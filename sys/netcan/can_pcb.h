@@ -95,6 +95,7 @@ LIST_HEAD(canpcbhead, canpcb);
 
 TAILQ_HEAD(canpcbqueue, canpcb);
 
+/* Set contains canpcb{}s */
 struct canpcbtable {
 	struct mutex 	canpt_mtx; 		/* protects PCB traversal */
 	umaa_zone_t 	canpt_zone; 	/* zone for slap allocator */
