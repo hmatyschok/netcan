@@ -98,7 +98,7 @@ can_output(struct mbuf *m, struct canpcb *canp)
 	M_ASSERTPKTHDR(m);
 	
 	if (canp == NULL) {
-		(void)printf("can_output: no pcb\n");
+		(void)printf("%: no pcb\n", __func__);
 		error = EINVAL;
 		goto bad;
 	}
@@ -123,7 +123,7 @@ can_output(struct mbuf *m, struct canpcb *canp)
 	}
 		
 	sotag = m_tag_get(PACKET_TAG_ND_OUTGOING, 
-		sizeof(struct socket *), PR_NOWAIT);
+		sizeof(struct socket *), M_NOWAIT);
 	if (sotag == NULL) {
 		ifp->if_oerrors++;
 		error = ENOMEM;

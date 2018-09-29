@@ -56,32 +56,36 @@
 #include <sys/cdefs.h>
 
 #include <sys/param.h>
-#include <sys/systm.h>
 #include <sys/mbuf.h>
-#include <sys/ioctl.h>
-#include <sys/domain.h>
-#include <sys/protosw.h>
 #include <sys/errno.h>
+#include <sys/protosw.h>
+#include <sys/sockio.h>
 #include <sys/socket.h>
 #include <sys/socketvar.h>
+#include <sys/sysctl.h>
 
 #include <net/if.h>
 #include <net/if_types.h>
-#include <net/netisr.h>
+
+#include <net/if.h>
+#include <net/if_types.h>
 #include <net/route.h>
-#include <net/bpf.h> 
 
 #include <netcan/can.h>
 #include <netcan/can_pcb.h>
 #include <netcan/can_var.h>
 
-struct canpcb canpcb;
+struct canpcbinfo rcan_pcbinfo;
 
-struct canpcbinfo can_raw_pcbinfo;
+u_long	rcan_sendspace = 4096;		/* really max datagram size */
+SYSCTL_ULONG(_net_can_raw, OID_AUTO, maxdgram, CTLFLAG_RW,
+    &rip_sendspace, 0, "Maximum outgoing raw IP datagram size");
 
-int	can_raw_sendspace = 4096;		/* really max datagram size */
-int	can_raw_revcspace = 40 * (1024 + sizeof(struct sockaddr_can));
+u_long	rcan_revcspace = 40 * (1024 + sizeof(struct sockaddr_can));
 					/* 40 1K datagrams */
+SYSCTL_ULONG(_net_can_raw, OID_AUTO, recvspace, CTLFLAG_RW,
+    &rip_recvspace, 0, "Maximum space for incoming raw IP datagrams");
+
 #ifndef CANHASHSIZE
 #define	CANHASHSIZE	128
 #endif
@@ -92,14 +96,14 @@ int	canhashsize = CANHASHSIZE;
  */
  
 static void
-can_raw_zone_change(void *tag)
+rcan_zone_change(void *tag)
 {
 
 	uma_zone_set_max(canpcbinfo.cani_zone, maxsockets);
 }
 
 static int
-can_raw_pcb_init(void *mem, int size, int flags)
+rcan_pcb_init(void *mem, int size, int flags)
 {
 	struct canpcb *canp = mem;
 
@@ -108,12 +112,12 @@ can_raw_pcb_init(void *mem, int size, int flags)
 }
 
 void
-can_raw_init(void)
+rcan_init(void)
 {
 
-	can_pcbinit(&can_raw_pcbinfo, "rawcan", "rawcanp", 
-		can_raw_pcb_init, NULL, canhashsize, canhashsize);
-	EVENTHANDLER_REGISTER(maxsockets_change, can_raw_zone_change, NULL,
+	can_pcbinit(&rcan_pcbinfo, "rawcan", "rawcanp", 
+		rcan_pcb_init, NULL, canhashsize, canhashsize);
+	EVENTHANDLER_REGISTER(maxsockets_change, rcan_zone_change, NULL,
 	    EVENTHANDLER_PRI_ANY);	
 }
 
@@ -122,7 +126,7 @@ can_raw_init(void)
  */
 
 static int
-can_raw_attach(struct socket *so, int proto, struct thread *td)
+rcan_attach(struct socket *so, int proto, struct thread *td)
 {
 	struct inpcb *inp;
 	int error;
@@ -130,32 +134,32 @@ can_raw_attach(struct socket *so, int proto, struct thread *td)
 	canp = sotocanpcb(so);
 	KASSERT(canp == NULL, ("%s: canp != NULL", __func__));
 
-	error = soreserve(so, can_raw_sendspace, can_raw_revcspace);
+	error = soreserve(so, rcan_sendspace, rcan_revcspace);
 	if (error != 0) 
 		goto out;
 	
-	CANP_INFO_LOCK(&can_raw_pcbinfo);	
-	error = can_pcballoc(so, &can_raw_pcbinfo);
-	CANP_INFO_UNLOCK(&can_raw_pcbinfo);
+	CANP_INFO_LOCK(&rcan_pcbinfo);	
+	error = can_pcballoc(so, &rcan_pcbinfo);
+	CANP_INFO_UNLOCK(&rcan_pcbinfo);
 out:
 	return (error);
 }
 
 static void
-can_raw_detach(struct socket *so)
+rcan_detach(struct socket *so)
 {
 	struct canpcb *canp;
 
 	canp = sotocanpcb(so);
 	KASSERT(canp != NULL, ("%s: canp == NULL", __func__));
 
-	CANP_INFO_LOCK(&can_raw_pcbinfo);	
+	CANP_INFO_LOCK(&rcan_pcbinfo);	
 	can_pcbdetach(canp);
-	CANP_INFO_UNLOCK(&can_raw_pcbinfo);	
+	CANP_INFO_UNLOCK(&rcan_pcbinfo);	
 }
 
 static int
-can_raw_bind(struct socket *so, struct sockaddr *nam, struct thread *td)
+rcan_bind(struct socket *so, struct sockaddr *nam, struct thread *td)
 {
 	struct sockaddr_can *scan = (struct sockaddr_can *)nam;
 	int error;
@@ -174,7 +178,7 @@ out:
 }
 
 static int
-can_raw_connect(struct socket *so, struct sockaddr *nam, 
+rcan_connect(struct socket *so, struct sockaddr *nam, 
 	struct thread *td)
 {
 	struct canpcb *canp;
@@ -192,20 +196,20 @@ can_raw_connect(struct socket *so, struct sockaddr *nam,
 	canp = sotocanpcb(so);
 	KASSERT(canp != NULL, ("%s: canp == NULL", __func__));
 #if 0
-	CANP_INFO_LOCK(&can_raw_pcbinfo);
+	CANP_INFO_LOCK(&rcan_pcbinfo);
 #endif
 	error = can_pcbconnect(canp, (struct sockaddr_can *)nam);
 	if (error != 0)
 		soisconnected(so);
 #if 0		
-	CANP_INFO_UNLOCK(&can_raw_pcbinfo);	
+	CANP_INFO_UNLOCK(&rcan_pcbinfo);	
 #endif
 out:
 	return (error);
 }
 
 static int
-can_raw_disconnect(struct socket *so)
+rcan_disconnect(struct socket *so)
 {
 	struct canpcb *canp;
 
@@ -215,16 +219,16 @@ can_raw_disconnect(struct socket *so)
 	canp = sotocanpcb(so);
 	KASSERT(canp != NULL, ("%s: canp == NULL", __func__));
 
-	CANP_INFO_LOCK(&can_raw_pcbinfo);
+	CANP_INFO_LOCK(&rcan_pcbinfo);
 	so->so_state &= ~SS_ISCONNECTED;
 	can_pcbdisconnect(canp);
-	CANP_INFO_UNLOCK(&can_raw_pcbinfo);
+	CANP_INFO_UNLOCK(&rcan_pcbinfo);
 	
 	return (0);
 }
 
 static int
-can_raw_shutdown(struct socket *so)
+rcan_shutdown(struct socket *so)
 {
 	struct canpcb *canp;
 
@@ -239,7 +243,7 @@ can_raw_shutdown(struct socket *so)
 }
 
 static int
-can_raw_sockaddr(struct socket *so, struct sockaddr *nam)
+rcan_sockaddr(struct socket *so, struct sockaddr *nam)
 {
 	struct canpcb *canp;
 
@@ -258,7 +262,7 @@ can_raw_sockaddr(struct socket *so, struct sockaddr *nam)
 }
 
 static int
-can_raw_send(struct socket *so, struct mbuf *m, struct sockaddr *nam,
+rcan_send(struct socket *so, struct mbuf *m, struct sockaddr *nam,
     struct mbuf *control, struct thread *td)
 {
 	struct canpcb *canp;
@@ -325,7 +329,7 @@ bad:
  *
  */
 static int
-can_raw_getop(struct canpcb *canp, struct sockopt *sopt)
+rcan_getop(struct canpcb *canp, struct sockopt *sopt)
 {
 	int optval = 0;
 	int error;
@@ -351,7 +355,7 @@ can_raw_getop(struct canpcb *canp, struct sockopt *sopt)
 }
 
 static int
-can_raw_setop(struct canpcb *canp, struct sockopt *sopt)
+rcan_setop(struct canpcb *canp, struct sockopt *sopt)
 {
 	int optval = 0;
 	int error;
@@ -398,7 +402,7 @@ can_raw_setop(struct canpcb *canp, struct sockopt *sopt)
 }
 
 int
-can_raw_ctloutput(struct socket *so, struct sockopt *sopt)
+rcan_ctloutput(struct socket *so, struct sockopt *sopt)
 {
 	struct canpcb *canp = sotocanpcb(so);
 	int error;
@@ -406,10 +410,10 @@ can_raw_ctloutput(struct socket *so, struct sockopt *sopt)
 	if (sopt->sopt_level == so->so_proto->pr_protocol) { /* XXX: CANPROTO_RAW */
 		switch (sopt->sopt_dir) {
 		case SOPT_GET:
-			error = can_raw_getop(canp, sopt);
+			error = rcan_getop(canp, sopt);
 			break;
 		case SOPT_SET:
-			error = can_raw_setop(canp, sopt);
+			error = rcan_setop(canp, sopt);
 			break;
 		default:
 			error = EINVAL;
@@ -421,16 +425,16 @@ can_raw_ctloutput(struct socket *so, struct sockopt *sopt)
 	return (error);
 }
 
-struct pr_usrreqs can_usrreqs = {
-	.pr_attach	= can_raw_attach,
-	.pr_detach	= can_raw_detach,
-	.pr_bind	= can_raw_bind,
-	.pr_listen	= can_raw_listen,
-	.pr_connect	= can_raw_connect,
-	.pr_disconnect	= can_raw_disconnect,
-	.pr_shutdown	= can_raw_shutdown,
-	.pr_sockaddr	= can_raw_sockaddr,
-	.pr_send	= can_raw_send,
-	.pr_sendoob	= can_raw_sendoob,
-	.pr_purgeif	= can_raw_purgeif,
+struct pr_usrreqs rcan_usrreqs = {
+	.pr_attach = 		rcan_attach,
+	.pr_detach = 		rcan_detach,
+	.pr_bind = 		rcan_bind,
+	.pr_listen = 		rcan_listen,
+	.pr_connect = 		rcan_connect,
+	.pr_disconnect = 		rcan_disconnect,
+	.pr_shutdown = 		rcan_shutdown,
+	.pr_sockaddr = 		rcan_sockaddr,
+	.pr_send = 		rcan_send,
+	.pr_sendoob = 		rcan_sendoob,
+	.pr_purgeif = 		rcan_purgeif,
 };
