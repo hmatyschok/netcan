@@ -111,3 +111,11 @@ struct domain candomain = {
 };
 
 DOMAIN_SET(can);
+
+/*
+ * Declarations for OIDs for sysctl(9) MIB on PF_CAN.
+ */
+SYSCTL_NODE(_net,      PF_CAN,		can,	CTLFLAG_RW, 0,
+	"Control Area Network Family");
+	
+SYSCTL_NODE(_net_can, CANPROTO_RAW,	raw,	CTLFLAG_RW, 0,	"RAW");

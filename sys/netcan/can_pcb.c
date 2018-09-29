@@ -163,7 +163,7 @@ can_pcbbind(struct canpcb *canp, struct sockaddr_can *scan,
 		    canp->canp_ifp->if_dlt != DLT_CAN_SOCKETCAN) {
 			canp->canp_ifp = NULL;
 			error = EADDRNOTAVAIL;
-			goto out1;
+			goto out;
 		}
 		soisconnected(canp->canp_socket);
 	} else {
@@ -172,7 +172,7 @@ can_pcbbind(struct canpcb *canp, struct sockaddr_can *scan,
 	}
 	can_pcbstate(canp, CANP_BOUND);
 	error = 0;
-out1:
+out:
 	CANP_UNLOCK(canp);
 out:		
 	return (error);
@@ -214,7 +214,8 @@ can_pcbdetach(struct canpcb *canp)
 {
 	struct socket *so;
 	
-	KASSERT(canp->canp_socket != NULL, ("%s: canp_socket == NULL", __func__));
+	KASSERT((canp->canp_socket != NULL), 
+		("%s: canp_socket == NULL", __func__));
 	so = canp->canp_socket;
 	so->so_pcb = NULL;
 
@@ -229,7 +230,7 @@ can_pcbdetach(struct canpcb *canp)
 void
 canp_ref(struct canpcb *canp)
 {
-	KASSERT(mutex_owned(&canp->canp_mtx));
+	CANP_LOCK_ASSERT(canp);
 	canp->canp_refcount++;
 }
 
@@ -270,25 +271,25 @@ can_setsockaddr(struct canpcb *canp, struct sockaddr_can *scan)
 int
 can_pcbsetfilter(struct canpcb *canp, struct can_filter *fp, int nfilters)
 {
-
 	struct can_filter *newf;
-	KASSERT(mutex_owned(&canp->canp_mtx));
+	
+	CANP_LOCK_ASSERT(canp);
 
 	if (nfilters > 0) {
 		newf = malloc(sizeof(struct can_filter) * nfilters, 
 			M_TEMP, M_WAITOK);
 		(void)memcpy(newf, fp, sizeof(struct can_filter) * nfilters);
-	} else {
+	} else 
 		newf = NULL;
-	}
+	
 	if (canp->canp_filters != NULL) {
 		free(canp->canp_filters, M_TEMP);
 	}
 	canp->canp_filters = newf;
 	canp->canp_nfilters = nfilters;
-	return 0;
-}
 
+	return (0);
+}
 
 
 #if 0
@@ -376,7 +377,7 @@ can_pcbstate(struct canpcb *canp, int state)
 {
 	int ifindex = canp->canp_ifp ? canp->canp_ifp->if_index : 0;
 
-	CANP_LOCK_ASSERT(cani);
+	CANP_LOCK_ASSERT(canp);
 
 	if (canp->canp_state > CANP_ATTACHED)
 		LIST_REMOVE(canp, canp_hash);
@@ -408,14 +409,14 @@ can_pcbfilter(struct canpcb *canp, struct mbuf *m)
 	struct can_frame *fmp;
 	struct can_filter *fip;
 
-	CANP_LOCK_ASSERT(cani);
+	CANP_LOCK_ASSERT(canp);
 
 	fmp = mtod(m, struct can_frame *);
 	for (i = 0; i < canp->canp_nfilters; i++) {
 		fip = &canp->canp_filters[i];
 		if ((fmp->can_id & fip->can_mask) == fip->can_id)
-			return 1;
+			return (1);
 	}
 	/* no match */
-	return 0;
+	return (0);
 }
