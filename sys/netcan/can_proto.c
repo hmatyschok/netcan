@@ -1,4 +1,4 @@
-/*	$NetBSD: can.c,v 1.2.2.1 2018/04/09 13:34:11 bouyer Exp $	*/
+/*	$NetBSD: can_proto.c,v 1.2 2017/05/27 21:02:56 bouyer Exp $	*/
 
 /*-
  * Copyright (c) 2003, 2017 The NetBSD Foundation, Inc.
@@ -56,121 +56,53 @@
 #include <sys/cdefs.h>
 
 #include <sys/param.h>
-#include <sys/mbuf.h>
-#include <sys/errno.h>
-#include <sys/protosw.h>
-#include <sys/sockio.h>
 #include <sys/socket.h>
-#include <sys/socketvar.h>
+#include <sys/protosw.h>
+#include <sys/domain.h>
+#include <sys/mbuf.h>
 
 #include <net/if.h>
-#include <net/if_types.h>
-
-#include <net/if.h>
-#include <net/if_types.h>
 #include <net/route.h>
 
+/*
+ * CAN protocol family
+ */
 #include <netcan/can.h>
-#include <netcan/can_pcb.h>
 #include <netcan/can_var.h>
 
-/*
- * XXX: Some components should externalized into interface-layer.
- */
+struct domain candomain;
 
-int can_output_cnt = 0;
-
-/*
- * Transmit frames.
- */
-int
-can_output(struct mbuf *m, struct canpcb *canp)
+const struct protosw cansw[] = {
 {
-	int error = 0;
-	struct ifnet *ifp;
-	struct canif_softc *csc; /* XXX: interface-layer */
-	struct m_tag *sotag;
-	struct sockaddr_can *dst;
-	const struct sockaddr_can *gw;
-	struct route canroute;
-	struct route *ro;
-	
-	if (canp == NULL) {
-		(void)printf("can_output: no pcb\n");
-		error = EINVAL;
-		goto bad;
-	}
-	
-	if ((ifp = canp->canp_ifp) == NULL) {
-		error = EDESTADDRREQ;
-		goto bad;
-	}
-	
-	switch (ifp->if_type) {
-	case IFT_OTHER:	
-		if ((csc = ifp->if_softc) != NULL) {
-			if (csc->csc_linkmodes & CAN_LINKMODE_LISTENONLY) {
-				error = ENETUNREACH;
-				goto bad:
-			}
-		}
-		break;
-	default:
-		error = ENETUNREACH;
-		goto bad:
-	}
-		
-	sotag = m_tag_get(PACKET_TAG_ND_OUTGOING, 
-		sizeof(struct socket *), PR_NOWAIT);
-	if (sotag == NULL) {
-		ifp->if_oerrors++;
-		error = ENOMEM;
-		goto bad;
-	}
-	
-	CANP_LOCK(canp);
-	canp_ref(canp);
-	CANP_UNLOCK(canp);
-	
-	*(struct canpcb **)(sotag + 1) = canp;
-	m_tag_prepend(m, sotag);
-
-	ro = &canroute;
-	bzero(ro, sizeof (*ro));
-	
-	gw = dst = (struct sockaddr_can *)&ro->ro_dst;
-	bzero(dst, sizeof(*dst));
-	dst->can_family = AF_CAN;
-	dst->can_len = sizeof(*dst);
-
-	if (m->m_len <= ifp->if_mtu) {
-		can_output_cnt++;
-		error = (*ifp->if_output)(ifp, m,
-			    (const struct sockaddr *)gw, ro);
-	} else {
-		error = EMSGSIZE;
-		goto bad;
-	}
-done:	
-	return (error);
-bad:
-	m_freem(m);
-	goto done;
+	.pr_type =		0,
+	.pr_domain =		&candomain,
+	.pr_protocol =		CANPROTO_CAN,
+	.pr_init =		can_init,
+	.pr_usrreqs =		&nousrreqs
+},
+{
+	.pr_type = 		SOCK_RAW,
+	.pr_domain = 		&candomain,
+	.pr_protocol =		CANPROTO_RAW,
+	.pr_init = 		can_raw_init,
+	.pr_flags = 		PR_ATOMIC|PR_ADDR,
+	.pr_usrreqs = 		&can_raw_usrreqs,
+	.pr_ctloutput = 	&can_raw_ctloutput,
 }
+};
 
-/*
- * Called by getsockopt and setsockopt.
- *
- */
-int
-can_ctloutput(struct socket *so, struct sockopt *sopt)
-{	
-	int error;	
+struct domain candomain = {
+	.dom_family = 		AF_CAN,
+	.dom_name = 		"can",
+#if 0
+	.dom_init = 		can_init,
+#endif
+	.dom_protosw = 		cansw,
+	.dom_protoswNPROTOSW = &cansw[nitems(cansw)],
+#if 0
+	.dom_ifattach =		can_domifattach,
+	.dom_ifdetach =		can_domifdetach
+#endif
+};
 
-	if (sopt->sopt_level == CANPROTO_CAN) 
-		error = ENOPROTOOPT;
-	else
-		error = EINVAL;
-
-	return (error);
-}
+DOMAIN_SET(can);
