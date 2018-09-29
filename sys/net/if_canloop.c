@@ -101,7 +101,9 @@ static const char canloop_name[] = "canlo";
 static void
 canloop_clone_destroy(struct ifnet *ifp)
 {
-	
+	ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
+	ifp->if_flags &= ~IFF_UP;
+
 	can_ifdetach(ifp);
 	if_free(ifp);
 }
@@ -123,6 +125,9 @@ canloop_clone_create(struct if_clone *ifc, int unit, caddr_t params)
 	ifp->if_snd.ifq_maxlen = ifqmaxlen;
 	
 	can_ifattach(ifp);
+
+	ifp->if_drv_flags |= IFF_DRV_RUNNING;
+	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 
 	return (0);
 }
