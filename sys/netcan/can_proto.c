@@ -67,12 +67,17 @@
 /*
  * CAN protocol family
  */
+
+static struct pr_usrreqs nousrreqs;
+
 #include <netcan/can.h>
 #include <netcan/can_var.h>
 
-struct domain candomain;
+FEATURE(can, "Controller Area Network protocol");
 
-const struct protosw cansw[] = {
+extern struct domain candomain;
+
+struct protosw cansw[] = {
 {
 	.pr_type =		0,
 	.pr_domain =		&candomain,
@@ -95,7 +100,7 @@ struct domain candomain = {
 	.dom_family = 		AF_CAN,
 	.dom_name = 		"can",
 #if 0
-	.dom_init = 		can_init,
+	.dom_init = 		can_dominit,
 #endif
 	.dom_protosw = 		cansw,
 	.dom_protoswNPROTOSW = &cansw[nitems(cansw)],
