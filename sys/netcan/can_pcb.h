@@ -95,7 +95,7 @@ struct canpcb {
 	mtx_init(&(canp)->canp_mtx, (d), NULL, MTX_DEF)
 #define	CANP_LOCK(canp)		mtx_lock(&(canp)->canp_mtx)
 #define	CANP_UNLOCK(canp)		mtx_unlock(&(canp)->canp_mtx)
-#define	CANP_LOCK_ASSERT(cani)	mtx_assert(&(canp)->canp_mtx, MA_OWNED)	
+#define	CANP_LOCK_ASSERT(canp)	mtx_assert(&(canp)->canp_mtx, MA_OWNED)	
 	
 LIST_HEAD(canpcbhead, canpcb);
 
@@ -128,7 +128,6 @@ struct canpcbinfo {
 /* flags in canp_flags: */
 #define CANP_NO_LOOPBACK	0x0001 /* local loopback disabled */
 #define CANP_RECEIVE_OWN	0x0002 /* receive own message */
-
 
 #define	sotocanpcb(so)		((struct canpcb *)(so)->so_pcb)
 
