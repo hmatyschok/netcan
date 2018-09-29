@@ -72,7 +72,7 @@
  * control block.
  */
 struct canpcbpolicy;
-
+struct canpcbinfo; /* XXX */
 
 struct canpcb {
 	LIST_ENTRY(canpcb) canp_hash;
@@ -84,28 +84,41 @@ struct canpcb {
 	struct socket 	*canp_socket;	/* back pointer to socket */
 	struct ifnet 	*canp_ifp; /* interface this socket is bound to */
 
-	struct canpcbtable 	*canp_table;
+	struct canpcbinfo 	*canp_pcbinfo;
 	struct can_filter 	*canp_filters; /* filter array */
 	int 	canp_nfilters; /* size of canp_filters */
 
 	int		canp_refcount;
 };
 
+#define	CANP_LOCK_INIT(canp, d) \
+	mtx_init(&(canp)->canp_mtx, (d), NULL, MTX_DEF)
+#define	CANP_LOCK(canp)		mtx_lock(&(canp)->canp_mtx)
+#define	CANP_UNLOCK(canp)		mtx_unlock(&(canp)->canp_mtx)
+#define	CANP_LOCK_ASSERT(cani)	mtx_assert(&(canp)->canp_mtx, MA_OWNED)	
+	
 LIST_HEAD(canpcbhead, canpcb);
 
 TAILQ_HEAD(canpcbqueue, canpcb);
 
 /* Set contains canpcb{}s */
-struct canpcbtable {
-	struct mutex 	canpt_mtx; 		/* protects PCB traversal */
-	umaa_zone_t 	canpt_zone; 	/* zone for slap allocator */
-	struct canpcbqueue 	canpt_queue;
-	struct canpcbhead 	*canpt_bindhashtbl;
-	struct canpcbhead 	*canpt_connecthashtbl;
-	u_long	canpt_bindhash;
-	u_long	canpt_connecthash;
+struct canpcbinfo {
+	struct mutex 	cani_mtx; 		/* protects PCB traversal */
+	umaa_zone_t 	cani_zone; 	/* zone for slap allocator */
+	struct canpcbqueue 	cani_queue;
+	struct canpcbhead 	*cani_bindhashtbl;
+	struct canpcbhead 	*cani_connecthashtbl;
+	u_long	cani_bindhash;
+	u_long	cani_connecthash;
 };
 
+#define	CANP_INFO_LOCK_INIT(cani, d) \
+	mtx_init(&(cani)->cani_mtx, (d), NULL, MTX_DEF)
+#define	CANP_INFO_LOCK(cani)		mtx_lock(&(cani)->cani_mtx)
+#define	CANP_INFO_UNLOCK(cani)		mtx_unlock(&(cani)->cani_mtx)
+#define	CANP_INFO_LOCK_ASSERT(cani)	\
+	mtx_assert(&(cani)->cani_mtx, MA_OWNED)
+	
 /* states in canp_state: */
 #define	CANP_DETACHED		0
 #define	CANP_ATTACHED		1
@@ -120,23 +133,25 @@ struct canpcbtable {
 #define	sotocanpcb(so)		((struct canpcb *)(so)->so_pcb)
 
 #ifdef _KERNEL
-void	can_losing(struct canpcb *);
-int	can_pcballoc (struct socket *, void *);
-int	can_pcbbind(void *, struct sockaddr_can *, struct lwp *);
-int	can_pcbconnect(void *, struct sockaddr_can *);
-void	can_pcbdetach(void *);
-void	can_pcbdisconnect(void *);
-void	can_pcbinit(struct canpcbtable *, int, int);
-int	can_pcbnotify(struct canpcbtable *, u_int32_t,
-	    u_int32_t, int, void (*)(struct canpcb *, int));
-void	can_pcbnotifyall(struct canpcbtable *, u_int32_t, int,
-	    void (*)(struct canpcb *, int));
-void	can_pcbpurgeif0(struct canpcbtable *, struct ifnet *);
-void	can_pcbpurgeif(struct canpcbtable *, struct ifnet *);
-void	can_pcbstate(struct canpcb *, int);
-void	can_setsockaddr(struct canpcb *, struct sockaddr_can *);
-int	can_pcbsetfilter(struct canpcb *, struct can_filter *, int);
-bool	can_pcbfilter(struct canpcb *, struct mbuf *);
+void 	can_losing(struct canpcb *);
+int 	can_pcballoc(struct socket *, struct canpcbinfo *);
+int 	can_pcbbind(struct canpcb *, struct sockaddr_can *, 
+	struct ucred *);
+int 	can_pcbconnect(struct canpcb *, struct sockaddr_can *);
+void 	can_pcbdetach(struct canpcb *);
+void 	can_pcbdisconnect(struct canpcb *);
+void 	can_pcbinfo_init(struct canpcbinfo *, const char *, 
+	const char *, uma_init, uma_fini, int, int);
+int 	can_pcbnotify(struct canpcbinfo *, u_int32_t, 
+	u_int32_t, int, void (*)(struct canpcb *, int));
+void 	can_pcbnotifyall(struct canpcbinfo *, u_int32_t, int, 
+	void (*)(struct canpcb *, int));
+void 	can_pcbpurgeif0(struct canpcbinfo *, struct ifnet *);
+void 	can_pcbpurgeif(struct canpcbinfo *, struct ifnet *);
+void 	can_pcbstate(struct canpcb *, int);
+void 	can_setsockaddr(struct canpcb *, struct sockaddr_can *);
+int 	can_pcbsetfilter(struct canpcb *, struct can_filter *, int);
+bool 	can_pcbfilter(struct canpcb *, struct mbuf *);
 
 /* refcount management */
 void	canp_ref(struct canpcb *);

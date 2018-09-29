@@ -71,106 +71,110 @@
 #include <netcan/can_var.h>
 #include <netcan/can_pcb.h>
 
-#define	CANPCBHASH_BIND(table, ifindex) \
-	&(table)->canpt_bindhashtbl[ \
-	    (ifindex) & (table)->canpt_bindhash]
-#define	CANPCBHASH_CONNECT(table, ifindex) \
-	&(table)->canpt_connecthashtbl[ \
-	    (ifindex) & (table)->canpt_bindhash]
-
+#define	CANPCBHASH_BIND(cani, ifindex) \
+	&(cani)->cani_bindhashtbl[ \
+	    (ifindex) & (cani)->cani_bindhash]
+#define	CANPCBHASH_CONNECT(cani, ifindex) \
+	&(cani)->cani_connecthashtbl[ \
+	    (ifindex) & (cani)->cani_bindhash]
+	    
 /*
- * Initialize raw connection block queue.
- */
-
-void
-can_pcbinit(struct canpcbtable *tbl, int bindhashsize, int connecthashsize)
+ * Initialize protocol specific software-context.
+ */ 
+void 
+can_pcbinfo_init(struct canpcbinfo *pcbinfo, const char *name, 
+	const char *zone_name, uma_init canpcbzone_init, 
+	uma_fini canpcbzone_fini, int bindhash_nelements, 
+	int connecthash_nelements)
 {
-	if (tbl->canpt_zone == NULL) { /* XXX */
-		tbl->canpt_zone = uma_zcreate("canpcb", sizeof(struct canpcb),
-			NULL, NULL, NULL /* XXX: ctor */, NULL /* XXX: dtor */,
+	CANP_INFO_LOCK_INIT(pcbinfo, name);
+	
+	pcbinfo->cani_zone = uma_zcreate(zone_name, sizeof(struct canpcb),
+		NULL, canpcbzone_init, can_canpcb_init, canpcbzone_fini,
 			 UMA_ALIGN_PTR, 0);
-		uma_zone_set_max(tbl->canpt_zone, maxsockets);
-		uma_zone_set_warning(tbl->canpt_zone,
-			"kern.ipc.maxsockets limit reached");	
-	}
-	TAILQ_INIT(&tbl->canpt_queue);
-	tbl->canpt_bindhashtbl = hashinit(bindhashsize, M_PCB,
-	    &tbl->canpt_bindhash);
-	tbl->canpt_connecthashtbl = hashinit(connecthashsize, M_PCB, 
-		&tbl->canpt_connecthash);
+	uma_zone_set_max(pcbinfo->cani_zone, maxsockets);
+	uma_zone_set_warning(pcbinfo->cani_zone,
+			"kern.ipc.maxsockets limit reached");
+	TAILQ_INIT(&pcbinfo->cani_queue);
+	pcbinfo->cani_bindhashtbl = hashinit(bindhash_nelements, 
+		M_PCB, &pcbinfo->cani_bindhash);
+	pcbinfo->cani_connecthashtbl = hashinit(connecthash_nelements, 
+		M_PCB, &pcbinfo->cani_connecthash);
 }
 
 int
-can_pcballoc(struct socket *so, void *v)
+can_pcballoc(struct socket *so, struct canpcbinfo *pcbinfo)
 {
-	struct canpcbtable *tbl = v;
 	struct canpcb *canp;
 	struct can_filter *can_init_filter;
-	int s;
 
-	can_init_filter = kmem_alloc(sizeof(struct can_filter), KM_NOSLEEP);
+	can_init_filter = malloc(sizeof(struct can_filter), M_TEMP, 
+		M_NOWAIT);
 	if (can_init_filter == NULL)
-		return (ENOBUFS);
+		return (ENOMEM);
+
 	can_init_filter->can_id = 0;
 	can_init_filter->can_mask = 0; /* accept all by default */
 
-	s = splnet();
-	canp = pool_get(&canpcb_pool, PR_NOWAIT);
-	splx(s);
+	canp = uma_zalloc(pcbinfo->cani_zone, M_NOWAIT);
 	if (canp == NULL) {
-		kmem_free(can_init_filter, sizeof(struct can_filter));
+		free(can_init_filter, M_TEMP);
 		return (ENOBUFS);
 	}
-	memset(canp, 0, sizeof(*canp));
-	canp->canp_table = table;
+	canp->canp_pcbinfo = pcbinfo;
 	canp->canp_socket = so;
 	canp->canp_filters = can_init_filter;
 	canp->canp_nfilters = 1;
-	mutex_init(&canp->canp_mtx, MUTEX_DEFAULT, IPL_NET);
+	
+	mtx_init(&canp->canp_mtx, MUTEX_DEFAULT, IPL_NET);
 	canp->canp_refcount = 1;
 
 	so->so_pcb = canp;
-	mutex_enter(&canp->canp_mtx);
-	TAILQ_INSERT_HEAD(&tbl->canpt_queue, canp, canp_queue);
+	CANP_INFO_LOCK(pcbinfo);
+	TAILQ_INSERT_HEAD(&pcbinfo->cani_queue, canp, canp_queue);
 	can_pcbstate(canp, CANP_ATTACHED);
-	mutex_exit(&canp->canp_mtx);
+	CANP_INFO_UNLOCK(pcbinfo);
+
 	return (0);
 }
 
 int
-can_pcbbind(void *v, struct sockaddr_can *scan, struct lwp *l)
+can_pcbbind(struct canpcb *canp, struct sockaddr_can *scan, 
+	struct ucred *cred)
 {
-	struct canpcb *canp = v;
-
+	
 	if (scan->can_family != AF_CAN)
 		return (EAFNOSUPPORT);
-	mutex_enter(&canp->canp_mtx);
+
+	CANP_LOCK(canp);
+
 	if (scan->can_ifindex != 0) {
 		canp->canp_ifp = if_byindex(scan->can_ifindex);
 		if (canp->canp_ifp == NULL ||
 		    canp->canp_ifp->if_dlt != DLT_CAN_SOCKETCAN) {
 			canp->canp_ifp = NULL;
-			mutex_exit(&canp->canp_mtx);
+			CANP_UNLOCK(canp);
 			return (EADDRNOTAVAIL);
 		}
 		soisconnected(canp->canp_socket);
 	} else {
 		canp->canp_ifp = NULL;
-		canp->canp_socket->so_state &= ~SS_ISCONNECTED;	/* XXX */
+		canp->canp_socket->so_state &= ~SS_ISCONNECTED;	/* XXX: No! */
 	}
 	can_pcbstate(canp, CANP_BOUND);
-	mutex_exit(&canp->canp_mtx);
+	CANP_UNLOCK(canp);
 	return 0;
 }
 
 /*
  * Connect from a socket to a specified address.
+ * 
+ * XXX: D'oh, I'll refactor this.
  */
 int
-can_pcbconnect(void *v, struct sockaddr_can *scan)
+can_pcbconnect(struct canpcb *canp, struct sockaddr_can *scan)
 {
 #if 0
-	struct canpcb *canp = v;
 	struct sockaddr_can *ifaddr = NULL;
 	int error;
 #endif
@@ -178,43 +182,44 @@ can_pcbconnect(void *v, struct sockaddr_can *scan)
 	if (scan->can_family != AF_CAN)
 		return (EAFNOSUPPORT);
 #if 0
-	mutex_enter(&canp->canp_mtx);
-	memcpy(&canp->canp_dst, scan, sizeof(struct sockaddr_can));
+	CANP_LOCK(canp);
+	(void)memcpy(&canp->canp_dst, scan, sizeof(struct sockaddr_can));
 	can_pcbstate(canp, CANP_CONNECTED);
-	mutex_exit(&canp->canp_mtx);
+	CANP_UNLOCK(canp);
 	return 0;
 #endif
 	return EOPNOTSUPP;
 }
 
 void
-can_pcbdisconnect(void *v)
+can_pcbdisconnect(struct canpcb *canp)
 {
-	struct canpcb *canp = v;
-
-	mutex_enter(&canp->canp_mtx);
+	CANP_LOCK(canp);
 	can_pcbstate(canp, CANP_DETACHED);
-	mutex_exit(&canp->canp_mtx);
+	CANP_UNLOCK(canp);
 	if (canp->canp_socket->so_state & SS_NOFDREF)
 		can_pcbdetach(canp);
 }
 
+/*
+ * XXX: I'll refactor this.
+ */
 void
-can_pcbdetach(void *v)
+can_pcbdetach(struct canpcb *canp)
 {
-	struct canpcb *canp = v;
-	struct socket *so = canp->canp_socket;
+	struct socket *so;
 
-	KASSERT(mutex_owned(softnet_lock));
+	so = canp->canp_socket;
+		
 	so->so_pcb = NULL;
-	mutex_enter(&canp->canp_mtx);
+
+	CANP_LOCK(canp);
 	can_pcbstate(canp, CANP_DETACHED);
 	can_pcbsetfilter(canp, NULL, 0);
-	mutex_exit(&canp->canp_mtx);
-	TAILQ_REMOVE(&canp->canp_tbl->canpt_queue, canp, canp_queue);
-	sofree(so); /* sofree drops the softnet_lock */
+	CANP_UNLOCK(canp);
+	TAILQ_REMOVE(&canp->canp_pcbinfo->cani_queue, canp, canp_queue);
+	sofree(so); /* XXX */
 	canp_unref(canp);
-	mutex_enter(softnet_lock);
 }
 
 void
@@ -227,15 +232,15 @@ canp_ref(struct canpcb *canp)
 void
 canp_unref(struct canpcb *canp)
 {
-	mutex_enter(&canp->canp_mtx);
+	CANP_LOCK(canp);
 	canp->canp_refcount--;
 	KASSERT(canp->canp_refcount >= 0);
 	if (canp->canp_refcount > 0) {
-		mutex_exit(&canp->canp_mtx);
+		CANP_UNLOCK(canp);
 		return;
 	}
-	mutex_exit(&canp->canp_mtx);
-	mutex_destroy(&canp->canp_mtx);
+	CANP_UNLOCK(canp);
+	mtx_destroy(&canp->canp_mtx);
 	pool_put(&canpcb_pool, canp);
 }
 
@@ -243,7 +248,7 @@ void
 can_setsockaddr(struct canpcb *canp, struct sockaddr_can *scan)
 {
 
-	mutex_enter(&canp->canp_mtx);
+	CANP_LOCK(canp);
 	memset(scan, 0, sizeof (*scan));
 	scan->can_family = AF_CAN;
 	scan->can_len = sizeof(*scan);
@@ -251,7 +256,7 @@ can_setsockaddr(struct canpcb *canp, struct sockaddr_can *scan)
 		scan->can_ifindex = canp->canp_ifp->if_index;
 	else
 		scan->can_ifindex = 0;
-	mutex_exit(&canp->canp_mtx);
+	CANP_UNLOCK(canp);
 }
 
 int
@@ -262,15 +267,14 @@ can_pcbsetfilter(struct canpcb *canp, struct can_filter *fp, int nfilters)
 	KASSERT(mutex_owned(&canp->canp_mtx));
 
 	if (nfilters > 0) {
-		newf =
-		    kmem_alloc(sizeof(struct can_filter) * nfilters, KM_SLEEP);
-		memcpy(newf, fp, sizeof(struct can_filter) * nfilters);
+		newf = malloc(sizeof(struct can_filter) * nfilters, 
+			M_TEMP, M_WAITOK);
+		(void)memcpy(newf, fp, sizeof(struct can_filter) * nfilters);
 	} else {
 		newf = NULL;
 	}
 	if (canp->canp_filters != NULL) {
-		kmem_free(canp->canp_filters,
-		    sizeof(struct can_filter) * canp->canp_nfilters);
+		free(canp->canp_filters, M_TEMP);
 	}
 	canp->canp_filters = newf;
 	canp->canp_nfilters = nfilters;
@@ -289,10 +293,10 @@ can_pcbsetfilter(struct canpcb *canp, struct can_filter *fp, int nfilters)
  * Call the protocol specific routine (if any) to report
  * any errors for each matching socket.
  *
- * Must be called at splsoftnet.
+ * Must be called at splsoftnet. <-- XXX: NO!!11!
  */
 int
-can_pcbnotify(struct canpcbtable *tbl, u_int32_t faddr, u_int32_t laddr,
+can_pcbnotify(struct canpcbinfo *pcbinfo, u_int32_t faddr, u_int32_t laddr,
     int errno, void (*notify)(struct canpcb *, int))
 {
 	struct canpcbhead *head;
@@ -303,7 +307,7 @@ can_pcbnotify(struct canpcbtable *tbl, u_int32_t faddr, u_int32_t laddr,
 		return (0);
 
 	nmatch = 0;
-	head = CANPCBHASH_CONNECT(table, faddr, laddr);
+	head = CANPCBHASH_CONNECT(pcbinfo, faddr, laddr);
 	for (canp = LIST_FIRST(head); canp != NULL; canp = ncanp) {
 		ncanp = LIST_NEXT(canp, canp_hash);
 		if (canp->canp_faddr == faddr &&
@@ -316,7 +320,7 @@ can_pcbnotify(struct canpcbtable *tbl, u_int32_t faddr, u_int32_t laddr,
 }
 
 void
-can_pcbnotifyall(struct canpcbtable *tbl, u_int32_t faddr, int errno,
+can_pcbnotifyall(struct canpcbinfo *pcbinfo, u_int32_t faddr, int errno,
     void (*notify)(struct canpcb *, int))
 {
 	struct canpcb *canp, *ncanp;
@@ -324,7 +328,7 @@ can_pcbnotifyall(struct canpcbtable *tbl, u_int32_t faddr, int errno,
 	if (faddr == 0 || notify == 0)
 		return;
 
-	TAILQ_FOREACH_SAFE(canp, &tbl->canpt_queue, canp_queue, ncanp) {
+	TAILQ_FOREACH_SAFE(canp, &pcbinfo->cani_queue, canp_queue, ncanp) {
 		if (canp->canp_faddr == faddr)
 			(*notify)(canp, errno);
 	}
@@ -332,8 +336,12 @@ can_pcbnotifyall(struct canpcbtable *tbl, u_int32_t faddr, int errno,
 #endif
 
 #if 0
+
+/*
+ * XXX: Wrong place for doing that.
+ */
 void
-can_pcbpurgeif0(struct canpcbtable *tbl, struct ifnet *ifp)
+can_pcbpurgeif0(struct canpcbinfo *pcbinfo, struct ifnet *ifp)
 {
 	struct canpcb *canp, *ncanp;
 	struct ip_moptions *imo;
@@ -341,16 +349,15 @@ can_pcbpurgeif0(struct canpcbtable *tbl, struct ifnet *ifp)
 
 }
 
+/*
+ * XXX: Wrong place for doing that.
+ */
 void
-can_pcbpurgeif(struct canpcbtable *tbl, struct ifnet *ifp)
+can_pcbpurgeif(struct canpcbinfo *pcbinfo, struct ifnet *ifp)
 {
 	struct canpcb *canp, *ncanp;
 
-	for (canp = CIRCLEQ_FIRST(&tbl->canpt_queue);
-	    canp != (void *)&tbl->canpt_queue;
-	    canp = ncanp) {
-		ncanp = CIRCLEQ_NEXT(canp, canp_queue);
-	}
+
 }
 #endif
 
@@ -360,18 +367,19 @@ void
 can_pcbstate(struct canpcb *canp, int state)
 {
 	int ifindex = canp->canp_ifp ? canp->canp_ifp->if_index : 0;
-	KASSERT(mutex_owned(&canp->canp_mtx));
+
+	CANP_LOCK_ASSERT(cani);
 
 	if (canp->canp_state > CANP_ATTACHED)
 		LIST_REMOVE(canp, canp_hash);
 
 	switch (state) {
 	case CANP_BOUND:
-		LIST_INSERT_HEAD(CANPCBHASH_BIND(canp->canp_table,
+		LIST_INSERT_HEAD(CANPCBHASH_BIND(canp->canp_pcbinfo,
 		    ifindex), canp, canp_hash);
 		break;
 	case CANP_CONNECTED:
-		LIST_INSERT_HEAD(CANPCBHASH_CONNECT(canp->canp_table,
+		LIST_INSERT_HEAD(CANPCBHASH_CONNECT(canp->canp_pcbinfo,
 		    ifindex), canp, canp_hash);
 		break;
 	}
@@ -382,24 +390,24 @@ can_pcbstate(struct canpcb *canp, int state)
 /*
  * check mbuf against socket accept filter.
  * returns true if mbuf is accepted, false otherwise
+ *
+ * XXX: I'll refactor this.
  */
-bool
+int
 can_pcbfilter(struct canpcb *canp, struct mbuf *m)
 {
 	int i;
 	struct can_frame *fmp;
 	struct can_filter *fip;
 
-	KASSERT(mutex_owned(&canp->canp_mtx));
-	KASSERT((m->m_flags & M_PKTHDR) != 0);
-	KASSERT(m->m_len == m->m_pkthdr.len);
+	CANP_LOCK_ASSERT(cani);
 
 	fmp = mtod(m, struct can_frame *);
 	for (i = 0; i < canp->canp_nfilters; i++) {
 		fip = &canp->canp_filters[i];
 		if ((fmp->can_id & fip->can_mask) == fip->can_id)
-			return true;
+			return 1;
 	}
 	/* no match */
-	return false;
+	return 0;
 }
