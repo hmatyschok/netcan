@@ -188,7 +188,7 @@ canloop_output(struct ifnet *ifp, struct mbuf *m, const struct sockaddr *dst,
 }
 
 static void
-canloop_ifstart(struct ifnet *ifp)
+canloop_start(struct ifnet *ifp)
 {
 	struct mbuf *m;
 
