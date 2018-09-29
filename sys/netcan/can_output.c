@@ -164,7 +164,13 @@ bad:
  */
 int
 can_ctloutput(struct socket *so, struct sockopt *sopt)
-{		
+{	
+	int error;	
 
-	return (EINVAL);
+	if (sopt->sopt_level != CANPROTO_CAN) 
+		error = EINVAL;
+	else
+		error = ENOPROTOOPT;
+
+	return (error);
 }
