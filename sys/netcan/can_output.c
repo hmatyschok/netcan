@@ -95,6 +95,8 @@ can_output(struct mbuf *m, struct canpcb *canp)
 	struct route canroute;
 	struct route *ro;
 	
+	M_ASSERTPKTHDR(m);
+	
 	if (canp == NULL) {
 		(void)printf("can_output: no pcb\n");
 		error = EINVAL;

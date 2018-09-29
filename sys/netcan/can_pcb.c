@@ -107,11 +107,16 @@ can_pcballoc(struct socket *so, struct canpcbinfo *pcbinfo)
 {
 	struct canpcb *canp;
 	struct can_filter *can_init_filter;
+	int error;
+
+	CANP_INFO_LOCK_ASSERT(pcbinfo);
 
 	can_init_filter = malloc(sizeof(struct can_filter), M_TEMP, 
 		M_NOWAIT);
-	if (can_init_filter == NULL)
-		return (ENOMEM);
+	if (can_init_filter == NULL) {
+		error = ENOMEM;
+		goto out;
+	}
 
 	can_init_filter->can_id = 0;
 	can_init_filter->can_mask = 0; /* accept all by default */
@@ -119,7 +124,8 @@ can_pcballoc(struct socket *so, struct canpcbinfo *pcbinfo)
 	canp = uma_zalloc(pcbinfo->cani_zone, M_NOWAIT);
 	if (canp == NULL) {
 		free(can_init_filter, M_TEMP);
-		return (ENOBUFS);
+		error = ENOBUFS;
+		goto out;
 	}
 	canp->canp_pcbinfo = pcbinfo;
 	canp->canp_socket = so;
@@ -130,22 +136,25 @@ can_pcballoc(struct socket *so, struct canpcbinfo *pcbinfo)
 	canp->canp_refcount = 1;
 
 	so->so_pcb = canp;
-	CANP_INFO_LOCK(pcbinfo);
+
 	TAILQ_INSERT_HEAD(&pcbinfo->cani_queue, canp, canp_queue);
 	can_pcbstate(canp, CANP_ATTACHED);
-	CANP_INFO_UNLOCK(pcbinfo);
-
-	return (0);
+	error = 0;
+out:
+	return (error);
 }
 
 int
 can_pcbbind(struct canpcb *canp, struct sockaddr_can *scan, 
 	struct ucred *cred)
 {
+	int error;
 	
-	if (scan->can_family != AF_CAN)
-		return (EAFNOSUPPORT);
-
+	if (scan->can_family != AF_CAN) {
+		error = EAFNOSUPPORT;
+		goto out;
+	}
+	
 	CANP_LOCK(canp);
 
 	if (scan->can_ifindex != 0) {
@@ -153,8 +162,8 @@ can_pcbbind(struct canpcb *canp, struct sockaddr_can *scan,
 		if (canp->canp_ifp == NULL ||
 		    canp->canp_ifp->if_dlt != DLT_CAN_SOCKETCAN) {
 			canp->canp_ifp = NULL;
-			CANP_UNLOCK(canp);
-			return (EADDRNOTAVAIL);
+			error = EADDRNOTAVAIL;
+			goto out1;
 		}
 		soisconnected(canp->canp_socket);
 	} else {
@@ -162,8 +171,11 @@ can_pcbbind(struct canpcb *canp, struct sockaddr_can *scan,
 		canp->canp_socket->so_state &= ~SS_ISCONNECTED;	/* XXX: No! */
 	}
 	can_pcbstate(canp, CANP_BOUND);
+	error = 0;
+out1:
 	CANP_UNLOCK(canp);
-	return 0;
+out:		
+	return (error);
 }
 
 /*
@@ -177,18 +189,13 @@ can_pcbconnect(struct canpcb *canp, struct sockaddr_can *scan)
 #if 0
 	struct sockaddr_can *ifaddr = NULL;
 	int error;
-#endif
 
-	if (scan->can_family != AF_CAN)
-		return (EAFNOSUPPORT);
-#if 0
 	CANP_LOCK(canp);
 	(void)memcpy(&canp->canp_dst, scan, sizeof(struct sockaddr_can));
 	can_pcbstate(canp, CANP_CONNECTED);
 	CANP_UNLOCK(canp);
-	return 0;
 #endif
-	return EOPNOTSUPP;
+	return (EOPNOTSUPP);
 }
 
 void
@@ -201,16 +208,14 @@ can_pcbdisconnect(struct canpcb *canp)
 		can_pcbdetach(canp);
 }
 
-/*
- * XXX: I'll refactor this.
- */
+
 void
 can_pcbdetach(struct canpcb *canp)
 {
 	struct socket *so;
-
+	
+	KASSERT(canp->canp_socket != NULL, ("%s: canp_socket == NULL", __func__));
 	so = canp->canp_socket;
-		
 	so->so_pcb = NULL;
 
 	CANP_LOCK(canp);
@@ -218,7 +223,6 @@ can_pcbdetach(struct canpcb *canp)
 	can_pcbsetfilter(canp, NULL, 0);
 	CANP_UNLOCK(canp);
 	TAILQ_REMOVE(&canp->canp_pcbinfo->cani_queue, canp, canp_queue);
-	sofree(so); /* XXX */
 	canp_unref(canp);
 }
 
@@ -247,15 +251,19 @@ canp_unref(struct canpcb *canp)
 void
 can_setsockaddr(struct canpcb *canp, struct sockaddr_can *scan)
 {
-
+	
 	CANP_LOCK(canp);
-	memset(scan, 0, sizeof (*scan));
+	
+	(void)memset(scan, 0, sizeof(*scan));
+	
 	scan->can_family = AF_CAN;
 	scan->can_len = sizeof(*scan);
-	if (canp->canp_ifp) 
+	
+	if (canp->canp_ifp != NULL) 
 		scan->can_ifindex = canp->canp_ifp->if_index;
 	else
 		scan->can_ifindex = 0;
+	
 	CANP_UNLOCK(canp);
 }
 
