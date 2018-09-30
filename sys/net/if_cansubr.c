@@ -84,9 +84,8 @@ static int 	can_output(struct ifnet *ifp, struct mbuf *m,
 	const struct sockaddr *dst, struct route *ro);
 
 /*
- * Process a received CAN frame
- * the packet is in the mbuf chain m with
- * the CAN header.
+ * Process a received CAN frame, the packet is 
+ * in the mbuf(9) chain with the CAN header.
  */
 static void
 can_input(struct ifnet *ifp, struct mbuf *m)
@@ -166,26 +165,22 @@ void
 can_ifattach(struct ifnet *ifp)
 {
 	
-	if (ifp->if_type == IFT_OTHER) {
-		if_attach(ifp);
+	if_attach(ifp);
 		
-		ifp->if_mtu = CAN_MTU;
-		ifp->if_hdrlen = 0;
-		ifp->if_addrlen = 0;
-		ifp->if_input = can_input;	
-		ifp->if_output = can_output; 
-		bpf_attach(ifp, DLT_CAN_SOCKETCAN, 0);
-	}
+	ifp->if_mtu = CAN_MTU;
+	ifp->if_hdrlen = 0;
+	ifp->if_addrlen = 0;
+	ifp->if_input = can_input;	
+	ifp->if_output = can_output; 
+	bpf_attach(ifp, DLT_CAN_SOCKETCAN, 0);
 }
 
 void
 can_ifdetach(struct ifnet *ifp)
 {
-
-	if (ifp->if_type == IDT_OTHER) {
-		bpf_detach(ifp);
-		if_detach(ifp);
-	}
+	
+	bpf_detach(ifp);
+	if_detach(ifp);
 }
 
 void
