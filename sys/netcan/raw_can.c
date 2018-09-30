@@ -75,21 +75,18 @@
 #include <netcan/can_pcb.h>
 #include <netcan/can_var.h>
 
+extern int can_hashsize;
+
 struct canpcbinfo rcan_pcbinfo;
 
 u_long	rcan_sendspace = 4096;		/* really max datagram size */
 SYSCTL_ULONG(_net_can_raw, OID_AUTO, maxdgram, CTLFLAG_RW,
-    &rip_sendspace, 0, "Maximum outgoing raw IP datagram size");
+    &rcan_sendspace, 0, "Maximum outgoing raw CAN frame size");
 
 u_long	rcan_revcspace = 40 * (1024 + sizeof(struct sockaddr_can));
 					/* 40 1K datagrams */
 SYSCTL_ULONG(_net_can_raw, OID_AUTO, recvspace, CTLFLAG_RW,
-    &rip_recvspace, 0, "Maximum space for incoming raw IP datagrams");
-
-#ifndef CANHASHSIZE
-#define	CANHASHSIZE	128
-#endif
-int	canhashsize = CANHASHSIZE;
+    &rcan_recvspace, 0, "Maximum space for incoming raw CAN frames");
 
 /*
  * Initialize raw connection block queue.
@@ -116,7 +113,7 @@ rcan_init(void)
 {
 
 	can_pcbinit(&rcan_pcbinfo, "rawcan", "rawcanp", 
-		rcan_pcb_init, NULL, canhashsize, canhashsize);
+		rcan_pcb_init, NULL, can_hashsize, can_hashsize);
 	EVENTHANDLER_REGISTER(maxsockets_change, rcan_zone_change, NULL,
 	    EVENTHANDLER_PRI_ANY);	
 }

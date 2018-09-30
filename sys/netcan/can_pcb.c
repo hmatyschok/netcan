@@ -77,6 +77,11 @@
 #define	CANPCBHASH_CONNECT(cani, ifindex) \
 	&(cani)->cani_connecthashtbl[ \
 	    (ifindex) & (cani)->cani_bindhash]
+
+#ifndef CAN_HASHSIZE
+#define	CAN_HASHSIZE	128
+#endif
+int	can_hashsize = CAN_HASHSIZE;
 	    
 /*
  * Initialize protocol specific software-context.
