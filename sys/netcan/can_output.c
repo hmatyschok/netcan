@@ -79,6 +79,7 @@
  */
 
 int can_output_cnt = 0;
+struct mbuf *can_lastout;
 
 /*
  * Transmit frames.

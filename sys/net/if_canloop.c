@@ -84,16 +84,14 @@
 
 #include <security/mac/mac_framework.h>
 
-#define CANLOMTU 	(sizeof(struct can_frame));
-
 static int		canloop_ioctl(struct ifnet *, u_long, caddr_t);
-static int		canloop_output(struct ifnet *ifp, struct mbuf *m,
-		    const struct sockaddr *dst, struct route *ro);
-static void 	canloop_start(struct ifnet *ifp);
-static int	canloop_clone_create(struct if_clone *, int, caddr_t);
-static void	canloop_clone_destroy(struct ifnet *);
+static void 	canloop_start(struct ifnet *);
 
 static struct ifnet *canloop_if; /* XXX */
+
+/*
+ * Interface cloner.
+ */ 
 
 static struct if_clone *canloop_cloner;
 static const char canloop_name[] = "canlo";
@@ -109,7 +107,7 @@ canloop_clone_destroy(struct ifnet *ifp)
 }
 
 static int
-canloop_clone_create(struct if_clone *ifc, int unit, caddr_t params)
+canloop_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 {
 	struct ifnet *ifp;
 
@@ -118,11 +116,10 @@ canloop_clone_create(struct if_clone *ifc, int unit, caddr_t params)
 		return (ENOSPC);
 
 	if_initname(ifp, canloop_name, unit);
+	
 	ifp->if_flags = IFF_LOOPBACK;
 	ifp->if_ioctl = canloop_ioctl;
-	ifp->if_output = canloop_output;
 	ifp->if_start = canloop_start;
-	ifp->if_snd.ifq_maxlen = ifqmaxlen;
 	
 	can_ifattach(ifp);
 
@@ -141,8 +138,12 @@ canloop_init(const void *v __unused)
 }
 SYSINIT(canloop_init, SI_SUB_PSEUDO, SI_ORDER_ANY, canloop_init, NULL);
 
+/*
+ * Module description.
+ */
+
 static int
-canloop_modevent(module_t mod, int type, void *data)
+canloop_modevent(module_t mod, int type, __unused void *data)
 {
 	int error;
 
@@ -167,26 +168,9 @@ static moduledata_t canloop_mod = {
 DECLARE_MODULE(if_canloop, canloop_mod, SI_SUB_PROTO_IFATTACHDOMAIN, 
 	SI_ORDER_ANY);
 
-static int
-canloop_output(struct ifnet *ifp, struct mbuf *m, const struct sockaddr *dst,
-    struct route *ro)
-{
-#ifdef MAC
-	int error;
-#endif 	/* MAC */
-	
-	M_ASSERTPKTHDR(m);
-
-#ifdef MAC
-	error = mac_ifnet_check_transmit(ifp, m);
-	if (error) {
-		m_freem(m);
-		return (error);
-	}
-#endif 	/* MAC */
-	return ((*ifp->if_transmit)(ifp, m));
-}
-
+/*
+ * Dequeue for transmission.
+ */
 static void
 canloop_start(struct ifnet *ifp)
 {
@@ -213,7 +197,7 @@ canloop_start(struct ifnet *ifp)
 #else
 		(void)printf("%s: can't handle CAN packet\n", ifp->if_xname);
 		m_freem(m);
-#endif 	/* CAN */
+#endif 	/* ! CAN */
 	}								
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 }
@@ -251,7 +235,7 @@ canloop_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 		}
 		break;
 	case SIOCSIFMTU:
-		if (ifr->ifr_mtu == CANLOMTU)
+		if (ifr->ifr_mtu == CAN_MTU)
 			ifp->if_mtu = ifr->ifr_mtu;
 		else
 			error = EINVAL;

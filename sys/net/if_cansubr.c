@@ -79,6 +79,10 @@
 #include <netcan/can_pcb.h>
 #include <netcan/can_var.h>
 
+static void 	can_input(struct ifnet *ifp, struct mbuf *m);
+static int 	can_output(struct ifnet *ifp, struct mbuf *m, 
+	const struct sockaddr *dst, struct route *ro);
+
 /*
  * Process a received CAN frame
  * the packet is in the mbuf chain m with
@@ -87,44 +91,101 @@
 static void
 can_input(struct ifnet *ifp, struct mbuf *m)
 {
+
+	M_ASSERTPKTHDR(m);
+	KASSERT(m->m_pkthdr.rcvif != NULL,
+	    ("%s: NULL interface pointer", __func__));
+	
 	if ((ifp->if_flags & IFF_UP) == 0) {
-		m_freem(m);
-		return;
+		if_printf(ifp, "discard frame at !IFF_UP\n");
+		goto bad;
 	}
+#ifdef DIAGNOSTIC
+	if ((ifp->if_drv_flags & IFF_DRV_RUNNING) == 0) {
+		if_printf(ifp, "discard frame at !IFF_DRV_RUNNING\n");
+		goto bad;
+	}
+#endif 	/* DIAGNOSTIC */
+	
+	if (m->m_pkthdr.len < sizeof(struct can_frame)) {
+		if_printf(ifp, "discard frame w/o can frame"
+			" (len %u pkt len %u)\n",
+			m->m_len, m->m_pkthdr.len);
+		goto bad1:
+	}
+	
+	if (m->m_len < sizeof (struct can_frame) {
+		m = m_pullup(m, sizeof (struct can_frame))
+	    if (m == NULL) {
+		if_printf(ifp, "m_pullup(9) failed,"
+			" discard frame w/o can frame"
+			" (len %u pkt len %u)\n",
+			m->m_len, m->m_pkthdr.len);
+		goto bad1:
+	}
+	
 #ifdef MAC
 	mac_ifnet_create_mbuf(ifp, m);
-#endif
+#endif 	/* MAC */
+
 	if_inc_counter(ifp, IFCOUNTER_IBYTES, m->m_pkthdr.len);
 	
+	M_SETFIB(m, ifp->if_fib);
 	netisr_dispatch(NETISR_CAN, m);
+	return;
+bad1:
+	if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
+bad:
+	m_freem(m);
 }
 
 /*
- * XXX: I'll refactor this..
+ * Output can_frame {} on interface-layer.
  */
+static int
+can_output(struct ifnet *ifp, struct mbuf *m, 
+	const struct sockaddr *dst, struct route *ro)
+{
+#ifdef MAC
+	int error;
+#endif 	/* MAC */
+	
+	M_ASSERTPKTHDR(m);
+
+#ifdef MAC
+	error = mac_ifnet_check_transmit(ifp, m);
+	if (error) {
+		m_freem(m);
+		return (error);
+	}
+#endif 	/* MAC */
+	return ((*ifp->if_transmit)(ifp, m));
+}
+
 void
 can_ifattach(struct ifnet *ifp)
 {
-	if_attach(ifp);
-	ifp->if_mtu = sizeof(struct can_frame);
 	
-	/* XXX */
-	ifp->if_hdrlen = 0;
-	ifp->if_addrlen = 0;
-	
-	/* ... */
-	
-	ifp->if_output = NULL; /* XXX: unused */
-	ifp->if_input = can_input;
-
-	bpf_attach(ifp, DLT_CAN_SOCKETCAN, 0);
+	if (ifp->if_type == IFT_OTHER) {
+		if_attach(ifp);
+		
+		ifp->if_mtu = CAN_MTU;
+		ifp->if_hdrlen = 0;
+		ifp->if_addrlen = 0;
+		ifp->if_input = can_input;	
+		ifp->if_output = can_output; 
+		bpf_attach(ifp, DLT_CAN_SOCKETCAN, 0);
+	}
 }
 
 void
 can_ifdetach(struct ifnet *ifp)
 {
-	bpf_detach(ifp);
-	if_detach(ifp);
+
+	if (ifp->if_type == IDT_OTHER) {
+		bpf_detach(ifp);
+		if_detach(ifp);
+	}
 }
 
 void
