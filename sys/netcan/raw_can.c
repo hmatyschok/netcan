@@ -119,7 +119,7 @@ rcan_init(void)
 }
 
 /*
- * Common usrreq.
+ * Common usrreqs.
  */
 
 static int
