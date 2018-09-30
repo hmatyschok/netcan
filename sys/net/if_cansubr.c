@@ -114,7 +114,7 @@ can_input(struct ifnet *ifp, struct mbuf *m)
 	}
 	
 	if (m->m_len < sizeof (struct can_frame) {
-		m = m_pullup(m, sizeof (struct can_frame))
+		m = m_pullup(m, sizeof (struct can_frame));
 	    if (m == NULL) {
 		if_printf(ifp, "m_pullup(9) failed,"
 			" discard frame w/o can frame"
@@ -139,7 +139,7 @@ bad:
 }
 
 /*
- * Output can_frame {} on interface-layer.
+ * Output CAN frame on interface-layer.
  */
 static int
 can_output(struct ifnet *ifp, struct mbuf *m, 
