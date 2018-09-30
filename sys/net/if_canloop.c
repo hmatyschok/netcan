@@ -167,7 +167,7 @@ static moduledata_t canloop_mod = {
 DECLARE_MODULE(if_canloop, canloop_mod, SI_SUB_PROTO_IFATTACHDOMAIN, 
 	SI_ORDER_ANY);
 
-int
+static int
 canloop_output(struct ifnet *ifp, struct mbuf *m, const struct sockaddr *dst,
     struct route *ro)
 {

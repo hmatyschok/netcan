@@ -90,10 +90,8 @@ can_output(struct mbuf *m, struct canpcb *canp)
 	struct ifnet *ifp;
 	struct canif_softc *csc; /* XXX: interface-layer */
 	struct m_tag *sotag;
-	struct sockaddr_can *dst;
+	struct sockaddr_can dst;
 	const struct sockaddr_can *gw;
-	struct route canroute;
-	struct route *ro;
 	
 	M_ASSERTPKTHDR(m);
 	
@@ -137,18 +135,15 @@ can_output(struct mbuf *m, struct canpcb *canp)
 	*(struct canpcb **)(sotag + 1) = canp;
 	m_tag_prepend(m, sotag);
 
-	ro = &canroute;
-	bzero(ro, sizeof (*ro));
-	
-	gw = dst = (struct sockaddr_can *)&ro->ro_dst;
-	bzero(dst, sizeof(*dst));
-	dst->can_family = AF_CAN;
-	dst->can_len = sizeof(*dst);
+	gw = (const struct sockaddr_can *)&dst;
+	(void)memset(&dst, 0, sizeof(dst));
+	dst.can_family = AF_CAN;
+	dst.can_len = sizeof(dst);
 
 	if (m->m_len <= ifp->if_mtu) {
 		can_output_cnt++;
 		error = (*ifp->if_output)(ifp, m,
-			    (const struct sockaddr *)gw, ro);
+			    (const struct sockaddr *)gw, NULL);
 	} else {
 		error = EMSGSIZE;
 		goto bad;

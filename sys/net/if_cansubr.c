@@ -107,7 +107,6 @@ can_ifattach(struct ifnet *ifp)
 {
 	if_attach(ifp);
 	ifp->if_mtu = sizeof(struct can_frame);
-	ifp->if_type = IFT_OTHER;
 	
 	/* XXX */
 	ifp->if_hdrlen = 0;
