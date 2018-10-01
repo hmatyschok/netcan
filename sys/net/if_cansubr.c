@@ -76,7 +76,6 @@
  */
 
 #include <netcan/can.h>
-#include <netcan/can_pcb.h>
 #include <netcan/can_var.h>
 
 static void 	can_input(struct ifnet *ifp, struct mbuf *m);

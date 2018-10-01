@@ -80,9 +80,11 @@
 
 #ifdef	CAN
 #include <netcan/can.h>
+#include <netcan/can_var.h>
 #endif
-
+#ifdef MAC 
 #include <security/mac/mac_framework.h>
+#endif 	/* MAC */
 
 static int		canloop_ioctl(struct ifnet *, u_long, caddr_t);
 static void 	canloop_start(struct ifnet *);
