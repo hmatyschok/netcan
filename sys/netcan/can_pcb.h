@@ -104,7 +104,7 @@ TAILQ_HEAD(canpcbqueue, canpcb);
 /* Set contains canpcb{}s */
 struct canpcbinfo {
 	struct mutex 	cani_mtx; 		/* protects PCB traversal */
-	umaa_zone_t 	cani_zone; 	/* zone for slap allocator */
+	umaa_zone_t 	cani_zone; 	/* uma(9) zone for slap allocator */
 	struct canpcbqueue 	cani_queue;
 	struct canpcbhead 	*cani_bindhashtbl;
 	struct canpcbhead 	*cani_connecthashtbl;
