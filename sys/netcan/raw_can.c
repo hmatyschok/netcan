@@ -104,7 +104,7 @@ rcan_pcb_init(void *mem, int size, int flags)
 {
 	struct canpcb *canp = mem;
 
-	CANP_LOCK_INIT(canp, "canp", "rawcanp");
+	CANP_WLOCK_INIT(canp, "canp", "rawcanp");
 	return (0);
 }
 
@@ -228,9 +228,9 @@ rcan_shutdown(struct socket *so)
 	KASSERT((canp != NULL), 
 		("%s: canp == NULL", __func__));
 
-	CANP_LOCK(canp);
+	CANP_WLOCK(canp);
 	socantsendmore(so);
-	CANP_UNLOCK(canp);
+	CANP_WUNLOCK(canp);
 
 	return (0);
 }
@@ -384,9 +384,9 @@ rcan_setop(struct canpcb *canp, struct sockopt *sopt)
 			error = EINVAL;
 			break;
 		}
-		CANP_LOCK(canp);
+		CANP_WLOCK(canp);
 		error = can_pcbsetfilter(canp, sopt->sopt_data, nfilters);
-		CANP_UNLOCK(canp);
+		CANP_WUNLOCK(canp);
 		break;
 		}
 	default:
