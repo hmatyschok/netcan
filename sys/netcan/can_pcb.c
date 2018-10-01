@@ -132,7 +132,7 @@ can_pcballoc(struct socket *so, struct canpcbinfo *pcbinfo)
 		error = ENOBUFS;
 		goto out;
 	}
-	CANP_LOCK(canp);
+	CANP_WLOCK(canp);
 	canp->canp_pcbinfo = pcbinfo;
 	canp->canp_socket = so;
 	canp->canp_filters = can_init_filter;
@@ -143,7 +143,7 @@ can_pcballoc(struct socket *so, struct canpcbinfo *pcbinfo)
 
 	TAILQ_INSERT_HEAD(&pcbinfo->cani_queue, canp, canp_queue);
 	can_pcbstate(canp, CANP_ATTACHED);
-	CANP_UNLOCK(canp);
+	CANP_WUNLOCK(canp);
 	error = 0;
 out:
 	return (error);
@@ -160,7 +160,7 @@ can_pcbbind(struct canpcb *canp, struct sockaddr_can *scan,
 		goto out;
 	}
 	
-	CANP_LOCK(canp);
+	CANP_WLOCK(canp);
 
 	if (scan->can_ifindex != 0) {
 		canp->canp_ifp = if_byindex(scan->can_ifindex);
@@ -187,7 +187,7 @@ can_pcbbind(struct canpcb *canp, struct sockaddr_can *scan,
 	can_pcbstate(canp, CANP_BOUND);
 	error = 0;
 out:
-	CANP_UNLOCK(canp);
+	CANP_WUNLOCK(canp);
 out:		
 	return (error);
 }
@@ -204,10 +204,10 @@ can_pcbconnect(struct canpcb *canp, struct sockaddr_can *scan)
 	struct sockaddr_can *ifaddr = NULL;
 	int error;
 
-	CANP_LOCK(canp);
+	CANP_WLOCK(canp);
 	(void)memcpy(&canp->canp_dst, scan, sizeof(struct sockaddr_can));
 	can_pcbstate(canp, CANP_CONNECTED);
-	CANP_UNLOCK(canp);
+	CANP_WUNLOCK(canp);
 #endif
 	return (EOPNOTSUPP);
 }
@@ -215,9 +215,9 @@ can_pcbconnect(struct canpcb *canp, struct sockaddr_can *scan)
 void
 can_pcbdisconnect(struct canpcb *canp)
 {
-	CANP_LOCK(canp);
+	CANP_WLOCK(canp);
 	can_pcbstate(canp, CANP_DETACHED);
-	CANP_UNLOCK(canp);
+	CANP_WUNLOCK(canp);
 	if (canp->canp_socket->so_state & SS_NOFDREF)
 		can_pcbdetach(canp);
 }
@@ -233,10 +233,10 @@ can_pcbdetach(struct canpcb *canp)
 	so = canp->canp_socket;
 	so->so_pcb = NULL;
 
-	CANP_LOCK(canp);
+	CANP_WLOCK(canp);
 	can_pcbstate(canp, CANP_DETACHED);
 	can_pcbsetfilter(canp, NULL, 0);
-	CANP_UNLOCK(canp);
+	CANP_WUNLOCK(canp);
 	CANP_INFO_LOCK(canp->canp_pcbinfo);
 	TAILQ_REMOVE(&canp->canp_pcbinfo->cani_queue, canp, canp_queue);
 	CANP_INFO_UNLOCK(canp->canp_pcbinfo);
@@ -246,23 +246,23 @@ can_pcbdetach(struct canpcb *canp)
 void
 canp_ref(struct canpcb *canp)
 {
-	CANP_LOCK_ASSERT(canp);
+	CANP_WLOCK_ASSERT(canp);
 	canp->canp_refcount++;
 }
 
 void
 canp_unref(struct canpcb *canp)
 {
-	CANP_LOCK(canp); /* XXX */
+	CANP_WLOCK(canp); /* XXX */
 	canp->canp_refcount--;
 	KASSERT((canp->canp_refcount >= 0),
 		("%s: canp->canp_refcount < 0", __func__));
 	if (canp->canp_refcount > 0) {
-		CANP_UNLOCK(canp);
+		CANP_WUNLOCK(canp);
 		return;
 	}
-	CANP_UNLOCK(canp);
-	CANP_LOCK_DESTROY(canp);
+	CANP_WUNLOCK(canp);
+	CANP_WLOCK_DESTROY(canp);
 	uma_zfree(canp->canp_pcbinfo->cani_zone, canp);
 }
 
@@ -270,7 +270,7 @@ void
 can_setsockaddr(struct canpcb *canp, struct sockaddr_can *scan)
 {
 	
-	CANP_LOCK(canp);
+	CANP_WLOCK(canp);
 	
 	(void)memset(scan, 0, sizeof(*scan));
 	
@@ -282,7 +282,7 @@ can_setsockaddr(struct canpcb *canp, struct sockaddr_can *scan)
 	else
 		scan->can_ifindex = 0;
 	
-	CANP_UNLOCK(canp);
+	CANP_WUNLOCK(canp);
 }
 
 int
@@ -290,7 +290,7 @@ can_pcbsetfilter(struct canpcb *canp, struct can_filter *fp, int nfilters)
 {
 	struct can_filter *newf;
 	
-	CANP_LOCK_ASSERT(canp);
+	CANP_WLOCK_ASSERT(canp);
 
 	if (nfilters > 0) {
 		newf = malloc(sizeof(struct can_filter) * nfilters, 
@@ -392,7 +392,7 @@ can_pcbstate(struct canpcb *canp, int state)
 {
 	int ifindex = canp->canp_ifp ? canp->canp_ifp->if_index : 0;
 
-	CANP_LOCK_ASSERT(canp); /* XXX */
+	CANP_WLOCK_ASSERT(canp); /* XXX */
 
 	if (canp->canp_state > CANP_ATTACHED)
 		LIST_REMOVE(canp, canp_hash);
@@ -426,7 +426,7 @@ can_pcbfilter(struct canpcb *canp, struct mbuf *m)
 	struct can_frame *fmp;
 	struct can_filter *fip;
 
-	CANP_LOCK_ASSERT(canp);
+	CANP_WLOCK_ASSERT(canp);
 
 	fmp = mtod(m, struct can_frame *);
 	for (i = 0; i < canp->canp_nfilters; i++) {

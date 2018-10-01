@@ -104,7 +104,7 @@ rcan_pcb_init(void *mem, int size, int flags)
 {
 	struct canpcb *canp = mem;
 
-	CANP_LOCK_INIT(canp, "rawcanp");
+	CANP_LOCK_INIT(canp, "canp", "rawcanp");
 	return (0);
 }
 

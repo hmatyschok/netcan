@@ -60,7 +60,7 @@
 
 #ifdef _KERNEL
 #include <sys/lock.h>
-#include <sys/mutex.h>
+#include <sys/rwlock.h>
 #include <vm/uma.h>
 #endif /* _KERNEL */
 
@@ -78,7 +78,7 @@ struct canpcb {
 	LIST_ENTRY(canpcb) canp_hash;
 	LIST_ENTRY(canpcb) canp_lhash;
 	TAILQ_ENTRY(canpcb) canp_queue;
-	struct mtx	canp_mtx;	/* protect states and refcount */
+	struct rwlock	canp_lock;	/* protect states and refcount */
 	int		canp_state;
 	int		canp_flags;
 	struct socket 	*canp_socket;	/* back pointer to socket */
@@ -91,12 +91,22 @@ struct canpcb {
 	int		canp_refcount;
 };
 
-#define	CANP_LOCK_INIT(canp, d) \
-	mtx_init(&(canp)->canp_mtx, (d), NULL, MTX_DEF)
-#define CANP_LOCK_DESTROY(CANP) 	mtx_destroy(&(canp)->canp_mtx)	
-#define	CANP_LOCK(canp) 	mtx_lock(&(canp)->canp_mtx)
-#define	CANP_UNLOCK(canp) 	mtx_unlock(&(canp)->canp_mtx)
-#define	CANP_LOCK_ASSERT(canp) 	mtx_assert(&(canp)->canp_mtx, MA_OWNED)	
+#define CANP_LOCK_INIT(canp, d, t) \
+	rw_init_flags(&(canp)->canp_lock, (t), RW_RECURSE |  RW_DUPOK)
+#define CANP_LOCK_DESTROY(canp)	rw_destroy(&(canp)->canp_lock)
+#define CANP_RLOCK(canp)		rw_rlock(&(canp)->canp_lock)
+#define CANP_WLOCK(canp)		rw_wlock(&(canp)->canp_lock)
+#define CANP_TRY_RLOCK(canp)	rw_try_rlock(&(canp)->canp_lock)
+#define CANP_TRY_WLOCK(canp)	rw_try_wlock(&(canp)->canp_lock)
+#define CANP_RUNLOCK(canp)	rw_runlock(&(canp)->canp_lock)
+#define CANP_WUNLOCK(canp)	rw_wunlock(&(canp)->canp_lock)
+#define	CANP_TRY_UPGRADE(canp)	rw_try_upgrade(&(canp)->canp_lock)
+#define	CANP_DOWNGRADE(canp)	rw_downgrade(&(canp)->canp_lock)
+#define	CANP_WLOCKED(canp)	rw_wowned(&(canp)->canp_lock)
+#define	CANP_LOCK_ASSERT(canp)	rw_assert(&(canp)->canp_lock, RA_LOCKED)
+#define	CANP_RLOCK_ASSERT(canp)	rw_assert(&(canp)->canp_lock, RA_RLOCKED)
+#define	CANP_WLOCK_ASSERT(canp)	rw_assert(&(canp)->canp_lock, RA_WLOCKED)
+#define	CANP_UNLOCK_ASSERT(canp)	rw_assert(&(canp)->canp_lock, RA_UNLOCKED)
 	
 LIST_HEAD(canpcbhead, canpcb);
 
