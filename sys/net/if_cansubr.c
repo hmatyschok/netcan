@@ -164,7 +164,6 @@ can_output(struct ifnet *ifp, struct mbuf *m,
 void
 can_ifattach(struct ifnet *ifp)
 {
-	
 	if_attach(ifp);
 		
 	ifp->if_mtu = CAN_MTU;
@@ -172,14 +171,15 @@ can_ifattach(struct ifnet *ifp)
 	ifp->if_addrlen = 0;
 	ifp->if_input = can_input;	
 	ifp->if_output = can_output; 
-	bpf_attach(ifp, DLT_CAN_SOCKETCAN, 0);
+	
+	bpfattach(ifp, DLT_CAN_SOCKETCAN, 0);
 }
 
 void
 can_ifdetach(struct ifnet *ifp)
 {
 	
-	bpf_detach(ifp);
+	bpfdetach(ifp);
 	if_detach(ifp);
 }
 

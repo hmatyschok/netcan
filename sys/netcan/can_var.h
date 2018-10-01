@@ -75,12 +75,19 @@ struct can_ifreq {
  * XXX: On the one hand this is generic, but on the other hand it 
  * XXX: is not in sight of the binding between its communication
  * XXX: domain(9) and interface-layer.
+ * XXX:
+ * XXX: See implementation of 
+ * XXX:
+ * XXX:   if_attachdomain(9) 
+ * XXX:
+ * XXX: in net/if.c and domain(9) for further datails. 
  */
 struct canif_softc {
-	device_t csc_dev;
-	struct can_link_timecaps csc_timecaps; /* timing capabilities */
-	struct can_link_timings csc_timings; /* operating timing values */
-	uint32_t csc_linkmodes;
+	struct ifnet 	*csc_ifp;
+	device_t 	csc_dev;
+	struct can_link_timecaps 	csc_timecaps; /* timing capabilities */
+	struct can_link_timings 	csc_timings; /* operating timing values */
+	uint32_t 	csc_linkmodes;
 };
 
 extern struct domain candomain;
@@ -91,7 +98,7 @@ extern const struct pr_usrreqs rcan_usrreqs;
 /* interface-layer */
 void 	can_ifattach(struct ifnet *);
 void 	can_ifdetach(struct ifnet *);
-void 	can_bpf_mtap(struct ifnet *, struct mbuf *, bool);
+void 	can_bpf_mtap(struct ifnet *, struct mbuf *);
 void 	can_ifinit_timings(struct canif_softc *);
 
 /* common subr. */

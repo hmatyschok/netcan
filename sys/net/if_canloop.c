@@ -111,8 +111,7 @@ canloop_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 {
 	struct ifnet *ifp;
 
-	ifp = if_alloc(IFT_OTHER);
-	if (ifp == NULL)
+	if ((ifp = if_alloc(IFT_OTHER)) == NULL)
 		return (ENOSPC);
 
 	if_initname(ifp, canloop_name, unit);
@@ -125,7 +124,8 @@ canloop_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 
 	ifp->if_drv_flags |= IFF_DRV_RUNNING;
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
-
+	error = 0;
+out:
 	return (0);
 }
 
