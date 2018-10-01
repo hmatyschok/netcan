@@ -93,9 +93,10 @@ struct canpcb {
 
 #define	CANP_LOCK_INIT(canp, d) \
 	mtx_init(&(canp)->canp_mtx, (d), NULL, MTX_DEF)
-#define	CANP_LOCK(canp)		mtx_lock(&(canp)->canp_mtx)
-#define	CANP_UNLOCK(canp)		mtx_unlock(&(canp)->canp_mtx)
-#define	CANP_LOCK_ASSERT(canp)	mtx_assert(&(canp)->canp_mtx, MA_OWNED)	
+#define CANP_LOCK_DESTROY(CANP) 	mtx_destroy(&(canp)->canp_mtx)	
+#define	CANP_LOCK(canp) 	mtx_lock(&(canp)->canp_mtx)
+#define	CANP_UNLOCK(canp) 	mtx_unlock(&(canp)->canp_mtx)
+#define	CANP_LOCK_ASSERT(canp) 	mtx_assert(&(canp)->canp_mtx, MA_OWNED)	
 	
 LIST_HEAD(canpcbhead, canpcb);
 
@@ -114,8 +115,9 @@ struct canpcbinfo {
 
 #define	CANP_INFO_LOCK_INIT(cani, d) \
 	mtx_init(&(cani)->cani_mtx, (d), NULL, MTX_DEF)
-#define	CANP_INFO_LOCK(cani)		mtx_lock(&(cani)->cani_mtx)
-#define	CANP_INFO_UNLOCK(cani)		mtx_unlock(&(cani)->cani_mtx)
+#define	CANP_INFO_LOCK_DESTROY(cani) 	mtx_destroy(&(cani)->cani_mtx)
+#define	CANP_INFO_LOCK(cani) 	mtx_lock(&(cani)->cani_mtx)
+#define	CANP_INFO_UNLOCK(cani) 	mtx_unlock(&(cani)->cani_mtx)
 #define	CANP_INFO_LOCK_ASSERT(cani)	\
 	mtx_assert(&(cani)->cani_mtx, MA_OWNED)
 	
