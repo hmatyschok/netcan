@@ -159,8 +159,8 @@ can_pcbbind(struct canpcb *canp, struct sockaddr_can *scan,
 
 	CANP_WLOCK_ASSERT(canp);
 
-	if (scan->can_ifindex != 0) {
-		canp->canp_ifp = ifnet_byindex(scan->can_ifindex);
+	if (scan->scan_ifindex != 0) {
+		canp->canp_ifp = ifnet_byindex(scan->scan_ifindex);
 		if (canp->canp_ifp == NULL || 
 			/* 
 			 * XXX: DLT_CAN_SOCKETCAN 
@@ -269,15 +269,15 @@ can_sockaddr(struct canpcb *canp)
 	struct sockaddr_can *scan;
 	
 	scan = malloc(sizeof(*scan), M_SONAME, M_WAITOK|M_ZERO);
-	scan->can_family = AF_CAN;
-	scan->can_len = sizeof(*scan);
+	scan->scan_family = AF_CAN;
+	scan->scan_len = sizeof(*scan);
 	
 	CANP_RLOCK(canp);
 	
 	if (canp->canp_ifp != NULL) 
-		scan->can_ifindex = canp->canp_ifp->if_index;
+		scan->scan_ifindex = canp->canp_ifp->if_index;
 	else
-		scan->can_ifindex = 0;
+		scan->scan_ifindex = 0;
 	
 	CANP_RUNLOCK(canp);
 }

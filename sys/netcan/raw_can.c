@@ -335,8 +335,8 @@ rcan_send(struct socket *so, struct mbuf *m, struct sockaddr *nam,
 		
 		(void)memset(&lscan, 0, sizeof(lscan));
 
-		lscan.can_family = AF_CAN;
-		lscan.can_len = sizeof(lscan);
+		lscan.scan_family = AF_CAN;
+		lscan.scan_len = sizeof(lscan);
 
 		CANP_WLOCK(canp);
 		can_pcbbind(canp, &lscan, td->td_ucred);
