@@ -82,6 +82,10 @@ struct protosw cansw[] = {
 	.pr_type =		0,
 	.pr_domain =		&candomain,
 	.pr_protocol =		CANPROTO_CAN,
+#if 0
+	.pr_ctlinput =		can_ctlinput,
+#endif
+	.pr_ctloutput = 	can_ctloutput,
 	.pr_init =		can_init,
 	.pr_usrreqs =		&nousrreqs
 },
@@ -89,10 +93,10 @@ struct protosw cansw[] = {
 	.pr_type = 		SOCK_RAW,
 	.pr_domain = 		&candomain,
 	.pr_protocol =		CANPROTO_RAW,
+	.pr_ctloutput = 	rcan_ctloutput,
 	.pr_init = 		rcan_init,
 	.pr_flags = 		PR_ATOMIC|PR_ADDR,
 	.pr_usrreqs = 		&rcan_usrreqs,
-	.pr_ctloutput = 	&rcan_ctloutput,
 }
 };
 

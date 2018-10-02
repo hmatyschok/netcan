@@ -163,10 +163,11 @@ can_nh_input(struct mbuf *m);
 	
 	(void)memset(&from, 0, sizeof(struct sockaddr_can));
 		
-	from.can_ifindex = rcv_ifindex;
-	from.can_len = sizeof(struct sockaddr_can);
-	from.can_family = AF_CAN;
+	from.scan_ifindex = rcv_ifindex;
+	from.scan_len = sizeof(struct sockaddr_can);
+	from.scan_family = AF_CAN;
 
+	/* fetch PCB maps to interface by its index, if any */
 	TAILQ_FOREACH(canp, &cbtable.canpt_queue, canp_queue) {
 		struct mbuf *mc;
 		
@@ -252,11 +253,14 @@ can_notify(struct canpcb *canp, int errno)
 	sowwakeup(canp->canp_socket);
 }
 
-void *
+/*
+ * XXX: Yeah, I'll refactor this. 
+ */
+void 
 can_ctlinput(int cmd, struct sockaddr *sa, void *v)
 {
 	struct ip *ip = v;
-	struct canhdr *uh;
+	struct udphdr *uh;
 	void (*notify) __P((struct inpcb *, int)) = can_notify;
 	int errno;
 

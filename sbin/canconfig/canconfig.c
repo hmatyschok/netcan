@@ -37,11 +37,6 @@
 
 #include <sys/cdefs.h>
 
-#ifndef lint
-__RCSID("$NetBSD: canconfig.c,v 1.2 2017/05/27 21:02:55 bouyer Exp $");
-#endif
-
-
 #include <sys/param.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
@@ -59,28 +54,28 @@ __RCSID("$NetBSD: canconfig.c,v 1.2 2017/05/27 21:02:55 bouyer Exp $");
 #include <string.h>
 #include <unistd.h>
 
-struct command {
+struct cmd {
 	const char *cmd_keyword;
 	int	cmd_argcnt;
 	int	cmd_flags;
-	void	(*cmd_func)(const struct command *, int, const char *,
+	void	(*cmd_func)(const struct cmd *, int, const char *,
 		    char **);
 };
 
-#define	CMD_INVERT	0x01	/* "invert" the sense of the command */
+#define	CMD_INVERT	0x01	/* "invert" the sense of the cmd */
 
-static void	cmd_up(const struct command *, int, const char *, char **);
-static void	cmd_down(const struct command *, int, const char *, char **);
-static void	cmd_brp(const struct command *, int, const char *, char **);
-static void	cmd_prop_seg(const struct command *, int, const char *, char **);
-static void	cmd_phase_seg1(const struct command *, int, const char *, char **);
-static void	cmd_phase_seg2(const struct command *, int, const char *, char **);
-static void	cmd_sjw(const struct command *, int, const char *, char **);
-static void	cmd_3samples(const struct command *, int, const char *, char **);
-static void	cmd_listenonly(const struct command *, int, const char *, char **);
-static void	cmd_loopback(const struct command *, int, const char *, char **);
+static void	cmd_up(const struct cmd *, int, const char *, char **);
+static void	cmd_down(const struct cmd *, int, const char *, char **);
+static void	cmd_brp(const struct cmd *, int, const char *, char **);
+static void	cmd_prop_seg(const struct cmd *, int, const char *, char **);
+static void	cmd_phase_seg1(const struct cmd *, int, const char *, char **);
+static void	cmd_phase_seg2(const struct cmd *, int, const char *, char **);
+static void	cmd_sjw(const struct cmd *, int, const char *, char **);
+static void	cmd_3samples(const struct cmd *, int, const char *, char **);
+static void	cmd_listenonly(const struct cmd *, int, const char *, char **);
+static void	cmd_loopback(const struct cmd *, int, const char *, char **);
 
-static const struct command command_table[] = {
+static const struct cmd cmd_table[] = {
 	{ "up",			0,	0,		cmd_up },
 	{ "down",		0,	0,		cmd_down },
 
@@ -109,7 +104,7 @@ static int	is_can(int s, const char *);
 static int	get_val(const char *, u_long *);
 #define	do_cmd(a,b,c,d,e,f)	do_cmd2((a),(b),(c),(d),(e),NULL,(f))
 static int	do_cmd2(int, const char *, u_long, void *, size_t, size_t *, int);
-__dead static void	usage(void);
+static void	usage(void);
 
 static int	aflag;
 static struct ifreq g_ifr;
@@ -122,7 +117,7 @@ static int	g_clt_updated = 0;
 int
 main(int argc, char *argv[])
 {
-	const struct command *cmd;
+	const struct cmd *cmd;
 	char *canifname;
 	int sock, ch;
 
@@ -187,18 +182,18 @@ main(int argc, char *argv[])
 		err(1, "unable to get can link timings");
 
 	while (argc != 0) {
-		for (cmd = command_table; cmd->cmd_keyword != NULL; cmd++) {
+		for (cmd = cmd_table; cmd->cmd_keyword != NULL; cmd++) {
 			if (strcmp(cmd->cmd_keyword, argv[0]) == 0)
 				break;
 		}
 		if (cmd->cmd_keyword == NULL)
-			errx(1, "unknown command: %s", argv[0]);
+			errx(1, "unknown cmd: %s", argv[0]);
 
 		argc--;
 		argv++;
 
 		if (argc < cmd->cmd_argcnt)
-			errx(1, "command %s requires %d argument%s",
+			errx(1, "cmd %s requires %d argument%s",
 			    cmd->cmd_keyword, cmd->cmd_argcnt,
 			    cmd->cmd_argcnt == 1 ? "" : "s");
 
@@ -241,7 +236,7 @@ usage(void)
 	int i;
 
 	for (i = 0; usage_strings[i] != NULL; i++)
-		fprintf(stderr, "%s %s %s\n",
+		f(void)printf(stderr, "%s %s %s\n",
 		    i == 0 ? "usage:" : "      ",
 		    __progname, usage_strings[i]);
 
@@ -266,9 +261,9 @@ printb(const char *s, u_int v, const char *bits)
 	char c;
 
 	if (bits && *bits == 8)
-		printf("%s=%o", s, v);
+		(void)printf("%s=%o", s, v);
 	else
-		printf("%s=%x", s, v);
+		(void)printf("%s=%x", s, v);
 	if (bits) { 
 		bits++;
 		putchar('<');
@@ -313,15 +308,15 @@ status(int sock, const char *canifname)
 {
 	struct ifreq ifr;
 
-	memset(&ifr, 0, sizeof(ifr));
+	(void)memset(&ifr, 0, sizeof(ifr));
 
 	strlcpy(ifr.ifr_name, canifname, sizeof(ifr.ifr_name));
 	if (ioctl(sock, SIOCGIFFLAGS, &ifr) < 0)
 		err(1, "unable to get flags");
 
-	printf("%s: ", canifname);
+	(void)printf("%s: ", canifname);
 	printb("flags", ifr.ifr_flags, IFFBITS);
-	printf("\n");
+	(void)printf("\n");
 
 	show_timings(sock, canifname, "\t");
 
@@ -371,40 +366,40 @@ show_timings(int sock, const char *canifname, const char *prefix)
 	humanize_number(hbuf, sizeof(hbuf), cltc.cltc_clock_freq, "Hz",
 	    HN_AUTOSCALE, HN_NOSPACE | HN_DIVISOR_1000);
 
-	printf("%stiming caps:\n", prefix);
-	printf("%s  clock %s, brp [%d..%d]/%d, prop_seg [%d..%d]\n",
+	(void)printf("%stiming caps:\n", prefix);
+	(void)printf("%s  clock %s, brp [%d..%d]/%d, prop_seg [%d..%d]\n",
 	    prefix, hbuf,
 	    cltc.cltc_brp_min, cltc.cltc_brp_max, cltc.cltc_brp_inc,
 	    cltc.cltc_prop_min, cltc.cltc_prop_max);
-	printf("%s  phase_seg1 [%d..%d], phase_seg2 [%d..%d], sjw [0..%d]\n",
+	(void)printf("%s  phase_seg1 [%d..%d], phase_seg2 [%d..%d], sjw [0..%d]\n",
 	    prefix,
 	    cltc.cltc_ps1_min, cltc.cltc_ps1_max,
 	    cltc.cltc_ps2_min, cltc.cltc_ps2_max,
 	    cltc.cltc_sjw_max);
-	printf("%s  ", prefix);
+	(void)printf("%s  ", prefix);
 	printb("capabilities", cltc.cltc_linkmode_caps, CAN_IFFBITS);
-	printf("\n");
-	printf("%soperational timings:", prefix);
+	(void)printf("\n");
+	(void)printf("%soperational timings:", prefix);
 	if (valid_timings(&cltc, &clt)) {
 		uint32_t tq, ntq, bps;
 		tq = ((uint64_t)clt.clt_brp * (uint64_t)1000000000) /
 		    cltc.cltc_clock_freq;
 		ntq = 1 + clt.clt_prop + clt.clt_ps1 + clt.clt_ps2;
-		printf(" %d time quanta of %dns",
+		(void)printf(" %d time quanta of %dns",
 		    1 + clt.clt_prop + clt.clt_ps1 + clt.clt_ps2, tq);
 		bps = 1000000000 / (tq * ntq); 
 		humanize_number(hbuf, sizeof(hbuf), bps, "bps",
 		    HN_AUTOSCALE, HN_NOSPACE | HN_DIVISOR_1000);
-		printf(", %s", hbuf);
+		(void)printf(", %s", hbuf);
 	};
-	printf("\n");
+	(void)printf("\n");
 
-	printf("%s  brp %d, prop_seg %d, phase_seg1 %d, phase_seg2 %d, sjw %d\n",
+	(void)printf("%s  brp %d, prop_seg %d, phase_seg1 %d, phase_seg2 %d, sjw %d\n",
 	    prefix,
 	    clt.clt_brp, clt.clt_prop, clt.clt_ps1, clt.clt_ps2, clt.clt_sjw);
-	printf("%s  ", prefix);
+	(void)printf("%s  ", prefix);
 	printb("mode", linkmode, CAN_IFFBITS);
-	printf("\n");
+	(void)printf("\n");
 }
 
 static int
@@ -429,7 +424,7 @@ do_cmd2(int sock, const char *canifname, u_long op, void *arg, size_t argsize,
 	struct ifdrv ifd;
 	int error;
 
-	memset(&ifd, 0, sizeof(ifd));
+	(void)memset(&ifd, 0, sizeof(ifd));
 
 	strlcpy(ifd.ifd_name, canifname, sizeof(ifd.ifd_name));
 	ifd.ifd_cmd = op;
@@ -468,7 +463,7 @@ do_canflag(int sock, const char *canifname, uint32_t flag, int set)
 }
 
 static void
-cmd_up(const struct command *cmd, int sock, const char *canifname,
+cmd_up(const struct cmd *cmd, int sock, const char *canifname,
     char **argv)
 {
 
@@ -476,7 +471,7 @@ cmd_up(const struct command *cmd, int sock, const char *canifname,
 }
 
 static void
-cmd_down(const struct command *cmd, int sock, const char *canifname,
+cmd_down(const struct cmd *cmd, int sock, const char *canifname,
     char **argv)
 {
 
@@ -484,7 +479,7 @@ cmd_down(const struct command *cmd, int sock, const char *canifname,
 }
 
 static void
-cmd_brp(const struct command *cmd, int sock, const char *bridge,
+cmd_brp(const struct cmd *cmd, int sock, const char *bridge,
     char **argv)
 {
 	u_long val;
@@ -498,7 +493,7 @@ cmd_brp(const struct command *cmd, int sock, const char *bridge,
 }
 
 static void
-cmd_prop_seg(const struct command *cmd, int sock, const char *bridge,
+cmd_prop_seg(const struct cmd *cmd, int sock, const char *bridge,
     char **argv)
 {
 	u_long val;
@@ -512,7 +507,7 @@ cmd_prop_seg(const struct command *cmd, int sock, const char *bridge,
 }
 
 static void
-cmd_phase_seg1(const struct command *cmd, int sock, const char *bridge,
+cmd_phase_seg1(const struct cmd *cmd, int sock, const char *bridge,
     char **argv)
 {
 	u_long val;
@@ -526,7 +521,7 @@ cmd_phase_seg1(const struct command *cmd, int sock, const char *bridge,
 }
 
 static void
-cmd_phase_seg2(const struct command *cmd, int sock, const char *bridge,
+cmd_phase_seg2(const struct cmd *cmd, int sock, const char *bridge,
     char **argv)
 {
 	u_long val;
@@ -540,7 +535,7 @@ cmd_phase_seg2(const struct command *cmd, int sock, const char *bridge,
 }
 
 static void
-cmd_sjw(const struct command *cmd, int sock, const char *bridge,
+cmd_sjw(const struct cmd *cmd, int sock, const char *bridge,
     char **argv)
 {
 	u_long val;
@@ -553,7 +548,7 @@ cmd_sjw(const struct command *cmd, int sock, const char *bridge,
 	g_clt_updated=1;
 }
 static void
-cmd_3samples(const struct command *cmd, int sock, const char *canifname,
+cmd_3samples(const struct cmd *cmd, int sock, const char *canifname,
     char **argv)
 {
         if (do_canflag(sock, canifname, CAN_LINKMODE_3SAMPLES,
@@ -563,7 +558,7 @@ cmd_3samples(const struct command *cmd, int sock, const char *canifname,
 }
 
 static void
-cmd_listenonly(const struct command *cmd, int sock, const char *canifname,
+cmd_listenonly(const struct cmd *cmd, int sock, const char *canifname,
     char **argv)
 {
         if (do_canflag(sock, canifname, CAN_LINKMODE_LISTENONLY,
@@ -573,7 +568,7 @@ cmd_listenonly(const struct command *cmd, int sock, const char *canifname,
 }
 
 static void
-cmd_loopback(const struct command *cmd, int sock, const char *canifname,
+cmd_loopback(const struct cmd *cmd, int sock, const char *canifname,
     char **argv)
 {
         if (do_canflag(sock, canifname, CAN_LINKMODE_LOOPBACK,

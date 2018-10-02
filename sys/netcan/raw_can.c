@@ -459,6 +459,7 @@ struct pr_usrreqs rcan_usrreqs = {
 	.pr_bind = 		rcan_bind,
 	.pr_listen = 		rcan_listen,
 	.pr_connect = 		rcan_connect,
+	.pru_control =		can_control,	
 	.pr_disconnect = 		rcan_disconnect,
 	.pr_shutdown = 		rcan_shutdown,
 	.pr_sockaddr = 		rcan_sockaddr,

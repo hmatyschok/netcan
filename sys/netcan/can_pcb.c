@@ -217,7 +217,6 @@ can_pcbdisconnect(struct canpcb *canp)
 		can_pcbdetach(canp);
 }
 
-
 void
 can_pcbdetach(struct canpcb *canp)
 {
@@ -319,7 +318,7 @@ can_pcbsetfilter(struct canpcb *canp, struct can_filter *fp, int nfilters)
  * Must be called at splsoftnet. <-- XXX: NO!!11!
  */
 int
-can_pcbnotify(struct canpcbinfo *pcbinfo, u_int32_t faddr, u_int32_t laddr,
+can_pcbnotify(struct canpcbinfo *pcbinfo, uint32_t faddr, uint32_t laddr,
     int errno, void (*notify)(struct canpcb *, int))
 {
 	struct canpcbhead *head;
@@ -343,7 +342,7 @@ can_pcbnotify(struct canpcbinfo *pcbinfo, u_int32_t faddr, u_int32_t laddr,
 }
 
 void
-can_pcbnotifyall(struct canpcbinfo *pcbinfo, u_int32_t faddr, int errno,
+can_pcbnotifyall(struct canpcbinfo *pcbinfo, uint32_t faddr, int errno,
     void (*notify)(struct canpcb *, int))
 {
 	struct canpcb *canp, *ncanp;

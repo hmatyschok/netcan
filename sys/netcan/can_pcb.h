@@ -167,9 +167,9 @@ void 	can_pcbdetach(struct canpcb *);
 void 	can_pcbdisconnect(struct canpcb *);
 void 	can_pcbinfo_init(struct canpcbinfo *, const char *, 
 	const char *, uma_init, uma_fini, int, int);
-int 	can_pcbnotify(struct canpcbinfo *, u_int32_t, 
-	u_int32_t, int, void (*)(struct canpcb *, int));
-void 	can_pcbnotifyall(struct canpcbinfo *, u_int32_t, int, 
+int 	can_pcbnotify(struct canpcbinfo *, uint32_t, 
+	uint32_t, int, void (*)(struct canpcb *, int));
+void 	can_pcbnotifyall(struct canpcbinfo *, uint32_t, int, 
 	void (*)(struct canpcb *, int));
 void 	can_pcbpurgeif0(struct canpcbinfo *, struct ifnet *);
 void 	can_pcbpurgeif(struct canpcbinfo *, struct ifnet *);
