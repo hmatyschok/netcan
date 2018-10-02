@@ -135,9 +135,9 @@ rcan_attach(struct socket *so, int proto, struct thread *td)
 	if (error != 0) 
 		goto out;
 	
-	CANP_INFO_LOCK(&rcan_pcbinfo);	
+	CANP_INFO_WLOCK(&rcan_pcbinfo);	
 	error = can_pcballoc(so, &rcan_pcbinfo);
-	CANP_INFO_UNLOCK(&rcan_pcbinfo);
+	CANP_INFO_WUNLOCK(&rcan_pcbinfo);
 out:
 	return (error);
 }
@@ -150,26 +150,42 @@ rcan_detach(struct socket *so)
 	canp = sotocanpcb(so);
 	KASSERT((canp != NULL), 
 		("%s: canp == NULL", __func__));
-
+	
+	CANP_INFO_WLOCK(&rcan_pcbinfo);	
 	can_pcbdetach(canp);
+	CANP_INFO_WUNLOCK(&rcan_pcbinfo);	
 }
 
 static int
 rcan_bind(struct socket *so, struct sockaddr *nam, struct thread *td)
 {
 	struct sockaddr_can *scan = (struct sockaddr_can *)nam;
+	struct canpcb *canp;
 	int error;
 
 	if (nam->sa_len != sizeof(*scan)) {
 		error = EINVAL;
 		goto out;
 	}
-
+	
+	if (TAILQ_EMPTY(&V_ifnet)) {
+		error = EADDRNOTAVAIL;
+		goto out;
+	}
+		
+	if (scan->scan_family != AF_CAN) {
+		error = EAFNOSUPPORT;
+		goto out;
+	}
 	canp = sotocanpcb(so);
 	KASSERT((canp != NULL), 
 		("%s: canp == NULL", __func__));
 
+	CANP_INFO_WLOCK(&rcan_pcbinfo);
+	CANP_WLOCK(canp);
 	error = can_pcbbind(canp, scan, td->td_ucred);
+	CANP_WUNLOCK(canp);
+	CANP_INFO_WUNLOCK(&rcan_pcbinfo);	
 out:	
 	return (error);
 }
@@ -178,6 +194,7 @@ static int
 rcan_connect(struct socket *so, struct sockaddr *nam, 
 	struct thread *td)
 {
+	struct sockaddr_can *scan = (struct sockaddr_can *)nam;
 	struct canpcb *canp;
 	int error;
 	
@@ -185,8 +202,13 @@ rcan_connect(struct socket *so, struct sockaddr *nam,
 		error = EINVAL;
 		goto out;
 	}
-
-	if (nam->sa_family != AF_CAN) {
+		
+	if (TAILQ_EMPTY(&V_ifnet)) {
+		error = EADDRNOTAVAIL;
+		goto out;
+	}
+		
+	if (scan->scan_family != AF_CAN) {
 		error = EAFNOSUPPORT;
 		goto out;
 	}
@@ -194,9 +216,11 @@ rcan_connect(struct socket *so, struct sockaddr *nam,
 	KASSERT((canp != NULL), 
 		("%s: canp == NULL", __func__));
 
+	CANP_INFO_WLOCK(&rcan_pcbinfo);
 	error = can_pcbconnect(canp, (struct sockaddr_can *)nam);
 	if (error != 0)
 		soisconnected(so);
+	CANP_INFO_WUNLOCK(&rcan_pcbinfo);	
 out:
 	return (error);
 }
@@ -205,18 +229,27 @@ static int
 rcan_disconnect(struct socket *so)
 {
 	struct canpcb *canp;
+	int error;
 
-	if ((so->so_state & SS_ISCONNECTED) == 0) 
-		return (ENOTCONN);
-
+	if ((so->so_state & SS_ISCONNECTED) == 0) {
+		error = ENOTCONN;
+		goto out;
+	}
 	canp = sotocanpcb(so);
 	KASSERT((canp != NULL), 
 		("%s: canp == NULL", __func__));
 
+	CANP_INFO_WLOCK(&rcan_pcbinfo);
+	SOCK_LOCK(so);
 	so->so_state &= ~SS_ISCONNECTED;
+	SOCK_UNLOCK(so);
+
 	can_pcbdisconnect(canp);
-	
-	return (0);
+	CANP_INFO_WUNLOCK(&rcan_pcbinfo);
+
+	error = 0;
+out:		
+	return (error);
 }
 
 static int
@@ -236,22 +269,17 @@ rcan_shutdown(struct socket *so)
 }
 
 static int
-rcan_sockaddr(struct socket *so, struct sockaddr *nam)
+rcan_sockaddr(struct socket *so, struct sockaddr **nam)
 {
+	struct sockaddr_can *scan = (struct sockaddr_can *)nam;
 	struct canpcb *canp;
-
-	if (nam->sa_len != sizeof(*scan)) {
-		return (EINVAL);
-
-	if (nam->sa_family != AF_CAN) {
-		return (EAFNOSUPPORT);
-		
+			
 	canp = sotocanpcb(so);
 	KASSERT((canp != NULL), 
 		("%s: canp == NULL", __func__));
 
-	can_setsockaddr(canp, (struct sockaddr_can *)nam);
-
+	*nam = can_sockaddr(canp);
+	
 	return (0);
 }
 

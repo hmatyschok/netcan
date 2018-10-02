@@ -112,9 +112,11 @@ LIST_HEAD(canpcbhead, canpcb);
 
 TAILQ_HEAD(canpcbqueue, canpcb);
 
-/* Set contains canpcb{}s */
+/* 
+ * Set contains canpcb{}s maps to PF_CAN family on AF_CAN domain(9). 
+ */
 struct canpcbinfo {
-	struct mutex 	cani_mtx; 		/* protects PCB traversal */
+	struct rwlock 	cani_lock; 		/* protects PCB traversal */
 	umaa_zone_t 	cani_zone; 	/* uma(9) zone for slap allocator */
 	struct canpcbqueue 	cani_queue;
 	struct canpcbhead 	*cani_bindhashtbl;
@@ -123,13 +125,25 @@ struct canpcbinfo {
 	u_long	cani_connecthash;
 };
 
-#define	CANP_INFO_LOCK_INIT(cani, d) \
-	mtx_init(&(cani)->cani_mtx, (d), NULL, MTX_DEF)
-#define	CANP_INFO_LOCK_DESTROY(cani) 	mtx_destroy(&(cani)->cani_mtx)
-#define	CANP_INFO_LOCK(cani) 	mtx_lock(&(cani)->cani_mtx)
-#define	CANP_INFO_UNLOCK(cani) 	mtx_unlock(&(cani)->cani_mtx)
+#define CANP_INFO_LOCK_INIT(cani, d) \
+	rw_init_flags(&(cani)->cani_lock, (d), RW_RECURSE)
+#define CANP_INFO_LOCK_DESTROY(cani) 	rw_destroy(&(cani)->cani_lock)
+#define CANP_INFO_RLOCK(cani) 	rw_rlock(&(cani)->cani_lock)
+#define CANP_INFO_WLOCK(cani) 	rw_wlock(&(cani)->cani_lock)
+#define CANP_INFO_TRY_RLOCK(cani) 	rw_try_rlock(&(cani)->cani_lock)
+#define CANP_INFO_TRY_WLOCK(cani) 	rw_try_wlock(&(cani)->cani_lock)
+#define CANP_INFO_TRY_UPGRADE(cani) 	rw_try_upgrade(&(cani)->cani_lock)
+#define CANP_INFO_WLOCKED(cani) 	rw_wowned(&(cani)->cani_lock)
+#define CANP_INFO_RUNLOCK(cani) 	rw_runlock(&(cani)->cani_lock)
+#define CANP_INFO_WUNLOCK(cani) 	rw_wunlock(&(cani)->cani_lock)
 #define	CANP_INFO_LOCK_ASSERT(cani)	\
-	mtx_assert(&(cani)->cani_mtx, MA_OWNED)
+	rw_assert(&(cani)->cani_lock, RA_LOCKED)
+#define CANP_INFO_RLOCK_ASSERT(cani) \
+	rw_assert(&(cani)->cani_lock, RA_RLOCKED)
+#define CANP_INFO_WLOCK_ASSERT(cani) \
+	rw_assert(&(cani)->cani_lock, RA_WLOCKED)
+#define CANP_INFO_UNLOCK_ASSERT(cani) \
+	rw_assert(&(cani)->cani_lock, RA_UNLOCKED)
 	
 /* states in canp_state: */
 #define	CANP_DETACHED		0
@@ -160,7 +174,7 @@ void 	can_pcbnotifyall(struct canpcbinfo *, u_int32_t, int,
 void 	can_pcbpurgeif0(struct canpcbinfo *, struct ifnet *);
 void 	can_pcbpurgeif(struct canpcbinfo *, struct ifnet *);
 void 	can_pcbstate(struct canpcb *, int);
-void 	can_setsockaddr(struct canpcb *, struct sockaddr_can *);
+struct sockaddr * 	can_sockaddr(struct canpcb *);
 int 	can_pcbsetfilter(struct canpcb *, struct can_filter *, int);
 bool 	can_pcbfilter(struct canpcb *, struct mbuf *);
 

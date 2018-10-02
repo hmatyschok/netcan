@@ -104,14 +104,14 @@ struct can_frame {
  * Socket address, CAN style
  */
 struct sockaddr_can {
-	u_int8_t	can_len;
-	sa_family_t	can_family;
-	int 		can_ifindex;
+	u_int8_t	scan_len;
+	sa_family_t	scan_family;
+	int 		scan_ifindex;
 	union {
 		/* transport protocol class address information (e.g. ISOTP) */
 		struct { canid_t rx_id, tx_id; } tp;
 		/* reserved for future CAN protocols address information */
-	} can_addr;
+	} scan_addr;
 };
 
 /*
