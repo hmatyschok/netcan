@@ -163,7 +163,7 @@ rcan_bind(struct socket *so, struct sockaddr *nam, struct thread *td)
 	struct canpcb *canp;
 	int error;
 
-	if (nam->sa_len != sizeof(*scan)) {
+	if (scan->scan_len != sizeof(*scan)) {
 		error = EINVAL;
 		goto out;
 	}
@@ -271,7 +271,6 @@ rcan_shutdown(struct socket *so)
 static int
 rcan_sockaddr(struct socket *so, struct sockaddr **nam)
 {
-	struct sockaddr_can *scan = (struct sockaddr_can *)nam;
 	struct canpcb *canp;
 			
 	canp = sotocanpcb(so);
@@ -287,6 +286,7 @@ static int
 rcan_send(struct socket *so, struct mbuf *m, struct sockaddr *nam,
     struct mbuf *control, struct thread *td)
 {
+	struct sockaddr_can *scan = (struct sockaddr_can *)nam;
 	struct canpcb *canp;
 	int error;
 
@@ -314,8 +314,11 @@ rcan_send(struct socket *so, struct mbuf *m, struct sockaddr *nam,
 	if (nam != NULL) {
 		if ((so->so_state & SS_ISCONNECTED) != 0) 
 			error = EISCONN;
-		else
-			error = can_pcbbind(canp, (struct sockaddr_can *)nam, l);
+		else {
+			CANP_WLOCK(canp);
+			error = can_pcbbind(canp, scan, td->td_ucred);
+			CANP_WUNLOCK(canp);
+		}
 	} else {
 		if ((so->so_state & SS_ISCONNECTED) == 0) 
 			error =  EDESTADDRREQ;
@@ -335,7 +338,9 @@ rcan_send(struct socket *so, struct mbuf *m, struct sockaddr *nam,
 		lscan.can_family = AF_CAN;
 		lscan.can_len = sizeof(lscan);
 
+		CANP_WLOCK(canp);
 		can_pcbbind(canp, &lscan, td->td_ucred);
+		CANP_WUNLOCK(canp);
 	}
 	
 	if (error != 0)
