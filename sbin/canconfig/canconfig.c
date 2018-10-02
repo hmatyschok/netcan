@@ -141,7 +141,7 @@ main(int argc, char *argv[])
 	if (aflag) {
 		if (argc != 0)
 			usage();
-		sock = socket(AF_CAN, SOCK_RAW, CAN_RAW);
+		sock = socket(AF_CAN, SOCK_RAW, CANPROTO_RAW);
 		if (sock < 0)
 			err(1, "socket");
 
@@ -152,7 +152,7 @@ main(int argc, char *argv[])
 	if (argc == 0)
 		usage();
 
-	sock = socket(AF_CAN, SOCK_RAW, CAN_RAW);
+	sock = socket(AF_CAN, SOCK_RAW, CANPROTO_RAW);
 	if (sock < 0)
 		err(1, "socket");
 
