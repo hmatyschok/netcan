@@ -58,6 +58,8 @@
  * Loopback interface driver for the CAN protocol
  */
 
+#include <sys/cdefs.h>
+
 #include "opt_can.h"
 
 #include <sys/param.h>
