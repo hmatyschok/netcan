@@ -76,12 +76,6 @@
 #include <netcan/can_var.h>
 
 /*
- * XXX: Incomplete..
- */
-
-static void 	can_nh_input(struct mbuf *m);
-
-/*
  * Declare netisr(4) handler for input queue.
  */ 
 static struct netisr_handler	can_nh = {
@@ -97,13 +91,16 @@ static struct netisr_handler	can_nh = {
 #endif
 };
 
+struct canpcbinfo_queue can_pcbinfohead;
+
 /* 
  * Initialize.
  */
 void
 can_init(void)
 {
-
+	
+	TAILQ_INIT(&can_pcbinfohead);
 	netisr_register(&can_nh);
 }
 
@@ -119,6 +116,8 @@ can_nh_input(struct mbuf *m);
 	struct canpcb	*sender_canp;
 
 	int		rcv_ifindex; /* XXX */	
+
+	struct canpcbinfo *cani;
 
 	M_ASSERTPKTHDR(m);
 	KASSERT(m->m_pkthdr.rcvif != NULL,
@@ -166,70 +165,74 @@ can_nh_input(struct mbuf *m);
 	from.scan_ifindex = rcv_ifindex;
 	from.scan_len = sizeof(struct sockaddr_can);
 	from.scan_family = AF_CAN;
-
-	/* fetch PCB maps to interface by its index, if any */
-	TAILQ_FOREACH(canp, &cbtable.canpt_queue, canp_queue) {
-		struct mbuf *mc;
+	
+	rw_rlock(&can_pcbinfo_lock);
+	
+	TAILQ_FOREACH(cani, &can_pcbinfohead, cani_queue) {
+		/* fetch PCB maps to interface by its index, if any */
+		TAILQ_FOREACH(canp, &cani->canpt_queue, canp_queue) {
+			struct mbuf *mc;
 		
-		CANP_LOCK(canp);
+			CANP_LOCK(canp);
 		
-		/* skip if we're detached */
-		if (canp->canp_state == CANP_DETACHED) {
-			CANP_UNLOCK(canp);
-			continue;
-		}
+			/* skip if we're detached */
+			if (canp->canp_state == CANP_DETACHED) {
+				CANP_UNLOCK(canp);
+				continue;
+			}
 
-		/* don't loop back to sockets on other interfaces */
-		if (canp->canp_ifp != NULL &&
-		    canp->canp_ifp->if_index != rcv_ifindex) {
-			CANP_UNLOCK(canp);
-			continue;
-		}
+			/* don't loop back to sockets on other interfaces */
+			if (canp->canp_ifp != NULL &&
+				canp->canp_ifp->if_index != rcv_ifindex) {
+				CANP_UNLOCK(canp);
+				continue;
+			}
 		
-		/* don't loop back to myself if I don't want it */
-		if (canp == sender_canp && 
-			(canp->canp_flags & CANP_RECEIVE_OWN) == 0) {
-			CANP_UNLOCK(canp);
-			continue;
-		}
+			/* don't loop back to myself if I don't want it */
+			if (canp == sender_canp && 
+				(canp->canp_flags & CANP_RECEIVE_OWN) == 0) {
+				CANP_UNLOCK(canp);
+				continue;
+			}
 
-		/* skip if the accept filter doen't match this pkt */
-		if (!can_pcbfilter(canp, m)) {
-			CANP_UNLOCK(canp);
-			continue;
-		}
+			/* skip if the accept filter doen't match this pkt */
+			if (!can_pcbfilter(canp, m)) {
+				CANP_UNLOCK(canp);
+				continue;
+			}
 
-		if (TAILQ_NEXT(canp, canp_queue) != NULL) {
-			/*
-			 * we can't be sure we won't need 
-			 * the original mbuf later so copy 
-			 */
-			mc = m_copypacket(m, M_NOWAIT);
-			if (mc == NULL) {
-				/* deliver this mbuf and abort */
+			if (TAILQ_NEXT(canp, canp_queue) != NULL) {
+				/*
+				 * we can't be sure we won't need 
+				 * the original mbuf later so copy 
+				 */
+				mc = m_copypacket(m, M_NOWAIT);
+				if (mc == NULL) {
+					/* deliver this mbuf and abort */
+					mc = m;
+					m = NULL;
+				}
+			} else {
 				mc = m;
 				m = NULL;
 			}
-		} else {
-			mc = m;
-			m = NULL;
+		
+			/* enqueue mbuf(9) */
+			if (sbappendaddr(&canp->canp_socket->so_rcv,
+					(struct sockaddr *) &from, mc,
+					(struct mbuf *) 0) == 0) {
+				m_freem(mc);
+			} else
+				sorwakeup(canp->canp_socket);
+		
+			CANP_UNLOCK(canp);
+		
+			if (m == NULL)
+				goto out2;
 		}
-		
-		/* enqueue mbuf(9) */
-		if (sbappendaddr(&canp->canp_socket->so_rcv,
-				 (struct sockaddr *) &from, mc,
-				 (struct mbuf *) 0) == 0) {
-			soroverflow(canp->canp_socket);
-			m_freem(mc);
-		} else
-			sorwakeup(canp->canp_socket);
-		
-		CANP_UNLOCK(canp);
-		
-		if (m == NULL)
-			break;
 	}
-		
+out2:	/* XXX */
+	rw_runlock(&can_pcbinfo_lock);
 out1:	
 	if (sender_canp != NULL) 
 		canp_unref(sender_canp);

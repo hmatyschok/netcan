@@ -207,6 +207,9 @@ can_mbuf_tag_clean(struct mbuf *m)
 		m_tag_prepend(m, sotag);
 }
 
+/*
+ * Capture a CAN frame.
+ */
 void
 can_bpf_mtap(struct ifnet *ifp, struct mbuf *m)
 {

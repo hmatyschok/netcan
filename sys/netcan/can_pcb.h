@@ -116,6 +116,7 @@ TAILQ_HEAD(canpcbqueue, canpcb);
  * Set contains canpcb{}s maps to PF_CAN family on AF_CAN domain(9). 
  */
 struct canpcbinfo {
+	TAILQ_ENTRY(canpcbinfo) cani_queue;
 	struct rwlock 	cani_lock; 		/* protects PCB traversal */
 	umaa_zone_t 	cani_zone; 	/* uma(9) zone for slap allocator */
 	struct canpcbqueue 	cani_queue;
@@ -144,6 +145,8 @@ struct canpcbinfo {
 	rw_assert(&(cani)->cani_lock, RA_WLOCKED)
 #define CANP_INFO_UNLOCK_ASSERT(cani) \
 	rw_assert(&(cani)->cani_lock, RA_UNLOCKED)
+
+TAILQ_HEAD(canpcbinfo_queue, canpcbinfo);
 	
 /* states in canp_state: */
 #define	CANP_DETACHED		0

@@ -71,6 +71,9 @@
 #include <netcan/can_var.h>
 #include <netcan/can_pcb.h>
 
+extern struct rwlock can_pcbinfo_lock;
+extern struct canpcbinfo_queue can_pcbinfo;
+
 #define	CANPCBHASH_BIND(cani, ifindex) \
 	&(cani)->cani_bindhashtbl[ \
 	    (ifindex) & (cani)->cani_bindhash]
@@ -105,6 +108,10 @@ can_pcbinfo_init(struct canpcbinfo *pcbinfo, const char *name,
 	uma_zone_set_max(pcbinfo->cani_zone, maxsockets);
 	uma_zone_set_warning(pcbinfo->cani_zone,
 			"kern.ipc.maxsockets limit reached");
+	
+	rw_wlock(&can_pcbinfo_lock);
+	TAILQ_INSERT_HEAD(&can_pcbinfo, canpcbinfo, cani_queue);		
+	rw_wunlock(&can_pcbinfo_lock);
 }
 
 int
