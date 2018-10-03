@@ -77,7 +77,7 @@
 
 extern int can_hashsize;
 
-struct canpcbinfo rcan_pcbinfo;
+static struct canpcbinfo rcan_pcbinfo;
 
 u_long	rcan_sendspace = 4096;		/* really max datagram size */
 SYSCTL_ULONG(_net_can_raw, OID_AUTO, maxdgram, CTLFLAG_RW,

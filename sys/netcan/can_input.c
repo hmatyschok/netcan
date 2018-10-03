@@ -91,7 +91,7 @@ static struct netisr_handler	can_nh = {
 #endif
 };
 
-struct canpcbinfo_head can_pcbinfo;
+struct canpcbinfo_head can_pcbinfo_tbl;
 
 /* 
  * Initialize.
@@ -100,7 +100,7 @@ void
 can_init(void)
 {
 	
-	TAILQ_INIT(&can_pcbinfohead);
+	TAILQ_INIT(&can_pcbinfo_tbl);
 	netisr_register(&can_nh);
 }
 
@@ -168,7 +168,7 @@ can_nh_input(struct mbuf *m);
 	
 	rw_rlock(&can_pcbinfo_lock);
 	
-	TAILQ_FOREACH(cani, &can_pcbinfo, cani_queue) {
+	TAILQ_FOREACH(cani, &can_pcbinfo_tbl, cani_queue) {
 		/* fetch PCB maps to interface by its index, if any */
 		TAILQ_FOREACH(canp, &cani->canpt_queue, canp_queue) {
 			struct mbuf *mc;
@@ -196,7 +196,7 @@ can_nh_input(struct mbuf *m);
 			}
 
 			/* skip if the accept filter doen't match this pkt */
-			if (!can_pcbfilter(canp, m)) {
+			if (can_pcbfilter(canp, m) == 0) {
 				CANP_UNLOCK(canp);
 				continue;
 			}
