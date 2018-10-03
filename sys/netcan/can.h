@@ -118,7 +118,7 @@ struct sockaddr_can {
  * Options for use with [gs]etsockopt for raw sockets
  * First word of comment is data type; bool is stored in int.
  */
-#define SOL_CAN_RAW CAN_RAW
+#define SOL_CAN_RAW CANPROTO_RAW
 
 #define CAN_RAW_FILTER	1	/* struct can_filter: set filter */
 #define CAN_RAW_LOOPBACK 4	/* bool: loopback to local sockets (default:on) */

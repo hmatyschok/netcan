@@ -77,8 +77,9 @@
 #include <net/if_var.h>
 #include <net/if_clone.h>
 #include <net/if_types.h>
-
+#include <net/netisr.h>
 #include <net/route.h>
+#include <net/bpf.h>
 
 #ifdef	CAN
 #include <netcan/can.h>
@@ -187,7 +188,7 @@ canloop_start(struct ifnet *ifp)
 			break;
 
 		/* IAP for tapping by bpf(4). */
-		can_bpf_mtap(ifp, m, 0);
+		can_bpf_mtap(ifp, m);
 
 		/* Do some statistics. */		
 		if_inc_counter(ifp, IFCOUNTER_OBYTES, m->m_pkthdr.len);
@@ -199,7 +200,8 @@ canloop_start(struct ifnet *ifp)
 		can_mbuf_tag_clean(m);
 		(*ifp->if_input)(ifp, m);
 #else
-		(void)printf("%s: can't handle CAN packet\n", ifp->if_xname);
+		(void)printf("%s: %s: can't handle CAN frame\n", 
+			__func__, ifp->if_xname);
 		m_freem(m);
 #endif 	/* ! CAN */
 	}								

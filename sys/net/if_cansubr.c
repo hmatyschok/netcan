@@ -168,8 +168,6 @@ can_ifattach(struct ifnet *ifp)
 	if_attach(ifp);
 		
 	ifp->if_mtu = CAN_MTU;
-	ifp->if_hdrlen = 0;
-	ifp->if_addrlen = 0;
 	ifp->if_input = can_input;	
 	ifp->if_output = can_output; 
 	
