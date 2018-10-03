@@ -146,7 +146,7 @@ struct canpcbinfo {
 #define CANP_INFO_UNLOCK_ASSERT(cani) \
 	rw_assert(&(cani)->cani_lock, RA_UNLOCKED)
 
-TAILQ_HEAD(canpcbinfo_queue, canpcbinfo);
+TAILQ_HEAD(canpcbinfo_head, canpcbinfo);
 	
 /* states in canp_state: */
 #define	CANP_DETACHED		0
