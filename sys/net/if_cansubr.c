@@ -97,18 +97,18 @@ can_input(struct ifnet *ifp, struct mbuf *m)
 	    ("%s: NULL interface pointer", __func__));
 	
 	if ((ifp->if_flags & IFF_UP) == 0) {
-		if_printf(ifp, "discard frame at !IFF_UP\n");
+		if_printf(ifp, "discard CAN frame at !IFF_UP\n");
 		goto bad;
 	}
 #ifdef DIAGNOSTIC
 	if ((ifp->if_drv_flags & IFF_DRV_RUNNING) == 0) {
-		if_printf(ifp, "discard frame at !IFF_DRV_RUNNING\n");
+		if_printf(ifp, "discard CAN frame at !IFF_DRV_RUNNING\n");
 		goto bad;
 	}
 #endif 	/* DIAGNOSTIC */
 	
 	if (m->m_pkthdr.len < sizeof(struct can_frame)) {
-		if_printf(ifp, "discard frame w/o can frame"
+		if_printf(ifp, "discard CAN frame"
 			" (len %u pkt len %u)\n",
 			m->m_len, m->m_pkthdr.len);
 		goto bad1:
@@ -117,10 +117,7 @@ can_input(struct ifnet *ifp, struct mbuf *m)
 	if (m->m_len < sizeof (struct can_frame) {
 		m = m_pullup(m, sizeof (struct can_frame));
 	    if (m == NULL) {
-		if_printf(ifp, "m_pullup(9) failed,"
-			" discard frame w/o can frame"
-			" (len %u pkt len %u)\n",
-			m->m_len, m->m_pkthdr.len);
+		if_printf(ifp, "m_pullup(9) failed, discard CAN frame.");
 		goto bad1:
 	}
 	
