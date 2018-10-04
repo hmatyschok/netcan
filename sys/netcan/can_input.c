@@ -109,7 +109,7 @@ can_init(void)
 /*
  * Process rx'd CAN frames by protocol-layer.
  */ 
-static void 	
+void 	
 can_nh_input(struct mbuf *m);
 {
 	struct sockaddr_can from;

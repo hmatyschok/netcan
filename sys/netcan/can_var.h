@@ -108,7 +108,7 @@ void 	can_mbuf_tag_clean(struct mbuf *);
 void 	can_ctlinput(int, struct sockaddr *, void *);
 int 	can_ctloutput(struct socket *, struct sockopt *);
 void 	can_init(void);
-void 	can_input(struct mbuf *);
+void 	can_nh_input(struct mbuf *);
 int 	can_output(struct mbuf *, struct canpcb *);
 
 /* CANPROTO_RAW */
