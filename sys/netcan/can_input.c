@@ -172,7 +172,7 @@ can_nh_input(struct mbuf *m);
 	
 	TAILQ_FOREACH(cani, &can_pcbinfo_tbl, cani_queue) {
 		/* fetch PCB maps to interface by its index, if any */
-		TAILQ_FOREACH(canp, &cani->canpt_queue, canp_queue) {
+		TAILQ_FOREACH(canp, &cani->cani_queue, canp_queue) {
 			struct mbuf *mc;
 		
 			CANP_RLOCK(canp);
