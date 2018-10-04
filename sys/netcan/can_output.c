@@ -131,17 +131,17 @@ can_output(struct mbuf *m, struct canpcb *canp)
 		goto bad;
 	}
 	
-	CANP_LOCK(canp);
+	CANP_WLOCK(canp);
 	canp_ref(canp);
-	CANP_UNLOCK(canp);
+	CANP_WUNLOCK(canp);
 	
 	*(struct canpcb **)(sotag + 1) = canp;
 	m_tag_prepend(m, sotag);
 
 	gw = (const struct sockaddr_can *)&dst;
 	(void)memset(&dst, 0, sizeof(dst));
-	dst.can_family = AF_CAN;
-	dst.can_len = sizeof(dst);
+	dst.scan_family = AF_CAN;
+	dst.scan_len = sizeof(dst);
 
 	if (m->m_len <= ifp->if_mtu) {
 		can_output_cnt++;
