@@ -355,7 +355,7 @@ bad:
 }
 
 /*
- * Called by getsockopt and setsockopt.
+ * Called by [gs]etsockopt(2). 
  *
  */
 static int
@@ -394,21 +394,19 @@ rcan_setop(struct canpcb *canp, struct sockopt *sopt)
 	case CAN_RAW_LOOPBACK:
 		error = sockopt_getint(sopt, &optval);
 		if (error == 0) {
-			if (optval) {
+			if (optval != 0) 
 				canp->canp_flags &= ~CANP_NO_LOOPBACK;
-			} else {
+			else 
 				canp->canp_flags |= CANP_NO_LOOPBACK;
-			}
 		}
 		break;
 	case CAN_RAW_RECV_OWN_MSGS: 
 		error = sockopt_getint(sopt, &optval);
 		if (error == 0) {
-			if (optval) {
+			if (optval != 0) 
 				canp->canp_flags |= CANP_RECEIVE_OWN;
-			} else {
+			else 
 				canp->canp_flags &= ~CANP_RECEIVE_OWN;
-			}
 		}
 		break;
 	case CAN_RAW_FILTER:

@@ -159,7 +159,7 @@ bad:
 }
 
 /*
- * Called by getsockopt and setsockopt.
+ * Called by [gs]etsockopt(2).
  *
  */
 int
