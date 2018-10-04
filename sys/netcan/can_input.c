@@ -175,7 +175,7 @@ can_nh_input(struct mbuf *m);
 		TAILQ_FOREACH(canp, &cani->canpt_queue, canp_queue) {
 			struct mbuf *mc;
 		
-			CANP_LOCK(canp);
+			CANP_RLOCK(canp);
 		
 			/* skip if we're detached */
 			if (canp->canp_state == CANP_DETACHED) {
@@ -227,7 +227,7 @@ can_nh_input(struct mbuf *m);
 			} else
 				sorwakeup(canp->canp_socket);
 		
-			CANP_UNLOCK(canp);
+			CANP_RUNLOCK(canp);
 		
 			if (m == NULL)
 				goto out2;
