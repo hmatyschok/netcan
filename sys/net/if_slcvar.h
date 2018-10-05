@@ -24,14 +24,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _NET_IF_SLCANVAR_H_
-#define _NET_IF_SLCANVAR_H_
-
-#define SLC_MTU 	33;
+#ifndef _NET_IF_SLCVAR_H_
+#define _NET_IF_SLCVAR_H_
 
 /*
- * Definitions for SLCAN interface data structures.
+ * Definitions for serial line CAN interface data structures.
  */
+
+#define SLC_MTU 	33; /* includes ext. CAN frame size */
+ 
 struct slc_softc {
 	struct canif_softc 		slc_csc;
 	struct tty 	*slc_tp;		/* pointer to tty structure */
@@ -47,4 +48,4 @@ struct slc_softc {
 #define	SLC_ERROR	0x00000002		/* error condition */
 
 
-#endif /* _NET_IF_SLCANVAR_H_ */
+#endif /* _NET_IF_SLCVAR_H_ */
