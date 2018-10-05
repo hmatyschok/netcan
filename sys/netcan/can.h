@@ -101,6 +101,28 @@ struct can_frame {
 #define CANPROTO_NPROTO 	2 	/* XXX: Wildcard, anyone??? */
 
 /*
+ * CAN ID based filter
+ * checks received can_id & can_filter.cf_mask against
+ *   can_filter.cf_id & can_filter.cf_mask
+ * valid flags for can_id:
+ *     CAN_INV_FILTER: invert filter
+ * valid flags for can_mask:
+ *     CAN_ERR_FLAG: filter for error message frames
+ */
+struct can_filter {
+	canid_t cf_id;
+	canid_t cf_mask;
+};
+
+#define CAN_INV_FILTER 0x20000000U
+
+/* transport protocol class address information (e.g. ISOTP) */
+struct can_tp { 
+	canid_t ct_rx_id; 
+	canid_t ct_tx_id; 
+};
+
+/*
  * Socket address, CAN style
  */
 struct sockaddr_can {
@@ -108,8 +130,10 @@ struct sockaddr_can {
 	sa_family_t	scan_family;
 	int 		scan_ifindex;
 	union {
+		/* CAN Id filter */
+		struct can_filter cf;
 		/* transport protocol class address information (e.g. ISOTP) */
-		struct { canid_t rx_id, tx_id; } tp;
+		struct can_tp tp;
 		/* reserved for future CAN protocols address information */
 	} scan_addr;
 };
@@ -123,22 +147,6 @@ struct sockaddr_can {
 #define CAN_RAW_FILTER	1	/* struct can_filter: set filter */
 #define CAN_RAW_LOOPBACK 4	/* bool: loopback to local sockets (default:on) */
 #define CAN_RAW_RECV_OWN_MSGS 5	/* bool: receive my own msgs (default:off) */
-
-/*
- * CAN ID based filter
- * checks received can_id & can_filter.can_mask against
- *   can_filter.can_id & can_filter.can_mask
- * valid flags for can_id:
- *     CAN_INV_FILTER: invert filter
- * valid flags for can_mask:
- *     CAN_ERR_FLAG: filter for error message frames
- */
-struct can_filter {
-	canid_t can_id;
-	canid_t can_mask;
-};
-
-#define CAN_INV_FILTER 0x20000000U
 
 #ifdef _KERNEL
 

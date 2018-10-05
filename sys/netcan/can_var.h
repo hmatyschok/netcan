@@ -69,6 +69,17 @@ struct can_ifreq {
 #include <sys/socketvar.h>
 
 /*
+ * Implements CAN filter on interface-layer.  
+ */
+struct can_ifaddr {
+	struct	ifaddr cia_ifa;		/* protocol-independent info */
+#define	cia_ifp		cia_ifa.ifa_ifp
+#define cia_flags	cia_ifa.ifa_flags
+	TAILQ_ENTRY(can_ifaddr) cia_link;	/* list of internet addresses */
+	struct	sockaddr_can cia_addr;	/* reserve space for CAN Filter */
+};
+
+/*
  * common structure for CAN interface drivers. Should be at the 
  * start ofeach driver's softc.
  * 
