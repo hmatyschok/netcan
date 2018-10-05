@@ -36,6 +36,7 @@
 struct slc_softc {
 	struct canif_softc 		slc_csc;
 	struct tty 	*slc_tp;		/* pointer to tty structure */
+	struct mbuf 	*slc_m; 
 	u_char 	slc_buf[SLC_MTU];
 	u_int 	slc_flags;
 	struct callout		 slc_timo;
@@ -44,8 +45,6 @@ struct slc_softc {
 #define	SLC2IFP(sc)	((sc)->slc_csc.csc_ifp)
 
 /* internal flags */
-#define	SLC_OACTIVE	0x00000001		/* pending task */
-#define	SLC_ERROR	0x00000002		/* error condition */
-
-
+#define	SLC_OACTIVE	0x00000001U		/* pending task */
+#define	SLC_ERROR	0x00000002U		/* error condition */
 #endif /* _NET_IF_SLCVAR_H_ */
