@@ -315,7 +315,7 @@ slc_start_locked(struct ifnet *ifp)
 	
 		/* notify the TTY */
 		tty_lock(tp);
-		if (tty_gone(tp) == 0)7
+		if (tty_gone(tp) == 0)
 			ttydevsw_outwakeup(tp);
 		tty_unlock(tp);
 	}								
