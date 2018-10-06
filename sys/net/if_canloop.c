@@ -92,8 +92,6 @@
 static int		canloop_ioctl(struct ifnet *, u_long, caddr_t);
 static void 	canloop_start(struct ifnet *);
 
-static struct ifnet *canloop_if; /* XXX */
-
 /*
  * Interface cloner.
  */ 
@@ -129,19 +127,9 @@ canloop_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 
 	ifp->if_drv_flags |= IFF_DRV_RUNNING;
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
-	error = 0;
-out:
+
 	return (0);
 }
-
-static void
-canloop_init(const void *v __unused)
-{
-
-	canloop_cloner = if_clone_simple(canloop_name, 
-		canloop_clone_create, canloop_clone_destroy, 1);
-}
-SYSINIT(canloop_init, SI_SUB_PSEUDO, SI_ORDER_ANY, canloop_init, NULL);
 
 /*
  * Module description.
@@ -154,7 +142,11 @@ canloop_modevent(module_t mod, int type, __unused void *data)
 
 	switch (type) {
 	case MOD_LOAD:
+		canloop_cloner = if_clone_simple(canloop_name, 
+			canloop_clone_create, canloop_clone_destroy, 0);
+		error = 0;
 	case MOD_UNLOAD:
+		if_clone_detach(canloop_cloner);
 		error = 0;
 		break;
 	default:

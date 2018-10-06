@@ -36,7 +36,6 @@
 struct slc_softc {
 	struct canif_softc 		slc_csc;
 	struct tty 	*slc_tp;		/* pointer to tty structure */
-	struct mbuf 	*slc_m; 
 	u_char 	slc_buf[SLC_MTU];
 	u_int 	slc_flags;
 	struct callout		 slc_timo;
