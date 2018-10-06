@@ -78,16 +78,16 @@ static TAILQ_HEAD(slc_head, slc_softc) slc_list;
 
 
 /*
- * Top-level routines.
+ * Bottom-level routines.
  */
  
-static th_getc_inject_t 	slc_getc_inject;
+static th_getc_inject_t 	slc_txeof;
 static th_getc_poll_t 	slc_getc_poll;
 static th_rint_t 	slc_rint;
 static th_rint_poll_t 	slc_rint_poll;
 
 static struct ttyhook slc_hook = {
-	.th_getc_inject = 	slc_getc_inject,
+	.th_getc_inject = 	slc_txeof,
 	.th_getc_poll = 	slc_getc_poll,
 	.th_rint = 	slc_rint,
 	.th_rint_poll = 	slc_rint_poll,
@@ -315,7 +315,7 @@ slc_start_locked(struct ifnet *ifp)
 	
 		/* notify the TTY */
 		tty_lock(tp);
-		if (tty_gone(tp) == 0)
+		if (tty_gone(tp) == 0)7
 			ttydevsw_outwakeup(tp);
 		tty_unlock(tp);
 	}								
