@@ -100,6 +100,7 @@ can_input(struct ifnet *ifp, struct mbuf *m)
 		if_printf(ifp, "discard CAN frame at !IFF_UP\n");
 		goto bad;
 	}
+	
 #ifdef DIAGNOSTIC
 	if ((ifp->if_drv_flags & IFF_DRV_RUNNING) == 0) {
 		if_printf(ifp, "discard CAN frame at !IFF_DRV_RUNNING\n");

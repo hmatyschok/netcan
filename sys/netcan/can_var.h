@@ -94,8 +94,8 @@ struct can_ifaddr {
  * XXX: in net/if.c and domain(9) for further datails. 
  */
 struct canif_softc {
-	struct ifnet 	*csc_ifp;
-	device_t 	csc_dev;
+	struct ifnet 	*csc_ifp; 	/* our ifnet(9) interface */
+	device_t 	csc_dev; 		/* maps to device(9), if any */
 	struct can_link_timecaps 	csc_timecaps; /* timing capabilities */
 	struct can_link_timings 	csc_timings; /* operating timing values */
 	uint32_t 	csc_linkmodes;

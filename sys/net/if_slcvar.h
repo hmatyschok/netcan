@@ -40,10 +40,13 @@ struct slc_softc {
 	u_int 	slc_flags;
 	struct callout		 slc_timo;
 	TAILQ_ENTRY(slc_softc) slc_next;
+	struct mtx 	slc_mtx;
 };
-#define	SLC2IFP(sc)	((sc)->slc_csc.csc_ifp)
+#define	SLC2IFP(slc)	((slc)->slc_csc.csc_ifp)
 
 /* internal flags */
-#define	SLC_OACTIVE	0x00000001U		/* pending task */
-#define	SLC_ERROR	0x00000002U		/* error condition */
+#define	SLC_DETACHED	0x00000000U
+#define	SLC_ATTACHED	0x00000001U
+#define	SLC_CONNECTED	0x00000002U
+#define	SLC_ERROR 	0x00000004U
 #endif /* _NET_IF_SLCVAR_H_ */
