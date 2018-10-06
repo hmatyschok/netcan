@@ -275,6 +275,9 @@ slc_start_locked(struct ifnet *ifp)
 		if (m == NULL) 
 			break;
 
+		/* IAP on bpf(4). */
+		can_bpf_mtap(ifp, m);
+
 		if (tp == NULL) {
 			m_freem(m);
 			continue;
@@ -289,15 +292,25 @@ slc_start_locked(struct ifnet *ifp)
 		 */
 		if (slc_encap(slc, &m) != 0) {
 			if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
+			m_freem(m);
 			continue;
 		}
 		
-		/* IAP for tapping by bpf(4). */
-		can_bpf_mtap(ifp, m);
-
 		/* Do some statistics. */		
 		if_inc_counter(ifp, IFCOUNTER_OBYTES, m->m_pkthdr.len);
 		if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
+
+		/* enqueue */
+		IF_LOCK(&slc->slc_outq);
+		if (_IF_QFULL(&slc->slc_outq)) {
+			IF_UNLOCK(&slc->slc_outq);
+			m_freem(m);
+			continue;
+		}
+
+		_IF_ENQUEUE(&slc->slc_outq, m);
+		slc->slc_outqlen += m->m_pkthdr.len;
+		IF_UNLOCK(&slc->slc_outq);
 	}								
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 	
@@ -313,9 +326,8 @@ slc_start_locked(struct ifnet *ifp)
  * ...
  */
 static int 
-slc_encap(struct slc_softc *slc, **mp)
+slc_encap(struct slc_softc *slc, struct mbuf **mp)
 {
 	
-	
-	
+
 }
