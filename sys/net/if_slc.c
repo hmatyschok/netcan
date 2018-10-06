@@ -304,23 +304,22 @@ slc_start_locked(struct ifnet *ifp)
 			m_freem(m);
 			continue;
 		}
-
+		
 		_IF_ENQUEUE(&slc->slc_outq, m);
 		slc->slc_outqlen += m->m_pkthdr.len;
 		IF_UNLOCK(&slc->slc_outq);
-		
-		/* Do some statistics. */		
+	
+		/* do some statistics */		
 		if_inc_counter(ifp, IFCOUNTER_OBYTES, m->m_pkthdr.len);
 		if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
+	
+		/* notify the TTY */
+		tty_lock(tp);
+		if (tty_gone(tp) == 0)
+			ttydevsw_outwakeup(tp);
+		tty_unlock(tp);
 	}								
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
-	
-	
-	/* 
-	 * XXX: transmit transformed data 
-	 * XXX: by ttydevsw_outwakeup(tp), 
-	 * XXX: etc ... 
-	 */
 }
 
 /*
