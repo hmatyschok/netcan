@@ -296,14 +296,11 @@ slc_start_locked(struct ifnet *ifp)
 			continue;
 		}
 		
-		/* Do some statistics. */		
-		if_inc_counter(ifp, IFCOUNTER_OBYTES, m->m_pkthdr.len);
-		if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
-
 		/* enqueue */
 		IF_LOCK(&slc->slc_outq);
 		if (_IF_QFULL(&slc->slc_outq)) {
 			IF_UNLOCK(&slc->slc_outq);
+			if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
 			m_freem(m);
 			continue;
 		}
@@ -311,6 +308,10 @@ slc_start_locked(struct ifnet *ifp)
 		_IF_ENQUEUE(&slc->slc_outq, m);
 		slc->slc_outqlen += m->m_pkthdr.len;
 		IF_UNLOCK(&slc->slc_outq);
+		
+		/* Do some statistics. */		
+		if_inc_counter(ifp, IFCOUNTER_OBYTES, m->m_pkthdr.len);
+		if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
 	}								
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 	
