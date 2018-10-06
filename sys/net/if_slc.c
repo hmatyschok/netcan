@@ -116,7 +116,7 @@ slc_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 	
 	if_initname(ifp, slc_name, unit);
 	
-	ifp->if_flags = IFF_LOOPBACK;
+	ifp->if_flags = IFF_POINTOPOINT | IFF_MULTICAST;
 	ifp->if_init = slc_init;
 	ifp->if_start = slc_start;
 	ifp->if_ioctl = slc_ioctl;
@@ -124,8 +124,15 @@ slc_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 	can_ifattach(ifp);
 
 	ifp->if_mtu = SLC_MTU;
-
+	
+	/* initialize its protective lock */
 	mtx_init(&slc->slc_mtx, "slc_mtx", NULL, MTX_DEF)
+	
+	/* initialize queue for transmission */
+	mtx_init(&slc->slc_outq.ifq_mtx, "slc_outq_mtx", NULL, MTX_DEF);
+	IFQ_SET_MAXLEN(&slc->slc_outq, ifqmaxlen);
+	
+	/* attach */
 	mtx_lock(&slc_list_mtx);
 	TAILQ_INSERT_TAIL(&slc_list, slc, slc_next);
 	mtx_unlock(&slc_list_mtx);
@@ -140,6 +147,7 @@ static void
 slc_destroy(struct slc_softc *slc)
 {
 	struct ifnet *ifp;
+	struct tty *tp;
 	
 	ifp = SLC2IFP(slc);
 	ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
@@ -147,6 +155,14 @@ slc_destroy(struct slc_softc *slc)
 
 	can_ifdetach(ifp);
 	if_free(ifp);
+	
+	/* detach hook, if any and flush queue */
+	if ((tp = slc->slc_tp) != NULL) {
+		tty_lock(tp);
+		ttyhook_unregister(tp);
+	}
+	IF_DRAIN(&slc->slc_outq);
+	mtx_destroy(&slc->slc_outq.ifq_mtx);
 	
 	mtx_destroy(&slc->slc_mtx);
 	free(slc, M_SLC);
@@ -282,16 +298,24 @@ slc_start_locked(struct ifnet *ifp)
 		/* Do some statistics. */		
 		if_inc_counter(ifp, IFCOUNTER_OBYTES, m->m_pkthdr.len);
 		if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
-		
-		/* 
-		 * XXX: transmit transformed data 
-		 * XXX: by ttydevsw_outwakeup(tp), 
-		 * XXX: etc ... 
-		 */
 	}								
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
+	
+	
+	/* 
+	 * XXX: transmit transformed data 
+	 * XXX: by ttydevsw_outwakeup(tp), 
+	 * XXX: etc ... 
+	 */
 }
 
 /*
  * ...
  */
+static int 
+slc_encap(struct slc_softc *slc, **mp)
+{
+	
+	
+	
+}

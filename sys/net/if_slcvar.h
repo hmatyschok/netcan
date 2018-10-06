@@ -27,6 +27,8 @@
 #ifndef _NET_IF_SLCVAR_H_
 #define _NET_IF_SLCVAR_H_
 
+#include <sys/callout.h>
+
 /*
  * Definitions for serial line CAN interface data structures.
  */
