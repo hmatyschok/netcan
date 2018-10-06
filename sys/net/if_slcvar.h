@@ -36,7 +36,9 @@
 struct slc_softc {
 	struct canif_softc 		slc_csc;
 	struct tty 	*slc_tp;		/* pointer to tty structure */
-	u_char 	slc_buf[SLC_MTU];
+	struct ifqueue	slc_outq;		/* queue of outgoing data */
+	size_t		slc_outqlen;	/* number of bytes in outq */
+	u_char 	slc_buf[SLC_MTU];  	/* cache of incomming data */
 	u_int 	slc_flags;
 	struct callout		 slc_timo;
 	TAILQ_ENTRY(slc_softc) slc_next;
