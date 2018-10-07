@@ -431,7 +431,6 @@ slc_rxeof(struct slc_softc *slc)
 	
 	/* fetch dlc */
 	cf->can_dlc = *mtod(m, u_char *);
-	m_adj(m, id_len);
 	
 	if (cf->can_dlc < SLC_HC_DLC_INF) 
 		goto out;
@@ -439,7 +438,7 @@ slc_rxeof(struct slc_softc *slc)
 	if (cf->can_dlc > SLC_HC_DLC_SUP) 
 		goto out;
 
-	cf->can_dlc -= '0';
+	cf->can_dlc -= SLC_HC_DLC_INF;
 	m_adj(m, sizeof(u_char));
 	
 	/* fetch data */
@@ -450,10 +449,11 @@ slc_rxeof(struct slc_softc *slc)
 	
 	if ((m = m_gethdr(M_NOWAIT|M_ZERO, MT_DATA)) == NULL)
 		goto out;
-		
-	cf = mtod(m, struct can_frame *);
-	
-		
+
+/*
+ * ...
+ */		
+				
 out:	
 	m_freem(slc->slc_inb);
 	slc->slc_inb = NULL;
