@@ -36,6 +36,7 @@
 #include <sys/malloc.h>
 #include <sys/serial.h>
 #include <sys/tty.h>
+#include <sys/ttycom.h>
 #include <sys/conf.h>
 #include <sys/kernel.h>
 #include <machine/resource.h>
@@ -325,9 +326,143 @@ slc_start_locked(struct ifnet *ifp)
 /*
  * ...
  */
+
+#if 0
 static int 
 slc_encap(struct slc_softc *slc, struct mbuf **mp)
 {
+	struct mbuf *m, *n;
+	struct can_frame *cf;
 	
 
+}
+#endif 
+
+static int
+slc_rint(struct tty *tp, char c, int flags)
+{
+	struct slc_softc slc;
+	struct mbuf *m;
+	int error = 0;
+
+	tty_lock_assert(tp, MA_OWNED);
+
+	if ((slc = ttyhook_softc(tp)) == NULL)
+		goto out;
+
+	mtx_lock(&slc->slc_mtx);
+
+#if 0
+	if (slc->slc_flags & SLC_ERROR) 
+		goto out1; /* XXX */
+#endif 
+
+	/* allocate mbuf(9) and initialize */
+	if ((m = slc->slc_inb) == NULL) {
+		m = m_gethdr(M_NOWAIT, MT_DATA);
+		if (m == NULL) {
+			error = ENOBUFS;
+			goto out1;
+		}
+		m->m_len = m->m_pkthdr.len = 0;
+	}
+	
+	*mtod(m, u_char *) = c;
+	
+	m->m_data++;
+	m->m_len++;
+	m->m_pkthdr.len++;
+
+	if (c == SLC_HC_BEL || c == SLC_HC_CR || m->m_len >= SLC_MTU) {
+		m->m_data = m->m_pktdat;
+		slc_rxeof(slc);
+	}
+out1:
+	mtx_unlock(&slc->slc_mtx);
+out:
+	return (error);
+}
+
+static void
+slc_rxeof(struct slc_softc *slc)
+{
+	struct mbuf *m;
+	u_char type;
+	struct can_frame cf;
+	int frame_len;
+	int id_len;
+	int data_len;
+	uint32_t id;
+	
+	mtx_assert(&slc->slc_mtx, MA_OWNED);
+	KASSERT((slc->slc_inb != NULL), 
+		("%s: slc->slc_inb == NULL", __func__));
+	m = slc->slc_inb;
+	
+	/* determine CAN frame type */
+	type = *mtod(m, u_char *);
+
+	(void)memset(&cf, 0, sizeof(cf));
+	
+	switch (type) {
+	case SLC_RTR_SFF:
+		cf->can_id |= CAN_RTR_FLAG;
+	case SLC_DATA_SFF:
+		frame_len = CAN_MTU;
+		id_len = SLC_SFF_ID_LEN;
+		break;
+	case SLC_RTR_EFF:
+		cf->can_id |= CAN_RTR_FLAG;
+					 	/* FALLTHROUGH */ 		
+	case SLC_DATA_EFF:
+		cf->can_id |= CAN_EFF_FLAG;
+		fame_len = SLC_MTU; /* XXX */
+		id_len = SLC_EFF_ID_LEN; 
+		break;
+	default:
+		goto out;
+	}
+	m_adj(m, sizeof(u_char));
+	
+	/* fetch id */
+	id = strtoul(mtod(m, u_char *), NULL, 16);
+	cf->can_id |= id;
+	m_adj(m, id_len);
+	
+	/* fetch dlc */
+	cf->can_dlc = *mtod(m, u_char *);
+	m_adj(m, id_len);
+	
+	if (cf->can_dlc < SLC_HC_DLC_INF) 
+		goto out;
+	
+	if (cf->can_dlc > SLC_HC_DLC_SUP) 
+		goto out;
+
+	cf->can_dlc -= '0';
+	m_adj(m, sizeof(u_char));
+	
+	/* fetch data */
+
+/*
+ * ...
+ */	
+	
+	if ((m = m_gethdr(M_NOWAIT|M_ZERO, MT_DATA)) == NULL)
+		goto out;
+		
+	cf = mtod(m, struct can_frame *);
+	
+		
+out:	
+	m_freem(slc->slc_inb);
+	slc->slc_inb = NULL;
+}
+
+
+static size_t
+slc_rint_poll(struct tty *tp)
+{
+	
+	return (1);
 }

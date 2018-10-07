@@ -99,6 +99,7 @@ struct canif_softc {
 	struct can_link_timecaps 	csc_timecaps; /* timing capabilities */
 	struct can_link_timings 	csc_timings; /* operating timing values */
 	uint32_t 	csc_linkmodes;
+	struct callout 	csc_timo;
 };
 
 extern struct domain candomain;

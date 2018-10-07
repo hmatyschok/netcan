@@ -86,7 +86,7 @@ typedef uint32_t can_err_mask_t;
 /* CAN frame */
 struct can_frame {
 	canid_t	can_id; /* ID + EFF/RTR/ERR flags */
-	uint8_t	can_dlc; /* frame payload length in byte (0 .. CAN_MAX_DLEN) */
+	uint8_t	can_dlc; /* frame SDU length in byte (0 .. CAN_MAX_DLEN) */
 	uint8_t	__pad;
 	uint8_t	__res0;
 	uint8_t __res1;
