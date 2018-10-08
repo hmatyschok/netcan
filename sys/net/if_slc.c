@@ -451,12 +451,13 @@ slc_rxeof(struct slc_softc *slc)
 	switch (*mtod(m, u_char *)) {
 	case SLC_RTR_SFF:
 		cf->can_id |= CAN_RTR_FLAG;
+					 	/* FALLTHROUGH */
 	case SLC_DATA_SFF:
 		len = SLC_SFF_ID_LEN;
 		break;
 	case SLC_RTR_EFF:
 		cf->can_id |= CAN_RTR_FLAG;
-					 	/* FALLTHROUGH */ 		
+					 	/* FALLTHROUGH */
 	case SLC_DATA_EFF:
 		cf->can_id |= CAN_EFF_FLAG;
 		len = SLC_EFF_ID_LEN; 
@@ -470,7 +471,7 @@ slc_rxeof(struct slc_softc *slc)
 	/* fetch id */
 	id = strtoul(mtod(m, u_char *), NULL, 16);
 	cf->can_id |= id;
-	m_adj(m, id_len);
+	m_adj(m, len);
 	
 	/* fetch dlc */
 	cf->can_dlc = *mtod(m, u_char *);
