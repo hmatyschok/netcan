@@ -435,12 +435,11 @@ slc_rxeof(struct slc_softc *slc)
 	
 	mtx_assert(&slc->slc_mtx, MA_OWNED);
 	
-	bp = buf;
-	(void)memset(bp, 0, MHLEN);
+	(void)memset((bp = buf), 0, MHLEN);
 	cf = (struct can_frame *)bp;
 	
 	ifp = SLC2IFP(slc);
-		
+
 	if ((m = slc->slc_inb) == NULL) {
 		error = EINVAL;
 		goto out;
@@ -448,7 +447,7 @@ slc_rxeof(struct slc_softc *slc)
 	slc->slc_inb = NULL;
 
 	/* determine CAN frame type */
-	switch (*mtod(m, u_char *)) {
+	switch (*mtod(m, caddr_t)) {
 	case SLC_RTR_SFF:
 		cf->can_id |= CAN_RTR_FLAG;
 					 	/* FALLTHROUGH */
@@ -466,15 +465,15 @@ slc_rxeof(struct slc_softc *slc)
 		error = EINVAL;
 		goto bad;
 	}
-	m_adj(m, sizeof(u_char));
+	m_adj(m, sizeof(uint8_t));
 	
 	/* fetch id */
-	id = strtoul(mtod(m, u_char *), NULL, 16);
+	id = strtoul(mtod(m, caddr_t), NULL, 16);
 	cf->can_id |= id;
 	m_adj(m, len);
 	
 	/* fetch dlc */
-	cf->can_dlc = *mtod(m, u_char *);
+	cf->can_dlc = *mtod(m, uint8_t *);
 	
 	if (cf->can_dlc < SLC_HC_DLC_INF) {
 		error = EINVAL;
@@ -486,11 +485,11 @@ slc_rxeof(struct slc_softc *slc)
 		goto bad;
 	}
 	cf->can_dlc -= SLC_HC_DLC_INF;
-	m_adj(m, sizeof(u_char));
+	m_adj(m, sizeof(uint8_t));
 	
 	/* fetch data, if any */
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) 
-		(void)slc_hex2bin(mtod(m, char *), cf->data, cf->can_dlc);
+		(void)slc_hex2bin(mtod(m, caddr_t), cf->data, cf->can_dlc);
 
 	if (m->m_len < sizeof(struct can_frame))
 		len = sizeof(struct can_frame);
