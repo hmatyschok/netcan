@@ -79,9 +79,18 @@ typedef uint32_t can_err_mask_t;
 #define CAN_EFF_MASK 0x1FFFFFFFU /* extended frame format (EFF) */
 #define CAN_ERR_MASK 0x1FFFFFFFU /* error frame format */
 
-/* CAN payload length and DLC definitions according to ISO 11898-1 */
+/* CAN SDU length and DLC definitions according to ISO 11898-1 */
 #define CAN_MAX_DLC 8
 #define CAN_MAX_DLEN 8
+
+/* CAN header */
+struct can_hdr {
+	canid_t	can_id; /* ID + EFF/RTR/ERR flags */
+	uint8_t	can_dlc; /* frame SDU length in byte (0 .. CAN_MAX_DLEN) */
+	uint8_t	__pad;
+	uint8_t	__res0;
+	uint8_t __res1;
+} __packed;
 
 /* CAN frame */
 struct can_frame {
@@ -90,8 +99,8 @@ struct can_frame {
 	uint8_t	__pad;
 	uint8_t	__res0;
 	uint8_t __res1;
-	uint8_t	data[CAN_MAX_DLEN] __aligned(8);
-};
+	uint8_t	data[CAN_MAX_DLEN];
+} __packed;
 
 #define CAN_MTU         (sizeof(struct can_frame))
 

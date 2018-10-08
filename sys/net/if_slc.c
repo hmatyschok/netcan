@@ -1,3 +1,39 @@
+/*-
+ * Copyright (c) 2003-2009 Silicon Graphics International Corp.
+ * Copyright (c) 2012 The FreeBSD Foundation
+ * Copyright (c) 2014-2017 Alexander Motin <mav@FreeBSD.org>
+ * All rights reserved.
+ *
+ * Portions of this software were developed by Edward Tomasz Napierala
+ * under sponsorship from the FreeBSD Foundation.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions, and the following disclaimer,
+ *    without modification.
+ * 2. Redistributions in binary form must reproduce at minimum a disclaimer
+ *    substantially similar to the "NO WARRANTY" disclaimer below
+ *    ("Disclaimer") and any redistribution must be conditioned upon
+ *    including a substantially similar Disclaimer requirement for further
+ *    binary redistribution.
+ *
+ * NO WARRANTY
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDERS OR CONTRIBUTORS BE LIABLE FOR SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGES.
+ *
+ * $Id$
+ */
 /*
  * Copyright (c) 2018 Henning Matyschok
  * All rights reserved.
@@ -29,6 +65,7 @@
 #include "opt_can.h"
 #include "opt_slc.h"
 
+#include <sys/ctype.h>
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/endian.h>
@@ -365,6 +402,7 @@ slc_rint(struct tty *tp, char c, int flags)
 			goto out1;
 		}
 		m->m_len = m->m_pkthdr.len = 0;
+		slc->slc_inb = m;
 	}
 	
 	*mtod(m, u_char *) = c;
@@ -373,9 +411,9 @@ slc_rint(struct tty *tp, char c, int flags)
 	m->m_len++;
 	m->m_pkthdr.len++;
 
-	if (c == SLC_HC_BEL || c == SLC_HC_CR || m->m_len >= SLC_MTU) {
+	if (c == SLC_HC_BEL || c == SLC_HC_CR || m->m_len >= MHLEN) {
 		m->m_data = m->m_pktdat;
-		slc_rxeof(slc);
+		error = slc_rxeof(slc);
 	}
 out1:
 	mtx_unlock(&slc->slc_mtx);
@@ -383,32 +421,41 @@ out:
 	return (error);
 }
 
-static void
+static int
 slc_rxeof(struct slc_softc *slc)
 {
+	int error = 0;
+	struct ifnet *ifp;
 	struct mbuf *m;
+	char buf[MHLEN];
+	char *bp;
+	struct can_frame *cf;
 	u_char type;
-	struct can_frame cf;
-	int frame_len;
 	int id_len;
-	int data_len;
 	uint32_t id;
+	char *data;
 	
 	mtx_assert(&slc->slc_mtx, MA_OWNED);
-	KASSERT((slc->slc_inb != NULL), 
-		("%s: slc->slc_inb == NULL", __func__));
-	m = slc->slc_inb;
+	
+	ifp = SLC2IFP(slc);
+	
+	if ((m = slc->slc_inb) == NULL) {
+		error = EINVAL;
+		goto out;
+	}
+	slc->slc_inb = NULL;
+
+	bp = buf;
+	(void)memset(bp, 0, MHLEN);
+	cf = (struct can_frame *)bp;
 	
 	/* determine CAN frame type */
 	type = *mtod(m, u_char *);
-
-	(void)memset(&cf, 0, sizeof(cf));
 	
 	switch (type) {
 	case SLC_RTR_SFF:
 		cf->can_id |= CAN_RTR_FLAG;
 	case SLC_DATA_SFF:
-		frame_len = CAN_MTU;
 		id_len = SLC_SFF_ID_LEN;
 		break;
 	case SLC_RTR_EFF:
@@ -416,11 +463,11 @@ slc_rxeof(struct slc_softc *slc)
 					 	/* FALLTHROUGH */ 		
 	case SLC_DATA_EFF:
 		cf->can_id |= CAN_EFF_FLAG;
-		fame_len = SLC_MTU; /* XXX */
 		id_len = SLC_EFF_ID_LEN; 
 		break;
 	default:
-		goto out;
+		error = EINVAL;
+		goto bad;
 	}
 	m_adj(m, sizeof(u_char));
 	
@@ -432,31 +479,38 @@ slc_rxeof(struct slc_softc *slc)
 	/* fetch dlc */
 	cf->can_dlc = *mtod(m, u_char *);
 	
-	if (cf->can_dlc < SLC_HC_DLC_INF) 
-		goto out;
+	if (cf->can_dlc < SLC_HC_DLC_INF) {
+		error = EINVAL;
+		goto bad;
+	}
 	
-	if (cf->can_dlc > SLC_HC_DLC_SUP) 
-		goto out;
-
+	if (cf->can_dlc > SLC_HC_DLC_SUP) {
+		error = EINVAL;
+		goto bad;
+	}
 	cf->can_dlc -= SLC_HC_DLC_INF;
 	m_adj(m, sizeof(u_char));
 	
-	/* fetch data */
+	/* fetch data, if any */
+	if ((cf->can_id & CAN_RTR_FLAG) == 0) 
+		(void)slc_hex2bin(mtod(m, char *), cf->data, cf->can_dlc);
 
+/*
+ * ...
+ */
+
+	/* reinitialize mbuf(9) and copy back */
+	m->m_len = m->m_pkthdr.len = sizeof(struct can_hdr) + cf->can_dlc;
+	
 /*
  * ...
  */	
-	
-	if ((m = m_gethdr(M_NOWAIT|M_ZERO, MT_DATA)) == NULL)
-		goto out;
-
-/*
- * ...
- */		
-				
-out:	
-	m_freem(slc->slc_inb);
-	slc->slc_inb = NULL;
+ 	
+out:
+	return (error);			
+bad:	
+	m_freem(m);
+	goto out;
 }
 
 
@@ -465,4 +519,49 @@ slc_rint_poll(struct tty *tp)
 {
 	
 	return (1);
+}
+
+/*
+ * Utility funtions.
+ */
+
+/*
+ * See sys/cam/ctl/ctl.c [@ line #4486] and the licence 
+ * information on top of this file for further details. 
+ */
+static int
+slc_hex2bin(const char *str, uint8_t *buf, int buf_size)
+{
+	int i;
+	u_char c;
+	
+	(void)memset(buf, 0, buf_size); /* XXX */
+	
+	while (isspace(str[0]))
+		str++;
+	
+	if (str[0] == '0' && (str[1] == 'x' || str[1] == 'X'))
+		str += 2;
+	
+	buf_size *= 2;
+	
+	for (i = 0; str[i] != 0 && i < buf_size; i++) {
+		c = str[i];
+	
+		if (isdigit(c))
+			c -= '0';
+		else if (isalpha(c))
+			c -= isupper(c) ? 'A' - 10 : 'a' - 10;
+		else
+			break;
+	
+		if (c >= 16)
+			break;
+	
+		if ((i & 1) == 0)
+			buf[i / 2] |= (c << 4);
+		else
+			buf[i / 2] |= c;
+	}
+	return ((i + 1) / 2);
 }

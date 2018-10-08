@@ -51,11 +51,6 @@
 #define SLC_HC_DLC_INF 	'0'
 #define SLC_HC_DLC_SUP 	'9'
 
-struct slc_buf {
-	u_char 	sb_data[SLC_MTU];
-	size_t 	sb_len;		
-};
- 
 struct slc_softc {
 	struct canif_softc 		slc_csc;
 	struct tty 	*slc_tp;		/* pointer to tty structure */
