@@ -431,8 +431,8 @@ slc_rxeof(struct slc_softc *slc)
 	char *bp;
 	struct can_frame *cf;
 	u_char type;
-	int id_len;
 	uint32_t id;
+	size_t len;
 	
 	mtx_assert(&slc->slc_mtx, MA_OWNED);
 	
@@ -455,14 +455,14 @@ slc_rxeof(struct slc_softc *slc)
 	case SLC_RTR_SFF:
 		cf->can_id |= CAN_RTR_FLAG;
 	case SLC_DATA_SFF:
-		id_len = SLC_SFF_ID_LEN;
+		len = SLC_SFF_ID_LEN;
 		break;
 	case SLC_RTR_EFF:
 		cf->can_id |= CAN_RTR_FLAG;
 					 	/* FALLTHROUGH */ 		
 	case SLC_DATA_EFF:
 		cf->can_id |= CAN_EFF_FLAG;
-		id_len = SLC_EFF_ID_LEN; 
+		len = SLC_EFF_ID_LEN; 
 		break;
 	default:
 		error = EINVAL;
@@ -494,18 +494,21 @@ slc_rxeof(struct slc_softc *slc)
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) 
 		(void)slc_hex2bin(mtod(m, char *), cf->data, cf->can_dlc);
 
-/*
- * ...
- */
+	if (m->m_len < sizeof(struct can_frame))
+		len = sizeof(struct can_frame);
+	else
+		len = sizeof(struct can_hdr) + cf->can_dlc;
 
 	/* reinitialize mbuf(9) and copy back */
-	m->m_len = m->m_pkthdr.len = sizeof(struct can_hdr) + cf->can_dlc;
+	m->m_len = m->m_pkthdr.len = len;
 	m->m_data = m->m_pktdat;
 
-/*
- * ...
- */	
- 	
+	bcopy(cf, mtod(m, caddr_t), len);
+	
+	/* pass CAN frame to layer above */
+ 	mtx_unlock(&slc->slc_mtx);
+ 	(*ifp->if_input)(ifp, m);
+ 	mtx_lock(&slc->slc_mtx);
 out:
 	return (error);			
 bad:	
