@@ -430,7 +430,6 @@ slc_rxeof(struct slc_softc *slc)
 	char buf[MHLEN];
 	char *bp;
 	struct can_frame *cf;
-	u_char type;
 	uint32_t id;
 	size_t len;
 	
@@ -449,9 +448,7 @@ slc_rxeof(struct slc_softc *slc)
 	cf = (struct can_frame *)bp;
 	
 	/* determine CAN frame type */
-	type = *mtod(m, u_char *);
-	
-	switch (type) {
+	switch (*mtod(m, u_char *)) {
 	case SLC_RTR_SFF:
 		cf->can_id |= CAN_RTR_FLAG;
 	case SLC_DATA_SFF:
