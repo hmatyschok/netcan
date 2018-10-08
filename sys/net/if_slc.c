@@ -425,28 +425,28 @@ static int
 slc_rxeof(struct slc_softc *slc)
 {
 	int error = 0;
-	struct ifnet *ifp;
-	struct mbuf *m;
 	char buf[MHLEN];
 	char *bp;
 	struct can_frame *cf;
+	struct ifnet *ifp;
+	struct mbuf *m;
 	uint32_t id;
 	size_t len;
 	
 	mtx_assert(&slc->slc_mtx, MA_OWNED);
 	
-	ifp = SLC2IFP(slc);
+	bp = buf;
+	(void)memset(bp, 0, MHLEN);
+	cf = (struct can_frame *)bp;
 	
+	ifp = SLC2IFP(slc);
+		
 	if ((m = slc->slc_inb) == NULL) {
 		error = EINVAL;
 		goto out;
 	}
 	slc->slc_inb = NULL;
 
-	bp = buf;
-	(void)memset(bp, 0, MHLEN);
-	cf = (struct can_frame *)bp;
-	
 	/* determine CAN frame type */
 	switch (*mtod(m, u_char *)) {
 	case SLC_RTR_SFF:
