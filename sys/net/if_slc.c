@@ -433,7 +433,6 @@ slc_rxeof(struct slc_softc *slc)
 	u_char type;
 	int id_len;
 	uint32_t id;
-	char *data;
 	
 	mtx_assert(&slc->slc_mtx, MA_OWNED);
 	
@@ -501,7 +500,8 @@ slc_rxeof(struct slc_softc *slc)
 
 	/* reinitialize mbuf(9) and copy back */
 	m->m_len = m->m_pkthdr.len = sizeof(struct can_hdr) + cf->can_dlc;
-	
+	m->m_data = m->m_pktdat;
+
 /*
  * ...
  */	
@@ -522,7 +522,7 @@ slc_rint_poll(struct tty *tp)
 }
 
 /*
- * Utility funtions.
+ * Utility functions.
  */
 
 /*
