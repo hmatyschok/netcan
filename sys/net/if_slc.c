@@ -598,7 +598,9 @@ slc_canid2hex(canid_t can_id, u_char *buf, int len)
 	u_char *ep;
 	u_char c;
 	
-	for (ep = buf + len - 1; ep >= buf; ep--) { /* XXX */
+	len -= 1;
+	
+	for (ep = buf + len; ep >= buf; ep--) { /* XXX */
 		c = can_id & 0x0f;
 		
 		if (isdigit(c))
