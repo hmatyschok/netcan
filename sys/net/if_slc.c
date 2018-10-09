@@ -525,7 +525,7 @@ slc_rxeof(struct slc_softc *slc)
 	
 	/* fetch data, if any */
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) 
-		(void)slc_hex2bin(mtod(m, u_char *), cf->data, cf->can_dlc);
+		slc_hex2bin(mtod(m, u_char *), cf->data, cf->can_dlc);
 
 	if (m->m_len < sizeof(struct can_frame))
 		len = sizeof(struct can_frame);
@@ -565,7 +565,7 @@ slc_rint_poll(struct tty *tp)
  * See sys/cam/ctl/ctl.c [@ line #4486] and the licence 
  * information on top of this file for further details. 
  */
-static int
+static void
 slc_hex2bin(const char *str, u_char *buf, int len)
 {
 	int i;
@@ -590,7 +590,6 @@ slc_hex2bin(const char *str, u_char *buf, int len)
 		else
 			buf[i / 2] |= c;
 	}
-	return ((i + 1) / 2);
 }
 
 static void
