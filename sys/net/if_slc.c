@@ -370,7 +370,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 {
 	int error = 0;
 	char buf[MHLEN];
-	char *bp;
+	u_char *bp;
 	struct mbuf *m;
 	struct can_frame *cf;
 /*
@@ -379,7 +379,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	size_t len;
 	
 	
-	(void)memset((bp = buf), 0, MHLEN);
+	(void)memset((bp = (u_char *)buf), 0, MHLEN);
 
 	M_ASSERTPKTHDR((m = *mp));
 	cf = mtod(m, struct can_frame *);
@@ -390,13 +390,15 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	else
 		*bp = SLC_DATA_SFF;
 	
-	if (cf->can_id & CAN_EFF_FLAG)
-		*bp++ = toupper(*bp);
-	
+	if (cf->can_id & CAN_EFF_FLAG) 
+		*bp = toupper(*bp);
+		
+	bp += SLC_CMD_LEN;	
+
 	/* fetch id */
 	if (cf->can_id & CAN_EFF_FLAG) {
 		cf->can_id &= CAN_EFF_MASK;
-		len = len = SLC_EFF_ID_LEN;
+		len = SLC_EFF_ID_LEN;
 	} else {
 		cf->can_id &= CAN_SFF_MASK;
 		len = SLC_SFF_ID_LEN;
@@ -459,8 +461,8 @@ static int
 slc_rxeof(struct slc_softc *slc)
 {
 	int error = 0;
-	char buf[MHLEN];
-	char *bp;
+	u_char buf[MHLEN];
+	u_char *bp;
 	struct can_frame *cf;
 	struct ifnet *ifp;
 	struct mbuf *m;
@@ -469,7 +471,7 @@ slc_rxeof(struct slc_softc *slc)
 	
 	mtx_assert(&slc->slc_mtx, MA_OWNED);
 	
-	(void)memset((bp = buf), 0, MHLEN);
+	(void)memset((bp = (u_char *)buf), 0, MHLEN);
 	cf = (struct can_frame *)bp;
 	
 	ifp = SLC2IFP(slc);
@@ -481,7 +483,7 @@ slc_rxeof(struct slc_softc *slc)
 	slc->slc_inb = NULL;
 
 	/* determine CAN frame type */
-	switch (*mtod(m, caddr_t)) {
+	switch (*mtod(m, u_char *)) {
 	case SLC_RTR_SFF:
 		cf->can_id |= CAN_RTR_FLAG;
 					 	/* FALLTHROUGH */
@@ -499,15 +501,15 @@ slc_rxeof(struct slc_softc *slc)
 		error = EINVAL;
 		goto bad;
 	}
-	m_adj(m, sizeof(uint8_t));
+	m_adj(m, sizeof(u_char));
 	
 	/* fetch id */
-	id = strtoul(mtod(m, caddr_t), NULL, 16);
+	id = strtoul(mtod(m, u_char *), NULL, 16);
 	cf->can_id |= id;
 	m_adj(m, len);
 	
 	/* fetch dlc */
-	cf->can_dlc = *mtod(m, uint8_t *);
+	cf->can_dlc = *mtod(m, u_char *);
 	
 	if (cf->can_dlc < SLC_HC_DLC_INF) {
 		error = EINVAL;
@@ -519,11 +521,11 @@ slc_rxeof(struct slc_softc *slc)
 		goto bad;
 	}
 	cf->can_dlc -= SLC_HC_DLC_INF;
-	m_adj(m, sizeof(uint8_t));
+	m_adj(m, sizeof(u_char));
 	
 	/* fetch data, if any */
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) 
-		(void)slc_hex2bin(mtod(m, caddr_t), cf->data, cf->can_dlc);
+		(void)slc_hex2bin(mtod(m, u_char *), cf->data, cf->can_dlc);
 
 	if (m->m_len < sizeof(struct can_frame))
 		len = sizeof(struct can_frame);
@@ -534,7 +536,7 @@ slc_rxeof(struct slc_softc *slc)
 	m->m_len = m->m_pkthdr.len = len;
 	m->m_data = m->m_pktdat;
 
-	bcopy(cf, mtod(m, caddr_t), len);
+	bcopy(cf, mtod(m, u_char *), len);
 	
 	/* pass CAN frame to layer above */
  	mtx_unlock(&slc->slc_mtx);
@@ -564,28 +566,24 @@ slc_rint_poll(struct tty *tp)
  * information on top of this file for further details. 
  */
 static int
-slc_hex2bin(const char *str, uint8_t *buf, int buf_size)
+slc_hex2bin(const char *str, u_char *buf, int len)
 {
 	int i;
 	u_char c;
 	
-	(void)memset(buf, 0, buf_size); /* XXX */
+	(void)memset(buf, 0, len); /* XXX */
 	
-	buf_size *= 2;
+	len *= 2;
 	
-	for (i = 0; str[i] != 0 && i < buf_size; i++) {
+	for (i = 0; str[i] != 0 && i < len; i++) {
 		c = str[i];
 	
-		if (isxdigit(c))
+		if (isdigit(c))
 			c -= '0';
 		else if (isalpha(c)) {
 			c = tolower(c);	
 			c -= 'a' - 10;
-		} else
-			break;
-	
-		if (c >= 16)
-			break;
+		} 
 	
 		if ((i & 1) == 0)
 			buf[i / 2] |= (c << 4);
@@ -593,4 +591,26 @@ slc_hex2bin(const char *str, uint8_t *buf, int buf_size)
 			buf[i / 2] |= c;
 	}
 	return ((i + 1) / 2);
+}
+
+static void
+slc_canid2hex(canid_t can_id, u_char *buf, int len)
+{
+	u_char *ep;
+	u_char c;
+	
+	for (ep = buf + len; ep >= buf; ep--) {
+		c = can_id & 0x0f;
+		
+		if (isdigit(c))
+			c -= '0';
+		else if (isalpha(c)) {
+			c = toupper(c);	
+			c -= 'A' - 10;
+		} 
+		
+		*ep = c;
+		
+		can_id >>= 4;
+	}
 }
