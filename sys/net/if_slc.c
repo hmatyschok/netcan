@@ -390,7 +390,23 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 		*bp = toupper(*bp);
 	
 	/* fetch id */
-
+	switch (*bp)) {
+	case SLC_RTR_SFF:
+	case SLC_DATA_SFF:
+		len = SLC_SFF_ID_LEN;
+		break;
+	case SLC_RTR_EFF:
+		cf->can_id |= CAN_RTR_FLAG;
+					 	/* FALLTHROUGH */
+	case SLC_DATA_EFF:
+		cf->can_id |= CAN_EFF_FLAG;
+		len = SLC_EFF_ID_LEN; 
+		break;
+	default:
+		error = EINVAL;
+		goto bad;
+	}
+	
 	
 	return (error);
 }
@@ -564,7 +580,10 @@ slc_hex2bin(const char *str, uint8_t *buf, int buf_size)
 	
 		if (isxdigit(c))
 			c -= '0';
-		else
+		else if (isalpha(c)) {
+			c = tolower(c);	
+			c -= 'a' - 10;
+		} else
 			break;
 	
 		if (c >= 16)
