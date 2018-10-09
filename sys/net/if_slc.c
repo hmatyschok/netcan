@@ -369,11 +369,15 @@ static int
 slc_encap(struct slc_softc *slc, struct mbuf **mp)
 {
 	int error = 0;
-	size_t len = 0;
 	char buf[MHLEN];
 	char *bp;
 	struct mbuf *m;
 	struct can_frame *cf;
+/*
+ * ...
+ */
+	size_t len;
+	
 	
 	(void)memset((bp = buf), 0, MHLEN);
 
@@ -387,26 +391,20 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 		*bp = SLC_DATA_SFF;
 	
 	if (cf->can_id & CAN_EFF_FLAG)
-		*bp = toupper(*bp);
+		*bp++ = toupper(*bp);
 	
 	/* fetch id */
-	switch (*bp)) {
-	case SLC_RTR_SFF:
-	case SLC_DATA_SFF:
+	if (cf->can_id & CAN_EFF_FLAG) {
+		cf->can_id &= CAN_EFF_MASK;
+		len = len = SLC_EFF_ID_LEN;
+	} else {
+		cf->can_id &= CAN_SFF_MASK;
 		len = SLC_SFF_ID_LEN;
-		break;
-	case SLC_RTR_EFF:
-		cf->can_id |= CAN_RTR_FLAG;
-					 	/* FALLTHROUGH */
-	case SLC_DATA_EFF:
-		cf->can_id |= CAN_EFF_FLAG;
-		len = SLC_EFF_ID_LEN; 
-		break;
-	default:
-		error = EINVAL;
-		goto bad;
 	}
-	
+
+/*
+ * ...
+ */
 	
 	return (error);
 }
