@@ -343,13 +343,13 @@ slc_start_locked(struct ifnet *ifp)
 			continue;
 		}
 		
+		/* do some statistics */		
+		if_inc_counter(ifp, IFCOUNTER_OBYTES, m->m_pkthdr.len);
+		if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);		
+		
 		_IF_ENQUEUE(&slc->slc_outq, m);
 		slc->slc_outqlen += m->m_pkthdr.len;
 		IF_UNLOCK(&slc->slc_outq);
-	
-		/* do some statistics */		
-		if_inc_counter(ifp, IFCOUNTER_OBYTES, m->m_pkthdr.len);
-		if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
 	
 		/* notify the TTY */
 		tty_lock(tp);
@@ -364,16 +364,36 @@ slc_start_locked(struct ifnet *ifp)
  * ...
  */
 
-#if 0
+
 static int 
 slc_encap(struct slc_softc *slc, struct mbuf **mp)
 {
-	struct mbuf *m, *n;
+	int error = 0;
+	size_t len = 0;
+	char buf[MHLEN];
+	char *bp;
+	struct mbuf *m;
 	struct can_frame *cf;
 	
+	(void)memset((bp = buf), 0, MHLEN);
 
+	M_ASSERTPKTHDR((m = *mp));
+	cf = mtod(m, struct can_frame *);
+	
+	/* determine CAN frame type */
+	if (cf->can_id & CAN_RTR_FLAG) 
+		*bp = SLC_RTR_SFF;
+	else
+		*bp = SLC_DATA_SFF;
+	
+	if (cf->can_id & CAN_EFF_FLAG)
+		*bp = toupper(*bp);
+	
+	/* fetch id */
+
+	
+	return (error);
 }
-#endif 
 
 static int
 slc_rint(struct tty *tp, char c, int flags)
@@ -537,21 +557,13 @@ slc_hex2bin(const char *str, uint8_t *buf, int buf_size)
 	
 	(void)memset(buf, 0, buf_size); /* XXX */
 	
-	while (isspace(str[0]))
-		str++;
-	
-	if (str[0] == '0' && (str[1] == 'x' || str[1] == 'X'))
-		str += 2;
-	
 	buf_size *= 2;
 	
 	for (i = 0; str[i] != 0 && i < buf_size; i++) {
 		c = str[i];
 	
-		if (isdigit(c))
+		if (isxdigit(c))
 			c -= '0';
-		else if (isalpha(c))
-			c -= isupper(c) ? 'A' - 10 : 'a' - 10;
 		else
 			break;
 	

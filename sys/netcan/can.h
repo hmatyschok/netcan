@@ -70,18 +70,19 @@ typedef uint32_t canid_t;
 typedef uint32_t can_err_mask_t;
 
 /* canid_t bits 29-31 descriptions */
-#define CAN_EFF_FLAG 0x80000000U	/* extended frame format */
-#define CAN_RTR_FLAG 0x40000000U	/* remote transmission request */
-#define CAN_ERR_FLAG 0x20000000U	/* error message frame */
+#define CAN_EFF_FLAG 	0x80000000U	/* extended frame format */
+#define CAN_RTR_FLAG 	0x40000000U	/* remote transmission request */
+#define CAN_ERR_FLAG 	0x20000000U	/* error message frame */
+#define CAN_FLAG_MASK 	0Xe0000000U
 
 /* valid bits in CAN ID for frame formats */
-#define CAN_SFF_MASK 0x000007FFU /* standard frame format (SFF) */
-#define CAN_EFF_MASK 0x1FFFFFFFU /* extended frame format (EFF) */
-#define CAN_ERR_MASK 0x1FFFFFFFU /* error frame format */
+#define CAN_SFF_MASK 	0x000007ffU /* standard frame format (SFF) */
+#define CAN_EFF_MASK 	0x1fffffffU /* extended frame format (EFF) */
+#define CAN_ERR_MASK 	0x1fffffffU /* error frame format */
 
 /* CAN SDU length and DLC definitions according to ISO 11898-1 */
-#define CAN_MAX_DLC 8
-#define CAN_MAX_DLEN 8
+#define CAN_MAX_DLC 	8
+#define CAN_MAX_DLEN 	8
 
 /* CAN header */
 struct can_hdr {
@@ -90,7 +91,7 @@ struct can_hdr {
 	uint8_t	__pad;
 	uint8_t	__res0;
 	uint8_t __res1;
-} __packed;
+};
 
 /* CAN frame */
 struct can_frame {
@@ -99,8 +100,8 @@ struct can_frame {
 	uint8_t	__pad;
 	uint8_t	__res0;
 	uint8_t __res1;
-	uint8_t	data[CAN_MAX_DLEN];
-} __packed;
+	uint8_t	data[CAN_MAX_DLEN] __aligned(8);
+};
 
 #define CAN_MTU         (sizeof(struct can_frame))
 
