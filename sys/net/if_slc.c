@@ -369,7 +369,7 @@ static int
 slc_encap(struct slc_softc *slc, struct mbuf **mp)
 {
 	int error = 0;
-	char buf[MHLEN];
+	u_char buf[MHLEN];
 	u_char *bp;
 	struct mbuf *m;
 	struct can_frame *cf;
@@ -379,7 +379,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	size_t len;
 	
 	
-	(void)memset((bp = (u_char *)buf), 0, MHLEN);
+	(void)memset((bp = buf), 0, MHLEN);
 
 	M_ASSERTPKTHDR((m = *mp));
 	cf = mtod(m, struct can_frame *);
@@ -403,6 +403,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 		cf->can_id &= CAN_SFF_MASK;
 		len = SLC_SFF_ID_LEN;
 	}
+	slc_hex2canid(bp, &cf->can_id, len);
 
 /*
  * ...
@@ -471,7 +472,7 @@ slc_rxeof(struct slc_softc *slc)
 	
 	mtx_assert(&slc->slc_mtx, MA_OWNED);
 	
-	(void)memset((bp = (u_char *)buf), 0, MHLEN);
+	(void)memset((bp = buf), 0, MHLEN);
 	cf = (struct can_frame *)bp;
 	
 	ifp = SLC2IFP(slc);
@@ -504,7 +505,7 @@ slc_rxeof(struct slc_softc *slc)
 	m_adj(m, sizeof(u_char));
 	
 	/* fetch id */
-	id = strtoul(mtod(m, u_char *), NULL, 16);
+	
 	cf->can_id |= id;
 	m_adj(m, len);
 	
@@ -566,7 +567,7 @@ slc_rint_poll(struct tty *tp)
  * information on top of this file for further details. 
  */
 static void
-slc_hex2bin(const char *str, u_char *buf, int len)
+slc_hex2bin(u_char *str, u_char *buf, int len)
 {
 	int i;
 	u_char c;
@@ -580,10 +581,8 @@ slc_hex2bin(const char *str, u_char *buf, int len)
 	
 		if (isdigit(c))
 			c -= '0';
-		else if (isalpha(c)) {
-			c = tolower(c);	
-			c -= 'a' - 10;
-		} 
+		else if (isalpha(c)) 
+			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
 	
 		if ((i & 1) == 0)
 			buf[i / 2] |= (c << 4);
@@ -593,7 +592,7 @@ slc_hex2bin(const char *str, u_char *buf, int len)
 }
 
 static void
-slc_canid2hex(canid_t can_id, u_char *buf, int len)
+slc_canid2hex(canid_t id, u_char *buf, int len)
 {
 	u_char *ep;
 	u_char c;
@@ -601,17 +600,37 @@ slc_canid2hex(canid_t can_id, u_char *buf, int len)
 	len -= 1;
 	
 	for (ep = buf + len; ep >= buf; ep--) { /* XXX */
-		c = can_id & 0x0f;
+		c = id & 0x0f;
 		
 		if (isdigit(c))
 			c -= '0';
-		else if (isalpha(c)) {
-			c = toupper(c);	
-			c -= 'A' - 10;
-		} 
+		else if (isalpha(c)) 
+			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
 		
 		*ep = c;
 		
-		can_id >>= 4;
+		id >>= 4;
 	}
+}
+
+static void
+slc_hex2canid(u_char *buf, canid_t *id, int len)
+{
+	canid_t u;
+	canid_t v;
+	int i;
+	u_char c;
+	
+	for (u = v = 0, i = 0; i < len; i++, v <<= 4) { /* XXX */
+		c = buf[i];
+
+		if (isdigit(c))
+			c -= '0';
+		else if (isalpha(c)) 
+			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
+		
+		v |= (c & 0x0f);
+		u = v;
+	}	
+	*id |= u;
 }
