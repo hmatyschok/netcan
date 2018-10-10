@@ -436,7 +436,7 @@ slc_txeof(struct tty *tp, void *buf, size_t len)
 	slc = ttyhook_softc(tp);
 
 	while (len > 0) {
-		IF_DEQUEUE(&sc->outq, m);
+		IF_DEQUEUE(&slc->slc_outq, m);
 		if (m == NULL)
 			break;
 
