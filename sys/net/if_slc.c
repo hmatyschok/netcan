@@ -425,6 +425,49 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	return (error);
 }
 
+static size_t
+slc_txeof(struct tty *tp, void *buf, size_t len)
+{
+	struct slc_softc slc;
+	struct mbuf *m;
+	size_t off = 0;
+	size_t m_len;
+
+	slc = ttyhook_softc(tp);
+
+	while (len > 0) {
+		IF_DEQUEUE(&sc->outq, m);
+		if (m == NULL)
+			break;
+
+		while (m != NULL) {
+			m_len = min(m->m_len, len);
+			memcpy((char *)buf + off, mtod(m, char *), m_len);
+
+			m->m_data += m_len;
+			m->m_len -= m_len;
+			off += m_len;
+			len -= m_len;
+
+			if (m->m_len > 0)
+				break;
+			
+			m = m_free(m);
+		}
+
+		if (m != NULL) {
+			IF_PREPEND(&slc->slc_outq, m);
+			break;
+		}
+	}
+	IF_LOCK(&slc->slc_outq);
+	slc->slc_outqlen -= off;
+	IF_UNLOCK(&slc->slc_outq);
+	MPASS(slc->slc_outqlen >= 0);
+
+	return (off);
+}
+
 static int
 slc_rint(struct tty *tp, char c, int flags)
 {
