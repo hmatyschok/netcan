@@ -558,12 +558,11 @@ slc_rint_poll(struct tty *tp)
 
 /*
  * Utility functions.
- */
-
-/*
+ *
  * See sys/cam/ctl/ctl.c [@ line #4486] and the licence 
  * information on top of this file for further details. 
  */
+
 static void
 slc_hex2bin(u_char *str, u_char *buf, int len)
 {
@@ -597,17 +596,16 @@ slc_canid2hex(canid_t id, u_char *buf, int len)
 	
 	len -= 1;
 	
-	for (ep = buf + len; ep >= buf; ep--) { /* XXX */
-		c = id & 0x0f;
+	
+	for (ep = buf + len; ep >= buf; ep--, id >>= 4) { /* XXX */
+		c = (id & 0x0f);
 		
 		if (isdigit(c))
 			c -= '0';
 		else if (isalpha(c)) 
 			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
 		
-		*ep = c;
-		
-		id >>= 4;
+		*ep = c;	
 	}
 }
 
