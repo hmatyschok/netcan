@@ -403,8 +403,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 		cf->can_id &= CAN_SFF_MASK;
 		len = SLC_SFF_ID_LEN;
 	}
-	slc_hex2canid(bp, &cf->can_id, len);
-
+	slc_canid2hex(cf->can_id, bp, len);
 /*
  * ...
  */
@@ -505,8 +504,7 @@ slc_rxeof(struct slc_softc *slc)
 	m_adj(m, sizeof(u_char));
 	
 	/* fetch id */
-	
-	cf->can_id |= id;
+	slc_hex2canid(mtod(m, u_char *), &cf->can_id, len);
 	m_adj(m, len);
 	
 	/* fetch dlc */
