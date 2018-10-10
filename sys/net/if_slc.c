@@ -334,23 +334,10 @@ slc_start_locked(struct ifnet *ifp)
 			continue;
 		}
 		
-		/* enqueue */
-		IF_LOCK(&slc->slc_outq);
-		if (_IF_QFULL(&slc->slc_outq)) {
-			IF_UNLOCK(&slc->slc_outq);
-			if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
-			m_freem(m);
-			continue;
-		}
-		
 		/* do some statistics */		
 		if_inc_counter(ifp, IFCOUNTER_OBYTES, m->m_pkthdr.len);
 		if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);		
 		
-		_IF_ENQUEUE(&slc->slc_outq, m);
-		slc->slc_outqlen += m->m_pkthdr.len;
-		IF_UNLOCK(&slc->slc_outq);
-	
 		/* notify the TTY */
 		tty_lock(tp);
 		if (tty_gone(tp) == 0)
@@ -368,16 +355,12 @@ slc_start_locked(struct ifnet *ifp)
 static int 
 slc_encap(struct slc_softc *slc, struct mbuf **mp)
 {
-	int error = 0;
 	u_char buf[MHLEN];
 	u_char *bp;
 	struct mbuf *m;
 	struct can_frame *cf;
-/*
- * ...
- */
 	size_t len;
-	
+	int error;
 	
 	(void)memset((bp = buf), 0, MHLEN);
 
@@ -395,7 +378,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 		
 	bp += SLC_CMD_LEN;	
 
-	/* fetch id */
+	/* map id */
 	if (cf->can_id & CAN_EFF_FLAG) {
 		cf->can_id &= CAN_EFF_MASK;
 		len = SLC_EFF_ID_LEN;
@@ -404,9 +387,40 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 		len = SLC_SFF_ID_LEN;
 	}
 	slc_canid2hex(cf->can_id, bp, len);
-/*
- * ...
- */
+	bp += len;
+	
+	/* map dlc */
+	*bp = cf->can_dlc + '0';
+	bp += SLC_DLC_LEN;
+	
+	/* apply data, if any */
+	if ((cf->can_id & CAN_RTR_FLAG) == 0) {
+		len = slc_bin2hex(cf->data, bp, cf->can_dlc);
+		bp += len;	
+	}
+
+	/* finalize */
+	*bp = SLC_HC_CR;
+	bp += 1;
+	
+	/* re-nitilaize mbuf(9) and copy back */
+	len = bp - buf; 
+	
+	m->m_len = m->m_pkthdr.len = len;
+	m->m_data = m->m_pktdat;
+
+	bcopy(buf, mtod(m, u_char *), len);
+	
+	/* enqueue */
+	IF_LOCK(&slc->slc_outq);
+	if (_IF_QFULL(&slc->slc_outq)) 
+		error = ENOSPC; /* XXX: upcall??? */
+	else {
+		_IF_ENQUEUE(&slc->slc_outq, m);
+		slc->slc_outqlen += m->m_pkthdr.len;
+		error = 0;
+	}
+	IF_UNLOCK(&slc->slc_outq);
 	
 	return (error);
 }
@@ -447,7 +461,7 @@ slc_rint(struct tty *tp, char c, int flags)
 	m->m_len++;
 	m->m_pkthdr.len++;
 
-	if (c == SLC_HC_BEL || c == SLC_HC_CR || m->m_len >= MHLEN) {
+	if (c == SLC_HC_BEL || c == SLC_HC_CR || m->m_len >= SLC_MTU) {
 		m->m_data = m->m_pktdat;
 		error = slc_rxeof(slc);
 	}
@@ -595,7 +609,6 @@ slc_canid2hex(canid_t id, u_char *buf, int len)
 	u_char c;
 	
 	len -= 1;
-	
 	
 	for (ep = buf + len; ep >= buf; ep--, id >>= 4) { /* XXX */
 		c = (id & 0x0f);
