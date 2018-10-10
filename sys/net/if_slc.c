@@ -395,8 +395,8 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	
 	/* apply data, if any */
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) {
-		len = slc_bin2hex(cf->data, bp, cf->can_dlc);
-		bp += len;	
+		lc_bin2hex(cf->data, bp, cf->can_dlc);
+		bp += cf->can_dlc;	
 	}
 
 	/* finalize */
