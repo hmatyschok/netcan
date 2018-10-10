@@ -442,7 +442,7 @@ slc_txeof(struct tty *tp, void *buf, size_t len)
 
 		while (m != NULL) {
 			m_len = min(m->m_len, len);
-			memcpy((char *)buf + off, mtod(m, char *), m_len);
+			bcopy(mtod(m, caddr_t), (caddr_t)buf + off, m_len);
 
 			m->m_data += m_len;
 			m->m_len -= m_len;
