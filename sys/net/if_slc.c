@@ -321,7 +321,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	u_char *bp;
 	struct mbuf *m;
 	struct can_frame *cf;
-	size_t len;
+	int len;
 	int error;
 	
 	(void)memset((bp = buf), 0, MHLEN);
@@ -375,6 +375,8 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 		error = 0;
 	}
 	IF_UNLOCK(&slc->slc_outq);
+	
+	*mp = m;
 	
 	return (error);
 }
@@ -438,8 +440,7 @@ slc_rxeof(struct slc_softc *slc)
 	struct can_frame *cf;
 	struct ifnet *ifp;
 	struct mbuf *m;
-	uint32_t id;
-	size_t len;
+	int len;
 	
 	mtx_assert(&slc->slc_mtx, MA_OWNED);
 	
@@ -494,7 +495,7 @@ slc_rxeof(struct slc_softc *slc)
 	
 	/* fetch data, if any */
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) 
-		slc_hex2bin(mtod(m, u_char *), cf->data, cf->can_dlc);
+		can_hex2bin(mtod(m, u_char *), cf->data, cf->can_dlc);
 
 	if (m->m_len < sizeof(struct can_frame))
 		len = sizeof(struct can_frame);
