@@ -116,7 +116,7 @@ static TAILQ_HEAD(slc_head, slc_softc) slc_list;
  
 static void 	slc_hex2bin(u_char *, u_char *, int);
 static int 	slc_canid2hex(struct can_frame *, u_char *);
-static void 	slc_hex2canid(u_char *, canid_t *, int);
+static int 	slc_hex2canid(u_char *, struct can_frame *);
 
 /* Interface-level routines. */
 static void 	slc_init(void *);
@@ -499,14 +499,12 @@ slc_rxeof(struct slc_softc *slc)
 		cf->can_id |= CAN_RTR_FLAG;
 					 	/* FALLTHROUGH */
 	case SLC_DATA_SFF:
-		len = SLC_SFF_ID_LEN;
 		break;
 	case SLC_RTR_EFF:
 		cf->can_id |= CAN_RTR_FLAG;
 					 	/* FALLTHROUGH */
 	case SLC_DATA_EFF:
-		cf->can_id |= CAN_EFF_FLAG;
-		len = SLC_EFF_ID_LEN; 
+		cf->can_id |= CAN_EFF_FLAG; 
 		break;
 	default:
 		error = EINVAL;
@@ -515,7 +513,7 @@ slc_rxeof(struct slc_softc *slc)
 	m_adj(m, sizeof(u_char));
 	
 	/* fetch id */
-	slc_hex2canid(mtod(m, u_char *), &cf->can_id, len);
+	len = slc_hex2canid(mtod(m, u_char *), cf);
 	m_adj(m, len);
 	
 	/* fetch dlc */
@@ -669,39 +667,19 @@ slc_canid2hex(struct can_frame *cf, u_char *buf)
 	return (len);
 }
 
-static void
-slc_hex2canid(u_char *buf, canid_t *id, int len)
+static int
+slc_hex2canid(u_char *buf, struct can_frame *cf)
 {
-	switch (*mtod(m, u_char *)) {
-	case SLC_RTR_SFF:
-		cf->can_id |= CAN_RTR_FLAG;
-					 	/* FALLTHROUGH */
-	case SLC_DATA_SFF:
-		len = SLC_SFF_ID_LEN;
-		break;
-	case SLC_RTR_EFF:
-		cf->can_id |= CAN_RTR_FLAG;
-					 	/* FALLTHROUGH */
-	case SLC_DATA_EFF:
-		cf->can_id |= CAN_EFF_FLAG;
-		len = SLC_EFF_ID_LEN; 
-		break;
-	default:
-		error = EINVAL;
-		goto bad;
-	}
-	m_adj(m, sizeof(u_char));
-	
-	/* fetch id */
-	slc_hex2canid(mtod(m, u_char *), &cf->can_id, len);
-	m_adj(m, len);
-	
-	
-	
+	int len;
 	canid_t u;
 	canid_t v;
 	int i;
 	u_char c;
+	
+	if (cf->can_id & CAN_EFF_FLAG) 
+		len = SLC_EFF_ID_LEN;
+	else 
+		len = SLC_SFF_ID_LEN;
 	
 	for (u = v = 0, i = 0; i < len; i++, v <<= 4) { /* XXX */
 		c = buf[i];
@@ -714,5 +692,7 @@ slc_hex2canid(u_char *buf, canid_t *id, int len)
 		v |= (c & 0x0f);
 		u = v;
 	}	
-	*id |= u;
+	cf->can_id |= u;
+	
+	return (len);
 }
