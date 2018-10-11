@@ -74,38 +74,36 @@ static MALLOC_DEFINE(M_SLC, "slc", "SLCAN Interface");
 
 static struct mtx slc_mtx;
 static TAILQ_HEAD(slc_head, slc_softc) slc_list;
-
-/*
- * ...
- */
  
-/* Interface-level routines. */
-static void 	slc_init(void *);
-static void 	slc_start(struct ifnet *);
-static void 	slc_start_locked(struct ifnet *);
-static int 	slc_encap(struct slc_softc *, struct mbuf **);
-
 /* Bottom-level routines, */
 static th_getc_inject_t 	slc_txeof;
 static th_getc_poll_t 	slc_txeof_poll;
 static th_rint_t 	slc_rint;
 static th_rint_poll_t 	slc_rint_poll;
 
+/* TTY hook */
 static struct ttyhook slc_hook = {
 	.th_getc_inject = 	slc_txeof,
 	.th_getc_poll = 	slc_getc_poll,
 	.th_rint = 	slc_rint,
 	.th_rint_poll = 	slc_rint_poll,
 };
-
-/* 
- * Interface cloner and module description. 
- */ 
+ 
+/* Interface-level routines. */
+static void 	slc_init(void *);
+static int 	canloop_ioctl(struct ifnet *, u_long, caddr_t);
+static void 	slc_start(struct ifnet *);
+static void 	slc_start_locked(struct ifnet *);
+static int 	slc_encap(struct slc_softc *, struct mbuf **);
 
 static void 	slc_destroy(struct ifnet *); 
 static void 	slc_clone_destroy(struct ifnet *); 
 static int 	slc_clone_create(struct if_clone *, int, caddr_t);
 static int 	slc_modevent(module_t, int, void *);
+
+/* 
+ * Interface cloner and module description. 
+ */ 
  
 static struct if_clone *slc_cloner;
 static const char slc_name[] = "slc";
@@ -378,6 +376,59 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	
 	*mp = m;
 	
+	return (error);
+}
+
+/*
+ * Process an ioctl(2) request.
+ */
+/* ARGSUSED */
+static int
+canloop_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
+{
+	struct ifreq *ifr = (struct ifreq *)data;
+	int error = 0;
+
+	switch (cmd) {
+	case SIOCSIFADDR:
+		ifp->if_flags |= IFF_UP;
+		ifp->if_drv_flags |= IFF_DRV_RUNNING;
+		break;
+	case SIOCADDMULTI:
+	case SIOCDELMULTI:
+		if (ifr == NULL) {
+			error = EAFNOSUPPORT;		/* XXX */
+			break;
+		}
+		
+		switch (ifr->ifr_addr.sa_family) {
+#ifdef CAN
+		case AF_CAN:
+			break;
+#endif 	/* CAN */
+		default:
+			error = EAFNOSUPPORT;
+			break;
+		}
+		break;
+	case SIOCGDRVSPEC:
+	case SIOCSDRVSPEC:
+/*
+ * ...
+ */	
+		break;
+	case SIOCSIFMTU:
+		if (ifr->ifr_mtu == CAN_MTU) /* XXX */
+			ifp->if_mtu = ifr->ifr_mtu;
+		else
+			error = EINVAL;
+		break;
+	case SIOCSIFFLAGS:
+		break;
+	default:
+		error = EINVAL;
+		break;
+	}
 	return (error);
 }
 

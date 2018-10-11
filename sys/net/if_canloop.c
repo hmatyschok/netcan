@@ -92,6 +92,10 @@
 static int		canloop_ioctl(struct ifnet *, u_long, caddr_t);
 static void 	canloop_start(struct ifnet *);
 
+static void 	canloop_clone_destroy(struct ifnet *);
+static int 	canloop_clone_create(struct if_clone *, int, caddr_t);
+static int 	canloop_modevent(module_t, int, void *);
+
 /*
  * Interface cloner.
  */ 
@@ -136,7 +140,7 @@ canloop_clone_create(struct if_clone *ifc, int unit, caddr_t data)
  */
 
 static int
-canloop_modevent(module_t mod, int type, __unused void *data)
+canloop_modevent(module_t mod, int type, void *data)
 {
 	int error;
 
@@ -204,7 +208,7 @@ canloop_start(struct ifnet *ifp)
  * Process an ioctl(2) request.
  */
 /* ARGSUSED */
-int
+static int
 canloop_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
 	struct ifreq *ifr = (struct ifreq *)data;
