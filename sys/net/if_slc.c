@@ -76,16 +76,18 @@ static struct mtx slc_mtx;
 static TAILQ_HEAD(slc_head, slc_softc) slc_list;
  
 /* Subr. */ 
-static void 	slc_destroy(struct ifnet *);
+static void 	slc_destroy(struct slc_softc *);
 static int 	slc_encap(struct slc_softc *, struct mbuf **);
-static int 	slc_stty(struct slc_softc *, void *); 
+static int 	slc_rxeof(struct slc_softc *); 
 static int 	slc_gtty(struct slc_softc *, void *); 
+static int 	slc_stty(struct slc_softc *, void *); 
  
 /* Interface-level routines. */
 static void 	slc_init(void *);
 static int 	slc_ioctl(struct ifnet *, u_long, caddr_t);
-static void 	slc_start(struct ifnet *);
 static void 	slc_start_locked(struct ifnet *);
+static void 	slc_start(struct ifnet *);
+
 
 /* Bottom-level routines, */
 static th_getc_inject_t 	slc_txeof;
@@ -230,7 +232,7 @@ static moduledata_t slc_mod = {
 	0
 }; 
 
-DECLARE_MODULE(if_slc, sl_mod, SI_SUB_PSEUDO, SI_ORDER_ANY);
+DECLARE_MODULE(if_slc, slc_mod, SI_SUB_PSEUDO, SI_ORDER_ANY);
 
 /*
  * Interface-level routines.
