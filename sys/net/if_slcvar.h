@@ -51,6 +51,7 @@
 #define SLC_HC_DLC_INF 	'0'
 #define SLC_HC_DLC_SUP 	'9'
 
+#ifdef _KERNEL
 struct slc_softc {
 	struct canif_softc 		slc_csc;
 	struct tty 	*slc_tp;		/* pointer to tty structure */
@@ -64,10 +65,16 @@ struct slc_softc {
 };
 #define	SLC2IFP(slc)	((slc)->slc_csc.csc_ifp)
 
-/* internal flags */
+/* internal flags */ 	/* XXX */
 #define	SLC_DETACHED	0x00000000U
 #define	SLC_ATTACHED	0x00000001U
 #define	SLC_CONNECTED	0x00000002U
 #define	SLC_ERROR 	0x00000004U
 #define	SLC_DEBUG 	0x00000008U
+#endif /* _KERNEL */
+
+/* Commands for SIOC[GS]DRVSPEC ioctl(2) requests  */
+#define SLCTTYSET 	0
+#define SLCTTYGET 	1
+
 #endif /* _NET_IF_SLCVAR_H_ */
