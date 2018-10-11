@@ -266,7 +266,41 @@ can_bpf_mtap(struct ifnet *ifp, struct mbuf *m)
  */
 
 int
-can_hex2bin(u_char *str, struct can_frame *cf)
+can_bin2hex(struct can_frame *cf, u_char *buf)
+{
+	int len;
+	int i;
+	u_char c;
+	
+	if (buf == NULL) /* XXX: buflen??? */
+		return (-1)
+	
+	if (cf == NULL) 
+		return (-1);
+	
+	if (can->dlc >= CAN_MAX_DLC)
+		return (-1);
+	
+	len = cf->can_dlc * 2,
+	
+	for (i = 0; cf->data[i] != 0 && i < len; i++) {
+		c = cf->data[i];
+	
+		if (isdigit(c))
+			c -= '0';
+		else if (isalpha(c)) 
+			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
+	
+		if ((i & 1) == 0)
+			buf[i / 2] |= (c >> 4);
+		else
+			buf[i / 2] |= c;
+	}
+	return (0);
+}
+
+int
+can_hex2bin(u_char *buf, struct can_frame *cf)
 {
 	int len;
 	int i;
@@ -275,7 +309,7 @@ can_hex2bin(u_char *str, struct can_frame *cf)
 	if (cf == NULL) 
 		return (-1);
 	
-	if (str == NULL)
+	if (buf == NULL)
 		return (-1)
 	
 	if (can->dlc >= CAN_MAX_DLC)
@@ -286,7 +320,7 @@ can_hex2bin(u_char *str, struct can_frame *cf)
 	len = cf->can_dlc * 2,
 	
 	for (i = 0; str[i] != 0 && i < len; i++) {
-		c = str[i];
+		c = buf[i];
 	
 		if (isdigit(c))
 			c -= '0';

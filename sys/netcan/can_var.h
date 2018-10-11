@@ -107,18 +107,18 @@ extern struct domain candomain;
 /* raw userreqs */
 extern const struct pr_usrreqs rcan_usrreqs;
 
+/* common subr. */
+void 	can_mbuf_tag_clean(struct mbuf *);
+int 	can_bin2hex(struct can_frame *, u_char *);
+int 	can_hex2bin(u_char *, struct can_frame *);
+int 	can_id2hex(struct can_frame *, u_char *);
+int 	can_hex2id(u_char *, struct can_frame *);
+
 /* interface-layer */
 void 	can_ifattach(struct ifnet *);
 void 	can_ifdetach(struct ifnet *);
 void 	can_bpf_mtap(struct ifnet *, struct mbuf *);
 void 	can_ifinit_timings(struct canif_softc *);
-
-/* common subr. */
-void 	can_mbuf_tag_clean(struct mbuf *);
-
-int 	can_hex2bin(u_char *, struct can_frame *);
-int 	can_id2hex(struct can_frame *, u_char *);
-int 	can_hex2id(u_char *, struct can_frame *);
 
 /* CANPROTO_CAN */
 void 	can_ctlinput(int, struct sockaddr *, void *);

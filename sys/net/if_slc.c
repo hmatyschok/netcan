@@ -103,112 +103,13 @@ static struct ttyhook slc_hook = {
 	.th_rint_poll = 	slc_rint_poll,
 };
 
+/* Interface cloner */
 static void 	slc_clone_destroy(struct ifnet *); 
 static int 	slc_clone_create(struct if_clone *, int, caddr_t);
 static int 	slc_modevent(module_t, int, void *);
 
-/* 
- * Interface cloner and module description. 
- */ 
- 
 static struct if_clone *slc_cloner;
 static const char slc_name[] = "slc";
-
-
-static int
-slc_clone_create(struct if_clone *ifc, int unit, caddr_t data)
-{
-	struct slc_softc *slc;
-	struct ifnet *ifp;
-
-	slc = malloc(sizeof(*slc), M_SLC, M_WAITOK | M_ZERO);
-	ifp = SLC2IFP(slc) = if_alloc(IFT_OTHER);
-	if (ifp == NULL) {
-		free(slc, M_SLC);
-		return (ENOSPC);
-	}
-	ifp->if_softc = slc;
-	
-	if_initname(ifp, slc_name, unit);
-	
-	ifp->if_flags = IFF_POINTOPOINT | IFF_MULTICAST;
-	ifp->if_init = slc_init;
-	ifp->if_start = slc_start;
-	ifp->if_ioctl = slc_ioctl;
-	
-	can_ifattach(ifp);
-
-	ifp->if_mtu = SLC_MTU;
-	
-	/* initialize its protective lock */
-	mtx_init(&slc->slc_mtx, "slc_mtx", NULL, MTX_DEF)
-	
-	/* initialize queue for transmission */
-	mtx_init(&slc->slc_outq.ifq_mtx, "slc_outq_mtx", NULL, MTX_DEF);
-	IFQ_SET_MAXLEN(&slc->slc_outq, ifqmaxlen);
-	
-	/* attach */
-	mtx_lock(&slc_list_mtx);
-	TAILQ_INSERT_TAIL(&slc_list, slc, slc_next);
-	mtx_unlock(&slc_list_mtx);
-	mtx_lock(&slc->slc_mtx);
-	slc->slc_flags |= SLC_ATTACHED;
-	mtx_unlock(&slc->slc_mtx);
-
-	return (0);
-}
-
-static void
-slc_clone_destroy(struct ifnet *ifp)
-{
-	struct slc_softc *slc = ifp->if_softc;
-
-	mtx_lock(&slc_list_mtx);
-	TAILQ_REMOVE(&slc_list, slc, slc_list);
-	mtx_unlock(&slc_list_mtx);
-	slc_destroy(slc);
-}
-
-static int
-slc_modevent(module_t mod, int type, void *data) 
-{ 
-	struct slc_softc *slc;
-	int error;
-
-	switch (type) {
-	case MOD_LOAD:
-		mtx_init(&slc_list_mtx, "slc_list_mtx", NULL, MTX_DEF);
-		slc_cloner = if_clone_simple(slc_name, 
-			slc_clone_create, slc_clone_destroy, 0);
-		error = 0;
-		break;
-	case MOD_UNLOAD:
-		mtx_lock(&slc_list_mtx);
-		while ((slc = TAILQ_FIRST(&slc_list)) != NULL) {
-			TAILQ_REMOVE(&slc_list, slc, slc_next);
-			mtx_unlock(&slc_list_mtx);
-			slc_destroy(slc);
-			mtx_lock(&slc_list_mtx);
-		}
-		mtx_unlock(&slc_list_mtx);
-		mtx_destroy(&slc_list_mtx);
-		if_clone_detach(slc_cloner);
-		error = 0;
-		break;
-	default:
-		error = EOPNOTSUPP;
-		break;
-	}
-	return (error);
-} 
-
-static moduledata_t slc_mod = { 
-	"if_slc", 
-	slc_modevent, 
-	0
-}; 
-
-DECLARE_MODULE(if_slc, slc_mod, SI_SUB_PSEUDO, SI_ORDER_ANY);
 
 /*
  * Interface-level routines.
@@ -558,7 +459,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 
 	/* finalize */
 	*bp = SLC_HC_CR;
-	bp += 1;
+	bp += sizeof(u_char);
 	
 	/* re-initialize mbuf(9) and copy back */
 	len = bp - buf; 
@@ -728,3 +629,102 @@ out:
 	mtx_unlock(&slc->slc_mtx);
 	return (error);
 }
+
+/* 
+ * Interface cloner and module description. 
+ */ 
+
+static int
+slc_clone_create(struct if_clone *ifc, int unit, caddr_t data)
+{
+	struct slc_softc *slc;
+	struct ifnet *ifp;
+
+	slc = malloc(sizeof(*slc), M_SLC, M_WAITOK | M_ZERO);
+	ifp = SLC2IFP(slc) = if_alloc(IFT_OTHER);
+	if (ifp == NULL) {
+		free(slc, M_SLC);
+		return (ENOSPC);
+	}
+	ifp->if_softc = slc;
+	
+	if_initname(ifp, slc_name, unit);
+	
+	ifp->if_flags = IFF_POINTOPOINT | IFF_MULTICAST;
+	ifp->if_init = slc_init;
+	ifp->if_start = slc_start;
+	ifp->if_ioctl = slc_ioctl;
+	
+	can_ifattach(ifp);
+
+	ifp->if_mtu = SLC_MTU;
+	
+	/* initialize its protective lock */
+	mtx_init(&slc->slc_mtx, "slc_mtx", NULL, MTX_DEF)
+	
+	/* initialize queue for transmission */
+	mtx_init(&slc->slc_outq.ifq_mtx, "slc_outq_mtx", NULL, MTX_DEF);
+	IFQ_SET_MAXLEN(&slc->slc_outq, ifqmaxlen);
+	
+	/* attach */
+	mtx_lock(&slc_list_mtx);
+	TAILQ_INSERT_TAIL(&slc_list, slc, slc_next);
+	mtx_unlock(&slc_list_mtx);
+	mtx_lock(&slc->slc_mtx);
+	slc->slc_flags |= SLC_ATTACHED;
+	mtx_unlock(&slc->slc_mtx);
+
+	return (0);
+}
+
+static void
+slc_clone_destroy(struct ifnet *ifp)
+{
+	struct slc_softc *slc = ifp->if_softc;
+
+	mtx_lock(&slc_list_mtx);
+	TAILQ_REMOVE(&slc_list, slc, slc_list);
+	mtx_unlock(&slc_list_mtx);
+	slc_destroy(slc);
+}
+
+static int
+slc_modevent(module_t mod, int type, void *data) 
+{ 
+	struct slc_softc *slc;
+	int error;
+
+	switch (type) {
+	case MOD_LOAD:
+		mtx_init(&slc_list_mtx, "slc_list_mtx", NULL, MTX_DEF);
+		slc_cloner = if_clone_simple(slc_name, 
+			slc_clone_create, slc_clone_destroy, 0);
+		error = 0;
+		break;
+	case MOD_UNLOAD:
+		mtx_lock(&slc_list_mtx);
+		while ((slc = TAILQ_FIRST(&slc_list)) != NULL) {
+			TAILQ_REMOVE(&slc_list, slc, slc_next);
+			mtx_unlock(&slc_list_mtx);
+			slc_destroy(slc);
+			mtx_lock(&slc_list_mtx);
+		}
+		mtx_unlock(&slc_list_mtx);
+		mtx_destroy(&slc_list_mtx);
+		if_clone_detach(slc_cloner);
+		error = 0;
+		break;
+	default:
+		error = EOPNOTSUPP;
+		break;
+	}
+	return (error);
+} 
+
+static moduledata_t slc_mod = { 
+	"if_slc", 
+	slc_modevent, 
+	0
+}; 
+
+DECLARE_MODULE(if_slc, slc_mod, SI_SUB_PSEUDO, SI_ORDER_ANY);
