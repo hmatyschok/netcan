@@ -115,7 +115,7 @@ static TAILQ_HEAD(slc_head, slc_softc) slc_list;
  */
  
 static void 	slc_hex2bin(u_char *, u_char *, int);
-static void 	slc_canid2hex(canid_t, u_char *, int);
+static int 	slc_canid2hex(struct can_frame *, u_char *);
 static void 	slc_hex2canid(u_char *, canid_t *, int);
 
 /* Interface-level routines. */
@@ -380,15 +380,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	bp += SLC_CMD_LEN;	
 
 	/* map id */
-	if (cf->can_id & CAN_EFF_FLAG) {
-		cf->can_id &= CAN_EFF_MASK;
-		len = SLC_EFF_ID_LEN;
-	} else {
-		cf->can_id &= CAN_SFF_MASK;
-		len = SLC_SFF_ID_LEN;
-	}
-	slc_canid2hex(cf->can_id, bp, len);
-	bp += len;
+	bp += slc_canid2hex(cf, bp);
 	
 	/* map dlc */
 	*bp = cf->can_dlc + '0';
@@ -649,16 +641,23 @@ slc_hex2bin(u_char *str, u_char *buf, int len)
 	}
 }
 
-static void
-slc_canid2hex(canid_t id, u_char *buf, int len)
+static int
+slc_canid2hex(struct can_frame *cf, u_char *buf)
 {
+	int len;
 	u_char *ep;
 	u_char c;
 	
-	len -= 1;
+	if (cf->can_id & CAN_EFF_FLAG) {
+		cf->can_id &= CAN_EFF_MASK;
+		len = SLC_EFF_ID_LEN;
+	} else {
+		cf->can_id &= CAN_SFF_MASK;
+		len = SLC_SFF_ID_LEN;
+	}
 	
-	for (ep = buf + len; ep >= buf; ep--, id >>= 4) { /* XXX */
-		c = (id & 0x0f);
+	for (ep = buf + len - 1; ep >= buf; ep--, cf->can_id >>= 4) {
+		c = (cf->can_id & 0x0f);
 		
 		if (isdigit(c))
 			c -= '0';
@@ -667,11 +666,38 @@ slc_canid2hex(canid_t id, u_char *buf, int len)
 		
 		*ep = c;	
 	}
+	return (len);
 }
 
 static void
 slc_hex2canid(u_char *buf, canid_t *id, int len)
 {
+	switch (*mtod(m, u_char *)) {
+	case SLC_RTR_SFF:
+		cf->can_id |= CAN_RTR_FLAG;
+					 	/* FALLTHROUGH */
+	case SLC_DATA_SFF:
+		len = SLC_SFF_ID_LEN;
+		break;
+	case SLC_RTR_EFF:
+		cf->can_id |= CAN_RTR_FLAG;
+					 	/* FALLTHROUGH */
+	case SLC_DATA_EFF:
+		cf->can_id |= CAN_EFF_FLAG;
+		len = SLC_EFF_ID_LEN; 
+		break;
+	default:
+		error = EINVAL;
+		goto bad;
+	}
+	m_adj(m, sizeof(u_char));
+	
+	/* fetch id */
+	slc_hex2canid(mtod(m, u_char *), &cf->can_id, len);
+	m_adj(m, len);
+	
+	
+	
 	canid_t u;
 	canid_t v;
 	int i;
