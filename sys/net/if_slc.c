@@ -75,6 +75,18 @@ static MALLOC_DEFINE(M_SLC, "slc", "SLCAN Interface");
 static struct mtx slc_mtx;
 static TAILQ_HEAD(slc_head, slc_softc) slc_list;
  
+/* Subr. */ 
+static void 	slc_destroy(struct ifnet *);
+static int 	slc_encap(struct slc_softc *, struct mbuf **);
+static int 	slc_stty(struct slc_softc *, void *); 
+static int 	slc_gtty(struct slc_softc *, void *); 
+ 
+/* Interface-level routines. */
+static void 	slc_init(void *);
+static int 	slc_ioctl(struct ifnet *, u_long, caddr_t);
+static void 	slc_start(struct ifnet *);
+static void 	slc_start_locked(struct ifnet *);
+
 /* Bottom-level routines, */
 static th_getc_inject_t 	slc_txeof;
 static th_getc_poll_t 	slc_txeof_poll;
@@ -88,15 +100,7 @@ static struct ttyhook slc_hook = {
 	.th_rint = 	slc_rint,
 	.th_rint_poll = 	slc_rint_poll,
 };
- 
-/* Interface-level routines. */
-static void 	slc_init(void *);
-static int 	slc_ioctl(struct ifnet *, u_long, caddr_t);
-static void 	slc_start(struct ifnet *);
-static void 	slc_start_locked(struct ifnet *);
-static int 	slc_encap(struct slc_softc *, struct mbuf **);
 
-static void 	slc_destroy(struct ifnet *); 
 static void 	slc_clone_destroy(struct ifnet *); 
 static int 	slc_clone_create(struct if_clone *, int, caddr_t);
 static int 	slc_modevent(module_t, int, void *);
@@ -387,7 +391,9 @@ static int
 slc_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
 	struct ifreq *ifr = (struct ifreq *)data;
+	struct ifdrv *ifd = (struct ifdrv *)data;
 	int error = 0;
+	struct slc_softc *slc;
 
 	switch (cmd) {
 	case SIOCSIFADDR:
@@ -413,9 +419,29 @@ slc_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 		break;
 	case SIOCGDRVSPEC:
 	case SIOCSDRVSPEC:
-/*
- * ...
- */	
+		
+		if ((slc = ifp->if_softc) == NULL) {
+			error = EINVAL;
+			break;
+		}
+
+		switch (ifd->ifd_cmd) {
+		case SLCSTTY:
+			if (ifd->ifd_len != sizeof(int))
+				error = EINVAL;
+			else
+				error = slc_stty(slc, ifd->ifd_data);
+			break;
+		case SLCGTTY:
+			if (ifd->ifd_len != sizeof(dev_t))
+				error = EINVAL;
+			else
+				error = slc_gtty(slc, ifd->ifd_data);
+			break;
+		default:
+			error = EINVAL;
+			break:
+		}
 		break;
 	case SIOCSIFMTU:
 		if (ifr->ifr_mtu == CAN_MTU) /* XXX */
@@ -430,6 +456,55 @@ slc_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 		break;
 	}
 	return (error);
+}
+
+static int 
+slc_stty(struct slc_softc *slc, void *data)
+{
+	int fd = *(int *)data;
+	struct proc *p;
+	int error;
+	
+	mtx_lock(&slc->slc_mtx);
+	
+	if (slc->slc_tp != NULL) {
+		error = EBUSY;
+		goto out;
+	}
+	
+	if ((p = pfind(fd)) == NULL) {
+		error = ESRCH;
+		goto out;
+	}
+	
+	if (p->p_flag & P_WEXIT) {
+		error = ESRCH;
+		goto out;
+	}
+	_PHOLD(p);
+	PROC_UNLOCK(p);
+	error = ttyhook_register(&slc->slc_tp, p, fd, &slc_hook, slc);
+	PRELE(p);	
+out:
+	mtx_unlock(&slc->slc_mtx);
+	return (error);
+}
+
+static int 
+slc_gtty(struct slc_softc *slc, void *data)
+{
+	dev_t *d = (dev_t *)data;
+	
+	mtx_lock(&slc->slc_mtx);
+	
+	if (slc->slc_tp != NULL)
+		*d = tty_udev(slc->slc_tp);	
+	else
+		*d = NODEV;
+
+	mtx_unlock(&slc->slc_mtx);
+
+	return (0);
 }
 
 /*
