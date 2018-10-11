@@ -74,7 +74,7 @@ struct slc_softc {
 #endif /* _KERNEL */
 
 /* Commands for SIOC[GS]DRVSPEC ioctl(2) requests  */
-#define SLCTTYSET 	0
-#define SLCTTYGET 	1
+#define SLCSTTY 	0
+#define SLCGTTY 	1
 
 #endif /* _NET_IF_SLCVAR_H_ */
