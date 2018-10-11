@@ -98,7 +98,7 @@ static th_rint_poll_t 	slc_rint_poll;
 /* TTY hook */
 static struct ttyhook slc_hook = {
 	.th_getc_inject = 	slc_txeof,
-	.th_getc_poll = 	slc_getc_poll,
+	.th_getc_poll = 	slc_txeof_poll,
 	.th_rint = 	slc_rint,
 	.th_rint_poll = 	slc_rint_poll,
 };
@@ -549,7 +549,10 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	
 	/* apply data, if any */
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) { /* XXX */
-		can_bin2hex(cf->data, bp, cf->can_dlc);
+		if (can_bin2hex(cf->data, bp) < 0) {
+			error = EINVAL;
+			goto out;
+		}
 		bp += cf->can_dlc;	
 	}
 
@@ -575,9 +578,8 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 		error = 0;
 	}
 	IF_UNLOCK(&slc->slc_outq);
-	
-	*mp = m;
-out:	
+out:
+	*mp = m;	
 	return (error);
 }
 
