@@ -1,39 +1,4 @@
-/*-
- * Copyright (c) 2003-2009 Silicon Graphics International Corp.
- * Copyright (c) 2012 The FreeBSD Foundation
- * Copyright (c) 2014-2017 Alexander Motin <mav@FreeBSD.org>
- * All rights reserved.
- *
- * Portions of this software were developed by Edward Tomasz Napierala
- * under sponsorship from the FreeBSD Foundation.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions, and the following disclaimer,
- *    without modification.
- * 2. Redistributions in binary form must reproduce at minimum a disclaimer
- *    substantially similar to the "NO WARRANTY" disclaimer below
- *    ("Disclaimer") and any redistribution must be conditioned upon
- *    including a substantially similar Disclaimer requirement for further
- *    binary redistribution.
- *
- * NO WARRANTY
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * HOLDERS OR CONTRIBUTORS BE LIABLE FOR SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
- * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGES.
- *
- * $Id$
- */
+
 /*
  * Copyright (c) 2018 Henning Matyschok
  * All rights reserved.
@@ -114,10 +79,6 @@ static TAILQ_HEAD(slc_head, slc_softc) slc_list;
  * ...
  */
  
-static void 	slc_hex2bin(u_char *, u_char *, int);
-static int 	slc_canid2hex(struct can_frame *, u_char *);
-static int 	slc_hex2canid(u_char *, struct can_frame *);
-
 /* Interface-level routines. */
 static void 	slc_init(void *);
 static void 	slc_start(struct ifnet *);
@@ -380,7 +341,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	bp += SLC_CMD_LEN;	
 
 	/* map id */
-	bp += slc_canid2hex(cf, bp);
+	bp += can_id2hex(cf, bp);
 	
 	/* map dlc */
 	*bp = cf->can_dlc + '0';
@@ -388,7 +349,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	
 	/* apply data, if any */
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) {
-		slc_bin2hex(cf->data, bp, cf->can_dlc);
+		can_bin2hex(cf->data, bp, cf->can_dlc);
 		bp += cf->can_dlc;	
 	}
 
@@ -513,7 +474,7 @@ slc_rxeof(struct slc_softc *slc)
 	m_adj(m, sizeof(u_char));
 	
 	/* fetch id */
-	len = slc_hex2canid(mtod(m, u_char *), cf);
+	len = can_hex2id(mtod(m, u_char *), cf);
 	m_adj(m, len);
 	
 	/* fetch dlc */
@@ -607,92 +568,3 @@ slc_rint_poll(struct tty *tp)
 	return (1);
 }
 
-/*
- * Utility functions.
- *
- * See sys/cam/ctl/ctl.c [@ line #4486] and the licence 
- * information on top of this file for further details. 
- */
-
-static void
-slc_hex2bin(u_char *str, u_char *buf, int len)
-{
-	int i;
-	u_char c;
-	
-	(void)memset(buf, 0, len); /* XXX */
-	
-	len *= 2;
-	
-	for (i = 0; str[i] != 0 && i < len; i++) {
-		c = str[i];
-	
-		if (isdigit(c))
-			c -= '0';
-		else if (isalpha(c)) 
-			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
-	
-		if ((i & 1) == 0)
-			buf[i / 2] |= (c << 4);
-		else
-			buf[i / 2] |= c;
-	}
-}
-
-static int
-slc_canid2hex(struct can_frame *cf, u_char *buf)
-{
-	int len;
-	u_char *ep;
-	u_char c;
-	
-	if (cf->can_id & CAN_EFF_FLAG) {
-		cf->can_id &= CAN_EFF_MASK;
-		len = SLC_EFF_ID_LEN;
-	} else {
-		cf->can_id &= CAN_SFF_MASK;
-		len = SLC_SFF_ID_LEN;
-	}
-	
-	for (ep = buf + len - 1; ep >= buf; ep--, cf->can_id >>= 4) {
-		c = (cf->can_id & 0x0f);
-		
-		if (isdigit(c))
-			c -= '0';
-		else if (isalpha(c)) 
-			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
-		
-		*ep = c;	
-	}
-	return (len);
-}
-
-static int
-slc_hex2canid(u_char *buf, struct can_frame *cf)
-{
-	int len;
-	canid_t u;
-	canid_t v;
-	int i;
-	u_char c;
-	
-	if (cf->can_id & CAN_EFF_FLAG) 
-		len = SLC_EFF_ID_LEN;
-	else 
-		len = SLC_SFF_ID_LEN;
-	
-	for (u = v = 0, i = 0; i < len; i++, v <<= 4) { /* XXX */
-		c = buf[i];
-
-		if (isdigit(c))
-			c -= '0';
-		else if (isalpha(c)) 
-			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
-		
-		v |= (c & 0x0f);
-		u = v;
-	}	
-	cf->can_id |= u;
-	
-	return (len);
-}
