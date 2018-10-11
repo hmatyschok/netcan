@@ -87,7 +87,7 @@ static int 	slc_encap(struct slc_softc *, struct mbuf **);
 
 /* Bottom-level routines, */
 static th_getc_inject_t 	slc_txeof;
-static th_getc_poll_t 	slc_getc_poll;
+static th_getc_poll_t 	slc_txeof_poll;
 static th_rint_t 	slc_rint;
 static th_rint_poll_t 	slc_rint_poll;
 
@@ -520,6 +520,13 @@ bad:
 }
 
 static size_t
+slc_rint_poll(struct tty *tp)
+{
+	
+	return (1);
+}
+
+static size_t
 slc_txeof(struct tty *tp, void *buf, size_t len)
 {
 	struct slc_softc *slc;
@@ -563,9 +570,14 @@ slc_txeof(struct tty *tp, void *buf, size_t len)
 }
 
 static size_t
-slc_rint_poll(struct tty *tp)
+ngt_txeof_poll(struct tty *tp)
 {
-	
-	return (1);
+	struct slc_softc *slc;
+
+	slc = ttyhook_softc(tp);
+
+	return (slc->slc_outqlen);
 }
+
+
 
