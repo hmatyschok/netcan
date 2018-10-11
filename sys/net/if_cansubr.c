@@ -265,15 +265,25 @@ can_bpf_mtap(struct ifnet *ifp, struct mbuf *m)
  * information on top of this file for further details. 
  */
 
-static void
-can_hex2bin(u_char *str, u_char *buf, int len)
+int
+can_hex2bin(u_char *str, struct can_frame *cf)
 {
+	int len;
 	int i;
 	u_char c;
 	
-	(void)memset(buf, 0, len); /* XXX */
+	if (cf == NULL) 
+		return (-1);
 	
-	len *= 2;
+	if (str == NULL)
+		return (-1)
+	
+	if (can->dlc >= CAN_MAX_DLC)
+		return (-1);
+	
+	(void)memset(cf->data, 0, cf->can_dlc); /* XXX */
+	
+	len = cf->can_dlc * 2,
 	
 	for (i = 0; str[i] != 0 && i < len; i++) {
 		c = str[i];
@@ -284,10 +294,11 @@ can_hex2bin(u_char *str, u_char *buf, int len)
 			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
 	
 		if ((i & 1) == 0)
-			buf[i / 2] |= (c << 4);
+			cf->data[i / 2] |= (c << 4);
 		else
-			buf[i / 2] |= c;
+			cf->data[i / 2] |= c;
 	}
+	return (0);
 }
 
 int
@@ -296,6 +307,12 @@ can_id2hex(struct can_frame *cf, u_char *buf)
 	int len;
 	u_char *ep;
 	u_char c;
+	
+	if (buf == NULL)
+		return (-1);
+	
+	if (cf == NULL)
+		return (-1);
 	
 	if (cf->can_id & CAN_EFF_FLAG) {
 		cf->can_id &= CAN_EFF_MASK;
@@ -326,6 +343,12 @@ can_hex2id(u_char *buf, struct can_frame *cf)
 	canid_t v;
 	int i;
 	u_char c;
+	
+	if (cf == NULL)
+		return (-1);
+	
+	if (buf == NULL)
+		return (-1);
 	
 	if (cf->can_id & CAN_EFF_FLAG) 
 		len = SLC_EFF_ID_LEN;

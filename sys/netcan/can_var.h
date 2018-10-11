@@ -116,7 +116,7 @@ void 	can_ifinit_timings(struct canif_softc *);
 /* common subr. */
 void 	can_mbuf_tag_clean(struct mbuf *);
 
-void 	can_hex2bin(u_char *, u_char *, int);
+int 	can_hex2bin(u_char *, struct can_frame *);
 int 	can_id2hex(struct can_frame *, u_char *);
 int 	can_hex2id(u_char *, struct can_frame *);
 

@@ -537,14 +537,18 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	bp += SLC_CMD_LEN;	
 
 	/* map id */
-	bp += can_id2hex(cf, bp);
+	if ((len = can_id2hex(cf, bp)) < 0) {
+		error = EINVAL;
+		goto out;
+	}
+	bp += len;
 	
 	/* map dlc */
 	*bp = cf->can_dlc + '0';
 	bp += SLC_DLC_LEN;
 	
 	/* apply data, if any */
-	if ((cf->can_id & CAN_RTR_FLAG) == 0) {
+	if ((cf->can_id & CAN_RTR_FLAG) == 0) { /* XXX */
 		can_bin2hex(cf->data, bp, cf->can_dlc);
 		bp += cf->can_dlc;	
 	}
@@ -573,7 +577,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	IF_UNLOCK(&slc->slc_outq);
 	
 	*mp = m;
-	
+out:	
 	return (error);
 }
 
@@ -639,6 +643,11 @@ slc_rxeof(struct slc_softc *slc)
 	
 	/* fetch id */
 	len = can_hex2id(mtod(m, u_char *), cf);
+	if (len < 0) {
+		error = EINVAL;
+		goto bad;
+	}
+	
 	m_adj(m, len);
 	
 	/* fetch dlc */
@@ -657,8 +666,12 @@ slc_rxeof(struct slc_softc *slc)
 	m_adj(m, sizeof(u_char));
 	
 	/* fetch data, if any */
-	if ((cf->can_id & CAN_RTR_FLAG) == 0) 
-		can_hex2bin(mtod(m, u_char *), cf->data, cf->can_dlc);
+	if ((cf->can_id & CAN_RTR_FLAG) == 0) { 
+		if (can_hex2bin(mtod(m, u_char *), cf) < 0) {
+			error = EINVAL;
+			goto bad;
+		}
+	}
 
 	if (m->m_len < sizeof(struct can_frame))
 		len = sizeof(struct can_frame);
