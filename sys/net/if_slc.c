@@ -91,7 +91,7 @@ static struct ttyhook slc_hook = {
  
 /* Interface-level routines. */
 static void 	slc_init(void *);
-static int 	canloop_ioctl(struct ifnet *, u_long, caddr_t);
+static int 	slc_ioctl(struct ifnet *, u_long, caddr_t);
 static void 	slc_start(struct ifnet *);
 static void 	slc_start_locked(struct ifnet *);
 static int 	slc_encap(struct slc_softc *, struct mbuf **);
@@ -384,7 +384,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
  */
 /* ARGSUSED */
 static int
-canloop_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
+slc_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
 	struct ifreq *ifr = (struct ifreq *)data;
 	int error = 0;
