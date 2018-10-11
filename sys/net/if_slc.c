@@ -113,12 +113,18 @@ static TAILQ_HEAD(slc_head, slc_softc) slc_list;
 /*
  * ...
  */
-
-
-/*
- * Bottom-level routines.
- */
  
+static void 	slc_hex2bin(u_char *, u_char *, int);
+static void 	slc_canid2hex(canid_t, u_char *, int);
+static void 	slc_hex2canid(u_char *, canid_t *, int);
+
+/* Interface-level routines. */
+static void 	slc_init(void *);
+static void 	slc_start(struct ifnet *);
+static void 	slc_start_locked(struct ifnet *);
+static int 	slc_encap(struct slc_softc *, struct mbuf **);
+
+/* Bottom-level routines, */
 static th_getc_inject_t 	slc_txeof;
 static th_getc_poll_t 	slc_getc_poll;
 static th_rint_t 	slc_rint;
@@ -131,10 +137,15 @@ static struct ttyhook slc_hook = {
 	.th_rint_poll = 	slc_rint_poll,
 };
 
-/*
- * Interface cloner.
+/* 
+ * Interface cloner and module description. 
  */ 
 
+static void 	slc_destroy(struct ifnet *); 
+static void 	slc_clone_destroy(struct ifnet *); 
+static int 	slc_clone_create(struct if_clone *, int, caddr_t);
+static int 	slc_modevent(module_t, int, void *);
+ 
 static struct if_clone *slc_cloner;
 static const char slc_name[] = "slc";
 
@@ -182,6 +193,17 @@ slc_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 }
 
 static void
+slc_clone_destroy(struct ifnet *ifp)
+{
+	struct slc_softc *slc = ifp->if_softc;
+
+	mtx_lock(&slc_list_mtx);
+	TAILQ_REMOVE(&slc_list, slc, slc_list);
+	mtx_unlock(&slc_list_mtx);
+	slc_destroy(slc);
+}
+
+static void
 slc_destroy(struct slc_softc *slc)
 {
 	struct ifnet *ifp;
@@ -206,22 +228,6 @@ slc_destroy(struct slc_softc *slc)
 	free(slc, M_SLC);
 }
 
-static void
-slc_clone_destroy(struct ifnet *ifp)
-{
-	struct slc_softc *slc = ifp->if_softc;
-
-	mtx_lock(&slc_list_mtx);
-	TAILQ_REMOVE(&slc_list, slc, slc_list);
-	mtx_unlock(&slc_list_mtx);
-	slc_destroy(slc);
-}
-
-
-/*
- * Module description.
- */
- 
 static int
 slc_modevent(module_t mod, int type, void *data) 
 { 
@@ -264,7 +270,7 @@ static moduledata_t slc_mod = {
 DECLARE_MODULE(if_slc, sl_mod, SI_SUB_PSEUDO, SI_ORDER_ANY);
 
 /*
- * Interface.
+ * Interface-level routines.
  */
  
 static void
@@ -347,11 +353,6 @@ slc_start_locked(struct ifnet *ifp)
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 }
 
-/*
- * ...
- */
-
-
 static int 
 slc_encap(struct slc_softc *slc, struct mbuf **mp)
 {
@@ -425,53 +426,14 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	return (error);
 }
 
-static size_t
-slc_txeof(struct tty *tp, void *buf, size_t len)
-{
-	struct slc_softc slc;
-	struct mbuf *m;
-	size_t off = 0;
-	size_t m_len;
-
-	slc = ttyhook_softc(tp);
-
-	while (len > 0) {
-		IF_DEQUEUE(&slc->slc_outq, m);
-		if (m == NULL)
-			break;
-
-		while (m != NULL) {
-			m_len = min(m->m_len, len);
-			bcopy(mtod(m, caddr_t), (caddr_t)buf + off, m_len);
-
-			m->m_data += m_len;
-			m->m_len -= m_len;
-			off += m_len;
-			len -= m_len;
-
-			if (m->m_len > 0)
-				break;
-			
-			m = m_free(m);
-		}
-
-		if (m != NULL) {
-			IF_PREPEND(&slc->slc_outq, m);
-			break;
-		}
-	}
-	IF_LOCK(&slc->slc_outq);
-	slc->slc_outqlen -= off;
-	IF_UNLOCK(&slc->slc_outq);
-	MPASS(slc->slc_outqlen >= 0);
-
-	return (off);
-}
+/*
+ * Bottom-level subr.
+ */
 
 static int
 slc_rint(struct tty *tp, char c, int flags)
 {
-	struct slc_softc slc;
+	struct slc_softc *slc;
 	struct mbuf *m;
 	int error = 0;
 
@@ -605,6 +567,48 @@ bad:
 	goto out;
 }
 
+static size_t
+slc_txeof(struct tty *tp, void *buf, size_t len)
+{
+	struct slc_softc *slc;
+	struct mbuf *m;
+	size_t off = 0;
+	size_t m_len;
+
+	slc = ttyhook_softc(tp);
+
+	while (len > 0) {
+		IF_DEQUEUE(&slc->slc_outq, m);
+		if (m == NULL)
+			break;
+
+		while (m != NULL) {
+			m_len = min(m->m_len, len);
+			bcopy(mtod(m, caddr_t), (caddr_t)buf + off, m_len);
+
+			m->m_data += m_len;
+			m->m_len -= m_len;
+			off += m_len;
+			len -= m_len;
+
+			if (m->m_len > 0)
+				break;
+			
+			m = m_free(m);
+		}
+
+		if (m != NULL) {
+			IF_PREPEND(&slc->slc_outq, m);
+			break;
+		}
+	}
+	IF_LOCK(&slc->slc_outq);
+	slc->slc_outqlen -= off;
+	IF_UNLOCK(&slc->slc_outq);
+	MPASS(slc->slc_outqlen >= 0);
+
+	return (off);
+}
 
 static size_t
 slc_rint_poll(struct tty *tp)
