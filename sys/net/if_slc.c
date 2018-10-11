@@ -331,9 +331,9 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	
 	/* determine CAN frame type */
 	if (cf->can_id & CAN_RTR_FLAG) 
-		*bp = SLC_RTR_SFF;
+		*bp = SLC_HC_RTR_SFF;
 	else
-		*bp = SLC_DATA_SFF;
+		*bp = SLC_HC_DATA_SFF;
 	
 	if (cf->can_id & CAN_EFF_FLAG) 
 		*bp = toupper(*bp);
@@ -456,15 +456,15 @@ slc_rxeof(struct slc_softc *slc)
 
 	/* determine CAN frame type */
 	switch (*mtod(m, u_char *)) {
-	case SLC_RTR_SFF:
+	case SLC_HC_RTR_SFF:
 		cf->can_id |= CAN_RTR_FLAG;
 					 	/* FALLTHROUGH */
-	case SLC_DATA_SFF:
+	case SLC_HC_DATA_SFF:
 		break;
-	case SLC_RTR_EFF:
+	case SLC_HC_RTR_EFF:
 		cf->can_id |= CAN_RTR_FLAG;
 					 	/* FALLTHROUGH */
-	case SLC_DATA_EFF:
+	case SLC_HC_DATA_EFF:
 		cf->can_id |= CAN_EFF_FLAG; 
 		break;
 	default:

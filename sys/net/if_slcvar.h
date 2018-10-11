@@ -40,10 +40,10 @@
 #define SLC_EFF_ID_LEN 	8
 #define SLC_DLC_LEN 	1 
  
-#define SLC_SFF_DATA 	't'
-#define SLC_SFF_RTR 	'r'
-#define SLC_EFF_DATA 	'T'
-#define SLC_EFF_RTR 	'R'
+#define SLC_HC_SFF_DATA 	't'
+#define SLC_HC_SFF_RTR 	'r'
+#define SLC_HC_EFF_DATA 	'T'
+#define SLC_HC_EFF_RTR 	'R'
 
 #define SLC_HC_CR 		'\r'
 #define SLC_HC_BEL 		'\a'
