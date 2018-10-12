@@ -405,3 +405,11 @@ can_hex2id(u_char *buf, struct can_frame *cf)
 	return (len);
 }
 
+static moduledata_t can_mod = {
+	"can",
+	NULL,
+	0
+};
+
+DECLARE_MODULE(can, can_mod, SI_SUB_PSEUDO, SI_ORDER_ANY);
+MODULE_VERSION(can, 1);
