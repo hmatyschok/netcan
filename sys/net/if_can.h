@@ -76,5 +76,20 @@ struct can_link_timings {
 #define CANSLINKMODE	4 /* (uint32_t) set bits */
 #define CANCLINKMODE	5 /* (uint32_t) clear bits */
 
+#ifdef _KERNEL
+/* common subr. */
+void 	can_mbuf_tag_clean(struct mbuf *);
+int 	can_bin2hex(struct can_frame *, u_char *);
+int 	can_hex2bin(u_char *, struct can_frame *);
+int 	can_id2hex(struct can_frame *, u_char *);
+int 	can_hex2id(u_char *, struct can_frame *);
+
+/* interface-layer */
+void 	can_ifattach(struct ifnet *);
+void 	can_ifdetach(struct ifnet *);
+void 	can_bpf_mtap(struct ifnet *, struct mbuf *);
+void 	can_ifinit_timings(struct canif_softc *);
+#endif /* _KERNEL */
+
 #endif /* _NETCAN_CAN_LINK_H */
 

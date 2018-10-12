@@ -116,7 +116,7 @@ can_nh_input(struct mbuf *m);
 	struct canpcb   *canp;
 	struct m_tag	*sotag;
 	struct canpcb	*sender_canp;
-
+	struct ifnet 	*ifp;
 	int		rcv_ifindex; /* XXX */	
 
 	struct canpcbinfo *cani;
@@ -160,7 +160,8 @@ can_nh_input(struct mbuf *m);
 		sender_canp = NULL;
 	
 	/* fetch interface index */
-	rcv_ifindex = m->m_pkthdr.rcvif->if_index;
+	ifp = m->m_pkthdr.rcvif;
+	rcv_ifindex = ifp->if_index;
 	
 	(void)memset(&from, 0, sizeof(struct sockaddr_can));
 		
@@ -266,7 +267,7 @@ can_ctlinput(int cmd, struct sockaddr *sa, void *v)
 {
 	struct ip *ip = v;
 	struct udphdr *uh;
-	void (*notify) __P((struct inpcb *, int)) = can_notify;
+	void (*notify)(struct inpcb *, int) = can_notify;
 	int errno;
 
 	if (sa->sa_family != AF_CAN
@@ -282,7 +283,7 @@ can_ctlinput(int cmd, struct sockaddr *sa, void *v)
 	else if (errno == 0)
 		return NULL;
 	if (ip) {
-		uh = (struct canhdr *)((caddr_t)ip + (ip->ip_hl << 2));
+		uh = (struct udphdr *)((caddr_t)ip + (ip->ip_hl << 2));
 		in_pcbnotify(&udbtable, satosin(sa)->sin_addr, uh->uh_dport,
 		    ip->ip_src, uh->uh_sport, errno, notify);
 
