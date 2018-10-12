@@ -1,6 +1,6 @@
 <pre><code> 
-can(4) - Controller Area Network protocol communication domain(9) 
-=================================================================
+can(4) - Controller Area Network protocol domain(9) for FreeBSD 11.x 
+====================================================================
 
  Port of raw socket(2) on AF_CAN communication domain(9) from 
  NetBSD 8.0 for FreeBSD 11.x operation system.
