@@ -54,10 +54,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
  
-/*
- * Loopback interface driver for the CAN protocol
- */
-
 #include <sys/cdefs.h>
 
 #include "opt_can.h"
@@ -89,6 +85,10 @@
 #include <security/mac/mac_framework.h>
 #endif 	/* MAC */
 
+/*
+ * Loopback interface driver for the CAN protocol
+ */
+
 static int		canloop_ioctl(struct ifnet *, u_long, caddr_t);
 static void 	canloop_start(struct ifnet *);
 
@@ -102,72 +102,6 @@ static int 	canloop_modevent(module_t, int, void *);
 
 static struct if_clone *canloop_cloner;
 static const char canloop_name[] = "canlo";
-
-static void
-canloop_clone_destroy(struct ifnet *ifp)
-{
-	ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
-	ifp->if_flags &= ~IFF_UP;
-
-	can_ifdetach(ifp);
-	if_free(ifp);
-}
-
-static int
-canloop_clone_create(struct if_clone *ifc, int unit, caddr_t data)
-{
-	struct ifnet *ifp;
-
-	if ((ifp = if_alloc(IFT_OTHER)) == NULL)
-		return (ENOSPC);
-
-	if_initname(ifp, canloop_name, unit);
-	
-	ifp->if_flags = IFF_LOOPBACK;
-	ifp->if_ioctl = canloop_ioctl;
-	ifp->if_start = canloop_start;
-	
-	can_ifattach(ifp);
-
-	ifp->if_drv_flags |= IFF_DRV_RUNNING;
-	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
-
-	return (0);
-}
-
-/*
- * Module description.
- */
-
-static int
-canloop_modevent(module_t mod, int type, void *data)
-{
-	int error;
-
-	switch (type) {
-	case MOD_LOAD:
-		canloop_cloner = if_clone_simple(canloop_name, 
-			canloop_clone_create, canloop_clone_destroy, 0);
-		error = 0;
-	case MOD_UNLOAD:
-		if_clone_detach(canloop_cloner);
-		error = 0;
-		break;
-	default:
-		error = EOPNOTSUPP;
-		break;
-	}
-	return (error);
-}
-
-static moduledata_t canloop_mod = {
-	"if_canloop",
-	canloop_modevent,
-	0
-};
-
-DECLARE_MODULE(if_canloop, canloop_mod, SI_SUB_PROTO_IFATTACHDOMAIN, 
-	SI_ORDER_ANY);
 
 /*
  * Dequeue for transmission.
@@ -250,3 +184,69 @@ canloop_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 	}
 	return (error);
 }
+
+/*
+ * Module description.
+ */
+
+static void
+canloop_clone_destroy(struct ifnet *ifp)
+{
+	ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
+	ifp->if_flags &= ~IFF_UP;
+
+	can_ifdetach(ifp);
+	if_free(ifp);
+}
+
+static int
+canloop_clone_create(struct if_clone *ifc, int unit, caddr_t data)
+{
+	struct ifnet *ifp;
+
+	if ((ifp = if_alloc(IFT_OTHER)) == NULL)
+		return (ENOSPC);
+
+	if_initname(ifp, canloop_name, unit);
+	
+	ifp->if_flags = IFF_LOOPBACK;
+	ifp->if_ioctl = canloop_ioctl;
+	ifp->if_start = canloop_start;
+	
+	can_ifattach(ifp);
+
+	ifp->if_drv_flags |= IFF_DRV_RUNNING;
+	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
+
+	return (0);
+}
+
+static int
+canloop_modevent(module_t mod, int type, void *data)
+{
+	int error;
+
+	switch (type) {
+	case MOD_LOAD:
+		canloop_cloner = if_clone_simple(canloop_name, 
+			canloop_clone_create, canloop_clone_destroy, 0);
+		error = 0;
+	case MOD_UNLOAD:
+		if_clone_detach(canloop_cloner);
+		error = 0;
+		break;
+	default:
+		error = EOPNOTSUPP;
+		break;
+	}
+	return (error);
+}
+
+static moduledata_t canloop_mod = {
+	"if_canloop",
+	canloop_modevent,
+	0
+};
+
+DECLARE_MODULE(if_canloop, canloop_mod, SI_SUB_PROTO_IFATTACHDOMAIN, 
+	SI_ORDER_ANY);

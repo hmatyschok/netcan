@@ -109,16 +109,19 @@
 #include <net/route.h>
 #include <net/bpf.h> 
 
-/*
- * XXX: incomplete, ...
- */
-
 #include <netcan/can.h>
 #include <netcan/can_var.h>
 
-static void 	can_input(struct ifnet *ifp, struct mbuf *m);
-static int 	can_output(struct ifnet *ifp, struct mbuf *m, 
-	const struct sockaddr *dst, struct route *ro);
+/*
+ * XXX: Rather incomplete, but work in progress.
+ * XXX: 
+ * XXX: Well, it's a good place for an generic 
+ * XXX: implementaion of LLC and error control.
+ */
+
+static void 	can_input(struct ifnet *, struct mbuf *);
+static int 	can_output(struct ifnet *, struct mbuf *, 
+	const struct sockaddr *, struct route *);
 
 /*
  * Process a received CAN frame, the packet is 
@@ -174,7 +177,7 @@ bad:
 }
 
 /*
- * Output CAN frame on interface-layer.
+ * Wrapper for tx CAN frame by interface-layer.
  */
 static int
 can_output(struct ifnet *ifp, struct mbuf *m, 
@@ -404,6 +407,10 @@ can_hex2id(u_char *buf, struct can_frame *cf)
 	
 	return (len);
 }
+
+/*
+ * Module description.
+ */
 
 static moduledata_t can_mod = {
 	"can",

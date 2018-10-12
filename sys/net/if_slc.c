@@ -56,7 +56,7 @@
 #include <netinet/can_link.h>
 #else
 #error "can(4) communication domain(9) not installed"
-#endif
+#endif /* CAN */
 
 #include <net/if_slcvar.h>
 
