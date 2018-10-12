@@ -46,10 +46,6 @@
 #include <sys/bus.h>
 #include <sys/rman.h>
 
-/*
- * XXX: incomplete, work in progress...
- */
-
 #include <net/if.h>
 #include <net/if_types.h>
 #include <net/netisr.h>
@@ -67,9 +63,14 @@
 #include <net/bpf.h>
 
 /*
- * ...
+ * Serial line CAN interface implemented as TTY hook.
+ * 
+ * XXX: Missing error control [ISO 11898-1] due the 
+ * XXX: the case of transmission by uart(4), but it's  
+ * XXX: a work in progress and should understood as a 
+ * XXX: prototype for a TTY Device-driver class.
  */
-
+ 
 static MALLOC_DEFINE(M_SLC, "slc", "SLCAN Interface");
 
 static struct mtx slc_mtx;
@@ -601,7 +602,7 @@ slc_rxeof(struct slc_softc *slc)
  	mtx_lock(&slc->slc_mtx);
 out:
 	return (error);			
-bad:	
+bad:
 	m_freem(m);
 	goto out;
 }
