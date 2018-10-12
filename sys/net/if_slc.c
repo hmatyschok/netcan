@@ -236,6 +236,19 @@ slc_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 		}
 		break;
 	case SIOCGDRVSPEC:
+	
+		switch (ifd->ifd_cmd) {
+		case SLCGTTY:
+			if (ifd->ifd_len != sizeof(dev_t))
+				error = EINVAL;
+			else
+				error = slc_gtty(slc, ifd->ifd_data);
+			break;
+		default:
+			error = EINVAL;
+			break:
+		}
+		break;
 	case SIOCSDRVSPEC:
 	
 		switch (ifd->ifd_cmd) {
@@ -244,12 +257,6 @@ slc_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 				error = EINVAL;
 			else
 				error = slc_stty(slc, ifd->ifd_data);
-			break;
-		case SLCGTTY:
-			if (ifd->ifd_len != sizeof(dev_t))
-				error = EINVAL;
-			else
-				error = slc_gtty(slc, ifd->ifd_data);
 			break;
 		default:
 			error = EINVAL;
@@ -411,6 +418,9 @@ slc_destroy(struct slc_softc *slc)
 	free(slc, M_SLC);
 }
 
+/*
+ * Serialize data and enqueue for trsnsmision.
+ */ 
 static int 
 slc_encap(struct slc_softc *slc, struct mbuf **mp)
 {
@@ -505,25 +515,25 @@ static int
 slc_rxeof(struct slc_softc *slc)
 {
 	int error = 0;
+	struct ifnet *ifp;
+	struct mbuf *m;
 	u_char buf[MHLEN];
 	u_char *bp;
 	struct can_frame *cf;
-	struct ifnet *ifp;
-	struct mbuf *m;
 	int len;
 	
 	mtx_assert(&slc->slc_mtx, MA_OWNED);
 	
-	(void)memset((bp = buf), 0, MHLEN);
-	cf = (struct can_frame *)bp;
-	
 	ifp = SLC2IFP(slc);
-
+	
 	if ((m = slc->slc_inb) == NULL) {
 		error = EINVAL;
 		goto out;
 	}
 	slc->slc_inb = NULL;
+
+	(void)memset((bp = buf), 0, MHLEN);
+	cf = (struct can_frame *)bp;
 
 	/* determine CAN frame type */
 	switch (*mtod(m, u_char *)) {
@@ -545,12 +555,10 @@ slc_rxeof(struct slc_softc *slc)
 	m_adj(m, sizeof(u_char));
 	
 	/* fetch id */
-	len = can_hex2id(mtod(m, u_char *), cf);
-	if (len < 0) {
+	if ((len = can_hex2id(mtod(m, u_char *), cf)) < 0) {
 		error = EINVAL;
 		goto bad;
 	}
-	
 	m_adj(m, len);
 	
 	/* fetch dlc */
@@ -585,7 +593,7 @@ slc_rxeof(struct slc_softc *slc)
 	m->m_len = m->m_pkthdr.len = len;
 	m->m_data = m->m_pktdat;
 
-	bcopy(cf, mtod(m, u_char *), len);
+	bcopy(buf, mtod(m, u_char *), len);
 	
 	/* pass CAN frame to layer above */
  	mtx_unlock(&slc->slc_mtx);
