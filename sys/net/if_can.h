@@ -29,8 +29,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _NETCAN_CAN_LINK_H
-#define _NETCAN_CAN_LINK_H
+#ifndef _NET_IF_CAN_H
+#define _NET_IF_CAN_H
 
 /*
  * CAN bus link-layer related commands, from the SIOCSDRVSPEC
@@ -88,8 +88,7 @@ int 	can_hex2id(u_char *, struct can_frame *);
 void 	can_ifattach(struct ifnet *);
 void 	can_ifdetach(struct ifnet *);
 void 	can_bpf_mtap(struct ifnet *, struct mbuf *);
-void 	can_ifinit_timings(struct canif_softc *);
+void 	can_ifinit_timings(struct canif_softc *); z
 #endif /* _KERNEL */
-
-#endif /* _NETCAN_CAN_LINK_H */
+#endif /* _NET_IF_CAN_H */
 
