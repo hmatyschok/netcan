@@ -27,6 +27,37 @@
 #ifndef _NET_IF_SLCVAR_H_
 #define _NET_IF_SLCVAR_H_
 
+/* 
+ * Commands for SIOC[GS]DRVSPEC ioctl(2) requests.
+ * 
+ * Example:
+ *
+ *  (void)memset(&ifd, 0, sizoef(ifd));
+ *  (void)strlcpy(ifd.ifd_name, "slc0", strlen("slc0"));
+ * 
+ *  if ((fd_slc = socket(AF_LOCAL, SOCK_DGRAM, 0) < 0) 
+ *      fatal(EX_DATAERR, "Can't open %s", ifd.ifd_name);
+ * 
+ *  (void)strlcpy(tty_name, "/dev/ttyU0", strlen("/dev/ttyU0"));
+ * 
+ *  if ((fd_tty = open(tty_name, O_RDONLY | O_NONBLOCK)) < 0)
+ *      fatal(EX_DATAERR, "Can't open %s device", tty_name); 
+ *
+ *  ifd.ifd_cmd = SLCSTTY;
+ *  ifd.ifd_len = sizeof(int);
+ *  ifd.ifd_data = &fd_tty;
+ * 
+ *  if (ioctl(fd_slc, SIOCSDRVSPEC, &ifd) != 0)
+ *      fatal(EX_UNAVAILABLE, "Cannot attach %s @ %s", 
+ *          tty_name, ifd.ifd_name);
+ *
+ *  (void)close(fd_tty);
+ *  (void)close(fd_slc);   
+ */
+#define SLCSTTY 	0
+#define SLCGTTY 	1
+
+
 /*
  * Definitions for serial line CAN interface data structures.
  */
@@ -49,6 +80,7 @@
 #define SLC_HC_DLC_INF 	'0'
 #define SLC_HC_DLC_SUP 	'9'
 
+#ifdef _KERNEL
 struct slc_softc {
 	struct canif_softc 		slc_csc;
 	struct tty 	*slc_tp;		/* pointer to tty structure */
@@ -60,6 +92,7 @@ struct slc_softc {
 	struct mtx 	slc_mtx;
 };
 #define	SLC2IFP(slc)	((slc)->slc_csc.csc_ifp)
+#define	SLC2DEV(slc)	((slc)->slc_csc.csc_dev)
 
 /* internal flags */ 	/* XXX */
 #define	SLC_DETACHED	0x00000000U
@@ -68,9 +101,4 @@ struct slc_softc {
 #define	SLC_ERROR 	0x00000004U
 #define	SLC_DEBUG 	0x00000008U
 #endif /* _KERNEL */
-
-/* Commands for SIOC[GS]DRVSPEC ioctl(2) requests  */
-#define SLCSTTY 	0
-#define SLCGTTY 	1
-
 #endif /* _NET_IF_SLCVAR_H_ */

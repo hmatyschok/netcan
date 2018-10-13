@@ -28,30 +28,28 @@
 #include <sys/cdefs.h>
 
 #include "opt_can.h"
-#include "opt_slc.h"
 
-#include <sys/ctype.h>
 #include <sys/param.h>
 #include <sys/systm.h>
-#include <sys/endian.h>
-#include <sys/fcntl.h>
-#include <sys/malloc.h>
-#include <sys/serial.h>
-#include <sys/tty.h>
-#include <sys/ttycom.h>
-#include <sys/conf.h>
 #include <sys/kernel.h>
-#include <machine/resource.h>
+#include <sys/mbuf.h>
+#include <sys/module.h>
 #include <machine/bus.h>
-#include <sys/bus.h>
 #include <sys/rman.h>
+#include <sys/socket.h>
+#include <sys/sockio.h>
+#include <sys/sysctl.h>
 
 #include <net/if.h>
+#include <net/if_var.h>
+#include <net/if_clone.h>
 #include <net/if_types.h>
 #include <net/netisr.h>
+#include <net/route.h>
+#include <net/bpf.h>
+#include <net/if_can.h>
 
 #if CAN
-#include <net/if_can.h>
 #include <netcan/can_var.h>
 #include <netcan/can_link.h>
 #else
@@ -59,8 +57,6 @@
 #endif /* CAN */
 
 #include <net/if_slcvar.h>
-
-#include <net/bpf.h>
 
 /*
  * Serial line CAN interface implemented as TTY hook.
@@ -211,8 +207,8 @@ slc_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 	if ((slc = ifp->if_softc) == NULL) {
 		error = EINVAL;
 		goto out;
-	} else
-		error = 0;
+	} 
+	error = 0;
 
 	switch (cmd) {
 	case SIOCSIFADDR:

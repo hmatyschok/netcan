@@ -76,6 +76,7 @@
 #include <net/netisr.h>
 #include <net/route.h>
 #include <net/bpf.h>
+#include <net/if_can.h>
 
 #ifdef	CAN
 #include <netcan/can.h>
