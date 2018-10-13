@@ -57,6 +57,7 @@
 #include <sys/cdefs.h>
 
 #include "opt_can.h"
+#include "opt_canloop.h"
 
 #include <sys/param.h>
 #include <sys/systm.h>

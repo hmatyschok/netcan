@@ -28,6 +28,7 @@
 #include <sys/cdefs.h>
 
 #include "opt_can.h"
+#include "opt_slc.h"
 
 #include <sys/param.h>
 #include <sys/systm.h>

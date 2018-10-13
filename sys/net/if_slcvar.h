@@ -35,24 +35,24 @@
  *  (void)memset(&ifd, 0, sizoef(ifd));
  *  (void)strlcpy(ifd.ifd_name, "slc0", strlen("slc0"));
  * 
- *  if ((fd_slc = socket(AF_LOCAL, SOCK_DGRAM, 0) < 0) 
+ *  if ((slc_fd = socket(AF_LOCAL, SOCK_DGRAM, 0) < 0) 
  *      fatal(EX_DATAERR, "Can't open %s", ifd.ifd_name);
  * 
  *  (void)strlcpy(tty_name, "/dev/ttyU0", strlen("/dev/ttyU0"));
  * 
- *  if ((fd_tty = open(tty_name, O_RDONLY | O_NONBLOCK)) < 0)
+ *  if ((tty_fd = open(tty_name, O_RDONLY | O_NONBLOCK)) < 0)
  *      fatal(EX_DATAERR, "Can't open %s device", tty_name); 
  *
  *  ifd.ifd_cmd = SLCSTTY;
  *  ifd.ifd_len = sizeof(int);
- *  ifd.ifd_data = &fd_tty;
+ *  ifd.ifd_data = &tty_fd;
  * 
- *  if (ioctl(fd_slc, SIOCSDRVSPEC, &ifd) != 0)
- *      fatal(EX_UNAVAILABLE, "Cannot attach %s @ %s", 
+ *  if (ioctl(slc_fd, SIOCSDRVSPEC, &ifd) != 0)
+ *      fatal(EX_UNAVAILABLE, "Can't attach %s @ %s", 
  *          tty_name, ifd.ifd_name);
  *
- *  (void)close(fd_tty);
- *  (void)close(fd_slc);   
+ *  (void)close(tty_fd);
+ *  (void)close(slc_fd);   
  */
 #define SLCSTTY 	0
 #define SLCGTTY 	1
