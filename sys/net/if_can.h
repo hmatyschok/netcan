@@ -78,6 +78,28 @@ struct can_frame {
 #define CAN_MTU         (sizeof(struct can_frame))
 
 /*
+ * CAN ID based filter
+ * checks received can_id & can_filter.cf_mask against
+ *   can_filter.cf_id & can_filter.cf_mask
+ * valid flags for can_id:
+ *     CAN_INV_FILTER: invert filter
+ * valid flags for can_mask:
+ *     CAN_ERR_FLAG: filter for error message frames
+ */
+struct can_filter {
+	canid_t cf_id;
+	canid_t cf_mask;
+};
+
+#define CAN_INV_FILTER 	0x20000000U
+
+/* transport protocol class address information (e.g. ISOTP) */
+struct can_tp { 
+	canid_t ct_rx_id; 
+	canid_t ct_tx_id; 
+};
+
+/*
  * CAN bus link-layer related commands, from the SIOCSDRVSPEC
  */
 
@@ -124,28 +146,6 @@ struct can_link_timings {
 #ifdef _KERNEL
 
 /*
- * CAN ID based filter
- * checks received can_id & can_filter.cf_mask against
- *   can_filter.cf_id & can_filter.cf_mask
- * valid flags for can_id:
- *     CAN_INV_FILTER: invert filter
- * valid flags for can_mask:
- *     CAN_ERR_FLAG: filter for error message frames
- */
-struct can_filter {
-	canid_t cf_id;
-	canid_t cf_mask;
-};
-
-#define CAN_INV_FILTER 0x20000000U
-
-/* transport protocol class address information (e.g. ISOTP) */
-struct can_tp { 
-	canid_t ct_rx_id; 
-	canid_t ct_tx_id; 
-};
-
-/*
  * Common structure for CAN interface drivers. Should be at the 
  * start ofeach driver's softc.
  * 
@@ -165,7 +165,7 @@ struct canif_softc {
 	struct can_link_timecaps 	csc_timecaps; /* timing capabilities */
 	struct can_link_timings 	csc_timings; /* operating timing values */
 	uint32_t 	csc_linkmodes;
-	struct callout 	csc_timo;
+	struct callout 	csc_timo; 	/* callout for error control */
 };
 
 /* common subr. */
@@ -182,4 +182,3 @@ void 	can_bpf_mtap(struct ifnet *, struct mbuf *);
 void 	can_ifinit_timings(struct canif_softc *); z
 #endif /* _KERNEL */
 #endif /* _NET_IF_CAN_H */
-

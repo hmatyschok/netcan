@@ -57,16 +57,12 @@
 #ifndef _NETCAN_CAN_VAR_H_
 #define _NETCAN_CAN_VAR_H_
 
-#include <sys/queue.h>
-#include <sys/device.h>
-#include <netcan/can_link.h>
-
-struct can_ifreq {
+struct can_ifreq { /* XXX; incomplete.. */
 	char            cfr_name[IFNAMSIZ];	/* if name, e.g. "sja0" */
 };
 
 #ifdef _KERNEL
-#include <sys/socketvar.h>
+#include <sys/queue.h>
 
 /*
  * Implements CAN filter on interface-layer.  
@@ -75,8 +71,8 @@ struct can_ifaddr {
 	struct	ifaddr cia_ifa;		/* protocol-independent info */
 #define	cia_ifp		cia_ifa.ifa_ifp
 #define cia_flags	cia_ifa.ifa_flags
-	TAILQ_ENTRY(can_ifaddr) cia_link;	/* list of internet addresses */
-	struct	sockaddr_can cia_addr;	/* reserve space for CAN Filter */
+	TAILQ_ENTRY(can_ifaddr) cia_link;
+	struct sockaddr_can cia_addr;	/* reserve space for CAN Filter */
 };
 
 extern struct domain candomain;

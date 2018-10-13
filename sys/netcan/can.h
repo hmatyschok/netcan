@@ -80,7 +80,8 @@ struct sockaddr_can {
 };
 
 /*
- * Options for use with [gs]etsockopt for raw sockets
+ * Options for use with [gs]etsockopt(2) for raw sockets.
+ * 
  * First word of comment is data type; bool is stored in int.
  */
 #define SOL_CAN_RAW CANPROTO_RAW
