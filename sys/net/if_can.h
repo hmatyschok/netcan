@@ -33,6 +33,51 @@
 #define _NET_IF_CAN_H
 
 /*
+ * CAN id structure
+ * bits 0-28	: CAN identifier (11/29 bits, see bit 31)
+ * bit2 29-31	: see below
+ */
+
+typedef uint32_t canid_t;
+typedef uint32_t can_err_mask_t;
+
+/* canid_t bits 29-31 descriptions */
+#define CAN_EFF_FLAG 	0x80000000U	/* extended frame format */
+#define CAN_RTR_FLAG 	0x40000000U	/* remote transmission request */
+#define CAN_ERR_FLAG 	0x20000000U	/* error message frame */
+#define CAN_FLAG_MASK 	0Xe0000000U
+
+/* valid bits in CAN ID for frame formats */
+#define CAN_SFF_MASK 	0x000007ffU /* standard frame format (SFF) */
+#define CAN_EFF_MASK 	0x1fffffffU /* extended frame format (EFF) */
+#define CAN_ERR_MASK 	0x1fffffffU /* error frame format */
+
+/* CAN SDU length and DLC definitions according to ISO 11898-1 */
+#define CAN_MAX_DLC 	8
+#define CAN_MAX_DLEN 	8
+
+/* CAN header */
+struct can_hdr {
+	canid_t	can_id; /* ID + EFF/RTR/ERR flags */
+	uint8_t	can_dlc; /* frame SDU length in byte (0 .. CAN_MAX_DLEN) */
+	uint8_t	__pad;
+	uint8_t	__res0;
+	uint8_t __res1;
+};
+
+/* CAN frame */
+struct can_frame {
+	canid_t	can_id; /* ID + EFF/RTR/ERR flags */
+	uint8_t	can_dlc; /* frame SDU length in byte (0 .. CAN_MAX_DLEN) */
+	uint8_t	__pad;
+	uint8_t	__res0;
+	uint8_t __res1;
+	uint8_t	data[CAN_MAX_DLEN] __aligned(8);
+};
+
+#define CAN_MTU         (sizeof(struct can_frame))
+
+/*
  * CAN bus link-layer related commands, from the SIOCSDRVSPEC
  */
 
@@ -77,6 +122,52 @@ struct can_link_timings {
 #define CANCLINKMODE	5 /* (uint32_t) clear bits */
 
 #ifdef _KERNEL
+
+/*
+ * CAN ID based filter
+ * checks received can_id & can_filter.cf_mask against
+ *   can_filter.cf_id & can_filter.cf_mask
+ * valid flags for can_id:
+ *     CAN_INV_FILTER: invert filter
+ * valid flags for can_mask:
+ *     CAN_ERR_FLAG: filter for error message frames
+ */
+struct can_filter {
+	canid_t cf_id;
+	canid_t cf_mask;
+};
+
+#define CAN_INV_FILTER 0x20000000U
+
+/* transport protocol class address information (e.g. ISOTP) */
+struct can_tp { 
+	canid_t ct_rx_id; 
+	canid_t ct_tx_id; 
+};
+
+/*
+ * Common structure for CAN interface drivers. Should be at the 
+ * start ofeach driver's softc.
+ * 
+ * XXX: On the one hand this is generic, but on the other hand it 
+ * XXX: is not in sight of the binding between its communication
+ * XXX: domain(9) and interface-layer.
+ * XXX:
+ * XXX: See implementation of 
+ * XXX:
+ * XXX:   if_attachdomain(9) 
+ * XXX:
+ * XXX: in net/if.c and domain(9) for further datails. 
+ */
+struct canif_softc {
+	struct ifnet 	*csc_ifp; 	/* our ifnet(9) interface */
+	device_t 	csc_dev; 		/* maps to device(9), if any */
+	struct can_link_timecaps 	csc_timecaps; /* timing capabilities */
+	struct can_link_timings 	csc_timings; /* operating timing values */
+	uint32_t 	csc_linkmodes;
+	struct callout 	csc_timo;
+};
+
 /* common subr. */
 void 	can_mbuf_tag_clean(struct mbuf *);
 int 	can_bin2hex(struct can_frame *, u_char *);

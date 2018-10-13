@@ -51,9 +51,9 @@
 #include <net/netisr.h>
 
 #if CAN
-#include <netcan/can.h>
-#include <netinet/can_var.h>
-#include <netinet/can_link.h>
+#include <net/if_can.h>
+#include <netcan/can_var.h>
+#include <netcan/can_link.h>
 #else
 #error "can(4) communication domain(9) not installed"
 #endif /* CAN */

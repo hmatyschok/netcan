@@ -79,29 +79,6 @@ struct can_ifaddr {
 	struct	sockaddr_can cia_addr;	/* reserve space for CAN Filter */
 };
 
-/*
- * common structure for CAN interface drivers. Should be at the 
- * start ofeach driver's softc.
- * 
- * XXX: On the one hand this is generic, but on the other hand it 
- * XXX: is not in sight of the binding between its communication
- * XXX: domain(9) and interface-layer.
- * XXX:
- * XXX: See implementation of 
- * XXX:
- * XXX:   if_attachdomain(9) 
- * XXX:
- * XXX: in net/if.c and domain(9) for further datails. 
- */
-struct canif_softc {
-	struct ifnet 	*csc_ifp; 	/* our ifnet(9) interface */
-	device_t 	csc_dev; 		/* maps to device(9), if any */
-	struct can_link_timecaps 	csc_timecaps; /* timing capabilities */
-	struct can_link_timings 	csc_timings; /* operating timing values */
-	uint32_t 	csc_linkmodes;
-	struct callout 	csc_timo;
-};
-
 extern struct domain candomain;
 
 /* raw userreqs */

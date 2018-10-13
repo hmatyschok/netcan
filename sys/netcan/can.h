@@ -58,79 +58,10 @@
 
 #include <sys/types.h>
 
-/* Definitions compatible (as much as possible) with socketCAN */
-
-/*
- * CAN id structure
- * bits 0-28	: CAN identifier (11/29 bits, see bit 31)
- * bit2 29-31	: see below
- */
-
-typedef uint32_t canid_t;
-typedef uint32_t can_err_mask_t;
-
-/* canid_t bits 29-31 descriptions */
-#define CAN_EFF_FLAG 	0x80000000U	/* extended frame format */
-#define CAN_RTR_FLAG 	0x40000000U	/* remote transmission request */
-#define CAN_ERR_FLAG 	0x20000000U	/* error message frame */
-#define CAN_FLAG_MASK 	0Xe0000000U
-
-/* valid bits in CAN ID for frame formats */
-#define CAN_SFF_MASK 	0x000007ffU /* standard frame format (SFF) */
-#define CAN_EFF_MASK 	0x1fffffffU /* extended frame format (EFF) */
-#define CAN_ERR_MASK 	0x1fffffffU /* error frame format */
-
-/* CAN SDU length and DLC definitions according to ISO 11898-1 */
-#define CAN_MAX_DLC 	8
-#define CAN_MAX_DLEN 	8
-
-/* CAN header */
-struct can_hdr {
-	canid_t	can_id; /* ID + EFF/RTR/ERR flags */
-	uint8_t	can_dlc; /* frame SDU length in byte (0 .. CAN_MAX_DLEN) */
-	uint8_t	__pad;
-	uint8_t	__res0;
-	uint8_t __res1;
-};
-
-/* CAN frame */
-struct can_frame {
-	canid_t	can_id; /* ID + EFF/RTR/ERR flags */
-	uint8_t	can_dlc; /* frame SDU length in byte (0 .. CAN_MAX_DLEN) */
-	uint8_t	__pad;
-	uint8_t	__res0;
-	uint8_t __res1;
-	uint8_t	data[CAN_MAX_DLEN] __aligned(8);
-};
-
-#define CAN_MTU         (sizeof(struct can_frame))
-
 /* protocols */
 #define CANPROTO_CAN 	0
 #define CANPROTO_RAW 	1 /* RAW sockets */
 #define CANPROTO_NPROTO 	2 	/* XXX: Wildcard, anyone??? */
-
-/*
- * CAN ID based filter
- * checks received can_id & can_filter.cf_mask against
- *   can_filter.cf_id & can_filter.cf_mask
- * valid flags for can_id:
- *     CAN_INV_FILTER: invert filter
- * valid flags for can_mask:
- *     CAN_ERR_FLAG: filter for error message frames
- */
-struct can_filter {
-	canid_t cf_id;
-	canid_t cf_mask;
-};
-
-#define CAN_INV_FILTER 0x20000000U
-
-/* transport protocol class address information (e.g. ISOTP) */
-struct can_tp { 
-	canid_t ct_rx_id; 
-	canid_t ct_tx_id; 
-};
 
 /*
  * Socket address, CAN style
