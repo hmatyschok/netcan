@@ -27,8 +27,6 @@
 #ifndef _NET_IF_SLCVAR_H_
 #define _NET_IF_SLCVAR_H_
 
-#include <sys/callout.h>
-
 /*
  * Definitions for serial line CAN interface data structures.
  */
@@ -51,12 +49,10 @@
 #define SLC_HC_DLC_INF 	'0'
 #define SLC_HC_DLC_SUP 	'9'
 
-#ifdef _KERNEL
 struct slc_softc {
 	struct canif_softc 		slc_csc;
 	struct tty 	*slc_tp;		/* pointer to tty structure */
 	struct mbuf 	*slc_inb;
-	struct mbuf 	*slc_outb;
 	struct ifqueue	slc_outq;		/* queue of outgoing data */
 	size_t		slc_outqlen;	/* number of bytes in outq */
 	u_int 	slc_flags;
