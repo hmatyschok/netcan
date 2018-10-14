@@ -1,5 +1,5 @@
 
-.PATH: ${.CURDIR}/../../net
+.PATH: ${SRCTOP}/sys/net
 
 KMOD=	if_canloop
 SRCS=	if_canloop.c opt_can.h opt_canloop.h
