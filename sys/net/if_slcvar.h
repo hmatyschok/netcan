@@ -92,6 +92,7 @@ struct slc_softc {
 	TAILQ_ENTRY(slc_softc) slc_next;
 	struct mtx 	slc_mtx;
 };
+
 #define	SLC2IFP(slc)	((slc)->slc_csc.csc_ifp)
 #define	SLC2DEV(slc)	((slc)->slc_csc.csc_dev)
 

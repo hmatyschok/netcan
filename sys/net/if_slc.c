@@ -36,8 +36,12 @@
 #include <sys/types.h>
 #include <sys/malloc.h>
 #include <sys/kernel.h>
+#include <sys/lock.h>
 #include <sys/module.h>
+#include <sys/mutex.h>
+#include <sys/proc.h>
 #include <sys/socket.h>
+#include <sys/sockio.h>
 #include <sys/tty.h>
      
 #include <net/if.h>
@@ -57,7 +61,7 @@
  
 static MALLOC_DEFINE(M_SLC, "slc", "SLCAN Interface");
 
-static struct mtx slc_mtx;
+static struct mtx slc_list_mtx;
 static TAILQ_HEAD(slc_head, slc_softc) slc_list;
  
 /* Subr. */ 
@@ -365,7 +369,7 @@ slc_txeof(struct tty *tp, void *buf, size_t len)
 }
 
 static size_t
-ngt_txeof_poll(struct tty *tp)
+slc_txeof_poll(struct tty *tp)
 {
 	struct slc_softc *slc;
 
@@ -418,7 +422,8 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	
 	(void)memset((bp = buf), 0, MHLEN);
 
-	M_ASSERTPKTHDR((m = *mp));
+	m = *mp;
+	M_ASSERTPKTHDR(m);
 	cf = mtod(m, struct can_frame *);
 	
 	/* determine CAN frame type */
@@ -676,7 +681,7 @@ slc_clone_destroy(struct ifnet *ifp)
 	struct slc_softc *slc = ifp->if_softc;
 
 	mtx_lock(&slc_list_mtx);
-	TAILQ_REMOVE(&slc_list, slc, slc_list);
+	TAILQ_REMOVE(&slc_list, slc, slc_next);
 	mtx_unlock(&slc_list_mtx);
 	slc_destroy(slc);
 }

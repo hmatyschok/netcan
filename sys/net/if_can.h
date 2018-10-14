@@ -144,8 +144,11 @@ struct can_link_timings {
 #define CANCLINKMODE	5 /* (uint32_t) clear bits */
 
 #ifdef _KERNEL
+
 #include <sys/ctype.h>
 #include <sys/callout.h>
+#include <sys/queue.h>
+
 /*
  * Common structure for CAN interface drivers. Should be at the 
  * start ofeach driver's softc.
