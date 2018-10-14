@@ -78,7 +78,6 @@ static int 	slc_ioctl(struct ifnet *, u_long, caddr_t);
 static void 	slc_start_locked(struct ifnet *);
 static void 	slc_start(struct ifnet *);
 
-
 /* Bottom-level routines, */
 static th_getc_inject_t 	slc_txeof;
 static th_getc_poll_t 	slc_txeof_poll;
@@ -96,7 +95,6 @@ static struct ttyhook slc_hook = {
 /* Interface cloner */
 static void 	slc_clone_destroy(struct ifnet *); 
 static int 	slc_clone_create(struct if_clone *, int, caddr_t);
-static int 	slc_modevent(module_t, int, void *);
 
 static struct if_clone *slc_cloner;
 static const char slc_name[] = "slc";

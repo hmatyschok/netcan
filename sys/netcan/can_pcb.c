@@ -112,7 +112,7 @@ can_pcbinfo_init(struct canpcbinfo *pcbinfo, const char *name,
 			"kern.ipc.maxsockets limit reached");
 	
 	rw_wlock(&can_pcbinfo_lock);
-	TAILQ_INSERT_HEAD(&can_pcbinfo_tbl, pcbinfo, cani_queue);		
+	TAILQ_INSERT_HEAD(&can_pcbinfo_tbl, pcbinfo, cani_next);		
 	rw_wunlock(&can_pcbinfo_lock);
 }
 

@@ -109,16 +109,15 @@ struct canpcb {
 #define	CANP_UNLOCK_ASSERT(canp)	rw_assert(&(canp)->canp_lock, RA_UNLOCKED)
 	
 LIST_HEAD(canpcbhead, canpcb);
-
 TAILQ_HEAD(canpcbqueue, canpcb);
 
 /* 
  * Set contains canpcb{}s maps to PF_CAN family on AF_CAN domain(9). 
  */
 struct canpcbinfo {
-	TAILQ_ENTRY(canpcbinfo) cani_queue;
+	TAILQ_ENTRY(canpcbinfo) cani_next;
 	struct rwlock 	cani_lock; 		/* protects PCB traversal */
-	umaa_zone_t 	cani_zone; 	/* uma(9) zone for slap allocator */
+	uma_zone_t 	cani_zone; 	/* uma(9) zone for slap allocator */
 	struct canpcbqueue 	cani_queue;
 	struct canpcbhead 	*cani_bindhashtbl;
 	struct canpcbhead 	*cani_connecthashtbl;

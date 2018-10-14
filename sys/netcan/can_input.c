@@ -59,19 +59,20 @@
 
 #include <sys/param.h>
 #include <sys/systm.h>
+#include <sys/time.h>
+#include <sys/kernel.h>
+#include <sys/module.h>
 #include <sys/mbuf.h>
-#include <sys/ioctl.h>
-#include <sys/domain.h>
-#include <sys/protosw.h>
-#include <sys/errno.h>
 #include <sys/socket.h>
 #include <sys/socketvar.h>
+#include <sys/sockio.h>
 
 #include <net/if.h>
+#include <net/if_clone.h>
+#include <net/if_var.h>
 #include <net/if_types.h>
+#include <net/if_can.h>
 #include <net/netisr.h>
-#include <net/route.h>
-#include <net/bpf.h> 
 
 #include <netcan/can.h>
 #include <netcan/can_pcb.h>
@@ -110,7 +111,7 @@ can_init(void)
  * Process rx'd CAN frames by protocol-layer.
  */ 
 void 	
-can_nh_input(struct mbuf *m);
+can_nh_input(struct mbuf *m)
 {
 	struct sockaddr_can from;
 	struct canpcb   *canp;
@@ -122,7 +123,7 @@ can_nh_input(struct mbuf *m);
 	struct canpcbinfo *cani;
 
 	M_ASSERTPKTHDR(m);
-	KASSERT(m->m_pkthdr.rcvif != NULL,
+	KASSERT((m->m_pkthdr.rcvif != NULL),
 	    ("%s: NULL interface pointer", __func__));
 #if 0
 	CANSTAT_INC(cans_total);
@@ -132,24 +133,24 @@ can_nh_input(struct mbuf *m);
 #if 0
 		CANSTAT_INC(cans_toosmall);
 #endif	
-		goto out:
+		goto out;
 	}
 	
-	if (m->m_len < sizeof (struct can_frame) {
-		m = m_pullup(m, sizeof (struct can_frame));
+	if (m->m_len < sizeof(struct can_frame)) {
+		m = m_pullup(m, sizeof(struct can_frame));
 	    if (m == NULL) {
 #if 0
 		CANSTAT_INC(cans_toosmall);
 #endif	
-		goto out:
+		goto out;
 	}
 	
-	sotag = m_tag_find(m, PACKET_TAG_SO, NULL);
+	sotag = m_tag_find(m, PACKET_TAG_ND_OUTGOING, NULL);
 	if (sotag != NULL) {
 		sender_canp = *(struct canpcb **)(sotag + 1);
 		m_tag_delete(m, sotag);
 		
-		KASSERT((sender_canp != NULL)
+		KASSERT((sender_canp != NULL),
 			("%s: sender_canp == NULL", __func__));
 		
 		/* if the sender doesn't want loopback, don't do it */

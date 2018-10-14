@@ -87,7 +87,6 @@ static void 	canloop_start(struct ifnet *);
 
 static void 	canloop_clone_destroy(struct ifnet *);
 static int 	canloop_clone_create(struct if_clone *, int, caddr_t);
-static int 	canloop_modevent(module_t, int, void *);
 
 /*
  * Interface cloner.

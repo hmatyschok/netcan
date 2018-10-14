@@ -59,19 +59,19 @@
 
 #include <sys/param.h>
 #include <sys/systm.h>
+#include <sys/time.h>
+#include <sys/kernel.h>
+#include <sys/module.h>
 #include <sys/mbuf.h>
-#include <sys/ioctl.h>
-#include <sys/domain.h>
-#include <sys/protosw.h>
-#include <sys/errno.h>
 #include <sys/socket.h>
 #include <sys/socketvar.h>
+#include <sys/sockio.h>
 
 #include <net/if.h>
+#include <net/if_clone.h>
+#include <net/if_var.h>
 #include <net/if_types.h>
-#include <net/netisr.h>
-#include <net/route.h>
-#include <net/bpf.h> 
+#include <net/if_can.h>
 
 #include <netcan/can.h>
 #include <netcan/can_pcb.h>
@@ -89,8 +89,8 @@ can_get_netlink(struct ifnet *ifp, struct ifdrv *ifd)
 
 	/* XXX */
 	
-	if (ifp->if_type == IFT_OTHER) {
-		if ((csc = ifp->if_softc) == NULL)
+	if (ifp->if_type == IFT_CAN) {
+		if ((csc = ifp->if_l2com) == NULL)
 			error = EOPNOTSUPP;
 		else
 			error = 0;
@@ -144,8 +144,8 @@ can_set_netlink(struct ifnet *ifp, struct ifdrv *ifd)
 
 	/* XXX */	
 	
-	if (ifp->if_type == IFT_OTHER) {
-		if ((csc = ifp->if_softc) == NULL)
+	if (ifp->if_type == IFT_CAN) {
+		if ((csc = ifp->if_l2com) == NULL)
 			error = EOPNOTSUPP;
 		else
 			error = 0;
@@ -195,29 +195,36 @@ out:
 	return (error);
 }
 
+/* 
+ * XXX: Well, this should be reimplemented. 
+ */
 /* ARGSUSED */
 static int
 can_control(struct socket *so, u_long cmd, caddr_t data, struct ifnet *ifp,
     struct thread *td)
 {
-	struct can_ifreq *cfr = (struct can_ifreq *)data;
+	struct ifdrv *ifd = (struct ifdrv *)data;
+#if 0	
+	struct ifreq *ifr = (struct ifreq *)data;
+	struct sockaddr_can *scan = (struct sockaddr_can *)&ifr->ifr_addr;
+#endif
 	int error = 0;
 
-	if (ifp == NULL)
+	if (ifp == NULL) {
 		error = EADDRNOTAVAIL;
 		goto out;
 	}
 
 	switch (cmd) {
 	case SIOCGDRVSPEC:
-		error = can_get_netlink(ifp, cfr);
+		error = can_get_netlink(ifp, ifd);
 		break;
 	case SIOCSDRVSPEC:
-		error = can_set_netlink(ifp, cfr);
+		error = can_set_netlink(ifp, ifd);
 		break;
 	default:
 		if (ifp->if_ioctl != NULL)
-			error = (*ifp->if_ioctl)(ifp, cmd, data)
+			error = (*ifp->if_ioctl)(ifp, cmd, data);
 		else	
 			error = EOPNOTSUPP;
 		
@@ -238,14 +245,14 @@ can_purgeif(struct socket *so, struct ifnet *ifp)
 }
 
 /*
- * cleanup mbuf tag, keeping the PACKET_TAG_SO tag
+ * cleanup mbuf tag, keeping the PACKET_TAG_ND_OUTGOING tag
  */
 void
 can_mbuf_tag_clean(struct mbuf *m)
 {
 	struct m_tag *sotag;
 
-	sotag = m_tag_find(m, PACKET_TAG_SO, NULL);
+	sotag = m_tag_find(m, PACKET_TAG_ND_OUTGOING, NULL);
 	if (sotag != NULL)
 		m_tag_unlink(m, sotag);
 
