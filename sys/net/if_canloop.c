@@ -142,27 +142,6 @@ canloop_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 	int error = 0;
 
 	switch (cmd) {
-	case SIOCSIFADDR:
-		ifp->if_flags |= IFF_UP;
-		ifp->if_drv_flags |= IFF_DRV_RUNNING;
-		break;
-	case SIOCADDMULTI:
-	case SIOCDELMULTI:
-		if (ifr == NULL) {
-			error = EAFNOSUPPORT;		/* XXX */
-			break;
-		}
-		
-		switch (ifr->ifr_addr.sa_family) {
-#ifdef CAN
-		case AF_CAN:
-			break;
-#endif 	/* CAN */
-		default:
-			error = EAFNOSUPPORT;
-			break;
-		}
-		break;
 	case SIOCSIFMTU:
 		if (ifr->ifr_mtu == CAN_MTU)
 			ifp->if_mtu = ifr->ifr_mtu;

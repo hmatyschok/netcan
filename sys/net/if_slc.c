@@ -114,8 +114,11 @@ slc_init(void *xsc)
 	slc = (struct slc_softc *)xsc;
 	ifp = slc->slc_ifp;
 	
-	ifp->if_drv_flags |= IFF_DRV_RUNNING;
-	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
+	if (slc->slc_tp != NULL) 
+		ifp->if_flags |= IFF_UP;
+	else
+		ifp->if_flags &= ~IFF_UP;
+
 }
 
 static void
@@ -204,27 +207,6 @@ slc_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 	error = 0;
 
 	switch (cmd) {
-	case SIOCSIFADDR:
-		ifp->if_flags |= IFF_UP;
-		ifp->if_drv_flags |= IFF_DRV_RUNNING;
-		break;
-	case SIOCADDMULTI:
-	case SIOCDELMULTI:
-		if (ifr == NULL) {
-			error = EAFNOSUPPORT;		/* XXX */
-			break;
-		}
-		
-		switch (ifr->ifr_addr.sa_family) {
-#ifdef CAN
-		case AF_CAN:
-			break;
-#endif 	/* CAN */
-		default:
-			error = EAFNOSUPPORT;
-			break;
-		}
-		break;
 	case SIOCGDRVSPEC:
 	
 		switch (ifd->ifd_cmd) {
@@ -260,6 +242,9 @@ slc_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 			error = EINVAL;
 		break;
 	case SIOCSIFFLAGS:
+		
+		if (slc->slc_tp == NULL) 
+			ifp->if_flags &= ~IFF_UP;
 		break;
 	default:
 		error = EINVAL;
@@ -672,6 +657,9 @@ slc_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 	mtx_lock(&slc->slc_mtx);
 	slc->slc_flags |= SLC_ATTACHED;
 	mtx_unlock(&slc->slc_mtx);
+
+	ifp->if_drv_flags |= IFF_DRV_RUNNING;
+	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 
 	return (0);
 }
