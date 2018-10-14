@@ -89,34 +89,25 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+ 
 #include <sys/cdefs.h>
 
 #include "opt_can.h"
+#include "opt_if_can.h"
 
 #include <sys/param.h>
 #include <sys/systm.h>
+#include <sys/time.h>
 #include <sys/kernel.h>
-#include <sys/mbuf.h>
 #include <sys/module.h>
-#include <machine/bus.h>
-#include <sys/rman.h>
+#include <sys/mbuf.h>
 #include <sys/socket.h>
 #include <sys/sockio.h>
-#include <sys/sysctl.h>
 
 #include <net/if.h>
 #include <net/if_var.h>
-#include <net/if_clone.h>
 #include <net/if_types.h>
-#include <net/netisr.h>
-#include <net/route.h>
-#include <net/bpf.h>
-#include <net/can_if.h>
-
-#ifdef CAN
-#include <netcan/can.h>
-#include <netcan/can_var.h>
-#endif /* CAN */
+#include <net/if_can.h>
 
 #ifdef MAC
 #include <security/mac/mac_framework.h>
