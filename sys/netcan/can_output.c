@@ -58,19 +58,19 @@
 #include "opt_can.h"
 
 #include <sys/param.h>
+#include <sys/systm.h>
+#include <sys/time.h>
+#include <sys/kernel.h>
+#include <sys/module.h>
 #include <sys/mbuf.h>
-#include <sys/errno.h>
-#include <sys/protosw.h>
-#include <sys/sockio.h>
 #include <sys/socket.h>
 #include <sys/socketvar.h>
+#include <sys/sockio.h>
 
 #include <net/if.h>
+#include <net/if_var.h>
 #include <net/if_types.h>
-
-#include <net/if.h>
-#include <net/if_types.h>
-#include <net/route.h>
+#include <net/if_can.h>
 
 #include <netcan/can.h>
 #include <netcan/can_pcb.h>
@@ -91,7 +91,7 @@ can_output(struct mbuf *m, struct canpcb *canp)
 {
 	int error = 0;
 	struct ifnet *ifp;
-	struct canif_softc *csc; /* XXX: interface-layer */
+	struct canif_softc *csc; 
 	struct m_tag *sotag;
 	struct sockaddr_can dst;
 	const struct sockaddr_can *gw;
@@ -99,7 +99,7 @@ can_output(struct mbuf *m, struct canpcb *canp)
 	M_ASSERTPKTHDR(m);
 	
 	if (canp == NULL) {
-		(void)printf("%: no pcb\n", __func__);
+		(void)printf("%s: no pcb\n", __func__);
 		error = EINVAL;
 		goto bad;
 	}
@@ -109,24 +109,20 @@ can_output(struct mbuf *m, struct canpcb *canp)
 		goto bad;
 	}
 	
-	switch (ifp->if_type) {
-	case IFT_OTHER:	
-		if ((csc = ifp->if_softc) != NULL) {
-			if (csc->csc_linkmodes & CAN_LINKMODE_LISTENONLY) {
+	if (ifp->if_type == IFT_CAN) {	
+		if ((csc = ifp->if_l2com) != NULL) {
+			if (csc->csc_linkmodes & CAN_LINKMODE_LISTENONLY) 
 				error = ENETUNREACH;
-				goto bad:
-			}
 		}
-		break;
-	default:
+	} else
 		error = ENETUNREACH;
-		goto bad:
-	}
-		
+	
+	if (error != 0)
+		goto bad;
+	
 	sotag = m_tag_get(PACKET_TAG_ND_OUTGOING, 
 		sizeof(struct socket *), M_NOWAIT);
 	if (sotag == NULL) {
-		ifp->if_oerrors++;
 		error = ENOMEM;
 		goto bad;
 	}
