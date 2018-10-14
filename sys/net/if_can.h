@@ -72,10 +72,16 @@ struct can_frame {
 	uint8_t	__pad;
 	uint8_t	__res0;
 	uint8_t __res1;
-	uint8_t	data[CAN_MAX_DLEN] __aligned(8);
+	uint8_t	can_data[CAN_MAX_DLEN] __aligned(8);
 };
 
 #define CAN_MTU         (sizeof(struct can_frame))
+
+/* Serial line CAN */
+#define SLC_CMD_LEN 	1
+#define SLC_SFF_ID_LEN 	3
+#define SLC_EFF_ID_LEN 	8
+#define SLC_DLC_LEN 	1 
 
 /*
  * CAN ID based filter

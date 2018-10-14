@@ -156,14 +156,15 @@ can_input(struct ifnet *ifp, struct mbuf *m)
 		if_printf(ifp, "discard CAN frame"
 			" (len %u pkt len %u)\n",
 			m->m_len, m->m_pkthdr.len);
-		goto bad1:
+		goto bad1;
 	}
 	
-	if (m->m_len < sizeof (struct can_frame) {
-		m = m_pullup(m, sizeof (struct can_frame));
+	if (m->m_len < sizeof(struct can_frame)) {
+		m = m_pullup(m, sizeof(struct can_frame));
 	    if (m == NULL) {
-		if_printf(ifp, "m_pullup(9) failed, discard CAN frame.");
-		goto bad1:
+			if_printf(ifp, "m_pullup(9) failed, discard CAN frame.");
+			goto bad1;
+		}
 	}
 	
 #ifdef MAC
@@ -252,7 +253,7 @@ can_bpf_mtap(struct ifnet *ifp, struct mbuf *m)
 	cf = mtod(m, struct can_frame *);
 	oid = cf->can_id;
 	cf->can_id = htonl(oid);
-	bpf_mtap(ifp, m);
+	bpf_mtap(ifp->if_bpf, m);
 	cf->can_id = oid;
 }
 
@@ -271,18 +272,18 @@ can_bin2hex(struct can_frame *cf, u_char *buf)
 	u_char c;
 	
 	if (buf == NULL) /* XXX: buflen??? */
-		return (-1)
+		return (-1);
 	
 	if (cf == NULL) 
 		return (-1);
 	
-	if (can->dlc >= CAN_MAX_DLC)
+	if (cf->can_dlc >= CAN_MAX_DLC)
 		return (-1);
 	
-	len = cf->can_dlc * 2,
+	len = cf->can_dlc * 2;
 	
-	for (i = 0; cf->data[i] != 0 && i < len; i++) {
-		c = cf->data[i];
+	for (i = 0; cf->can_data[i] != 0 && i < len; i++) {
+		c = cf->can_data[i];
 	
 		if (isdigit(c))
 			c -= '0';
@@ -308,16 +309,16 @@ can_hex2bin(u_char *buf, struct can_frame *cf)
 		return (-1);
 	
 	if (buf == NULL)
-		return (-1)
-	
-	if (can->dlc >= CAN_MAX_DLC)
 		return (-1);
 	
-	(void)memset(cf->data, 0, cf->can_dlc); /* XXX */
+	if (cf->can_dlc >= CAN_MAX_DLC)
+		return (-1);
 	
-	len = cf->can_dlc * 2,
+	(void)memset(cf->can_data, 0, cf->can_dlc); /* XXX */
 	
-	for (i = 0; str[i] != 0 && i < len; i++) {
+	len = cf->can_dlc * 2;
+	
+	for (i = 0; buf[i] != 0 && i < len; i++) {
 		c = buf[i];
 	
 		if (isdigit(c))
@@ -326,9 +327,9 @@ can_hex2bin(u_char *buf, struct can_frame *cf)
 			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
 	
 		if ((i & 1) == 0)
-			cf->data[i / 2] |= (c << 4);
+			cf->can_data[i / 2] |= (c << 4);
 		else
-			cf->data[i / 2] |= c;
+			cf->can_data[i / 2] |= c;
 	}
 	return (0);
 }
@@ -406,10 +407,27 @@ can_hex2id(u_char *buf, struct can_frame *cf)
 /*
  * Module description.
  */
+ 
+static int
+can_modevent(module_t mod, int type, void *data)
+{
+	int error;
+
+	switch (type) {
+	case MOD_LOAD:
+	case MOD_UNLOAD:
+		error = 0;
+		break;
+	default:
+		error = EOPNOTSUPP;
+		break;
+	}
+	return (error);
+} 
 
 static moduledata_t can_mod = {
 	"can",
-	NULL,
+	can_modevent,
 	0
 };
 

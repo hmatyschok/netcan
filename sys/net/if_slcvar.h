@@ -64,12 +64,7 @@
  */
 
 #define SLC_MTU 	33 /* includes ext. CAN frame size */
- 
-#define SLC_CMD_LEN 	1
-#define SLC_SFF_ID_LEN 	3
-#define SLC_EFF_ID_LEN 	8
-#define SLC_DLC_LEN 	1 
- 
+
 #define SLC_HC_SFF_DATA 	't'
 #define SLC_HC_SFF_RTR 	'r'
 #define SLC_HC_EFF_DATA 	'T'
@@ -92,9 +87,6 @@ struct slc_softc {
 	TAILQ_ENTRY(slc_softc) slc_next;
 	struct mtx 	slc_mtx;
 };
-
-#define	SLC2IFP(slc)	((slc)->slc_csc.csc_ifp)
-#define	SLC2DEV(slc)	((slc)->slc_csc.csc_dev)
 
 /* internal flags */ 	/* XXX */
 #define	SLC_DETACHED	0x00000000U
