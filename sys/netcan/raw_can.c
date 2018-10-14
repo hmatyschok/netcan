@@ -58,20 +58,20 @@
 #include "opt_can.h"
 
 #include <sys/param.h>
+#include <sys/systm.h>
+#include <sys/time.h>
+#include <sys/kernel.h>
+#include <sys/module.h>
 #include <sys/mbuf.h>
-#include <sys/errno.h>
-#include <sys/protosw.h>
-#include <sys/sockio.h>
 #include <sys/socket.h>
 #include <sys/socketvar.h>
+#include <sys/sockio.h>
 #include <sys/sysctl.h>
 
 #include <net/if.h>
+#include <net/if_var.h>
 #include <net/if_types.h>
-
-#include <net/if.h>
-#include <net/if_types.h>
-#include <net/route.h>
+#include <net/if_can.h>
 
 #include <netcan/can.h>
 #include <netcan/can_pcb.h>
@@ -82,7 +82,7 @@ extern int can_hashsize;
 static struct canpcbinfo rcan_pcbinfo;
 
 u_long	rcan_sendspace = 4096;		/* really max datagram size */
-SYSCTL_ULONG(_net_can_raw, OID_AUTO, maxdgram, CTLFLAG_RW,
+SYSCTL_ULONG(_net_can_raw, OID_AUTO, sendspace, CTLFLAG_RW,
     &rcan_sendspace, 0, "Maximum outgoing raw CAN frame size");
 
 u_long	rcan_revcspace = 40 * (1024 + sizeof(struct sockaddr_can));

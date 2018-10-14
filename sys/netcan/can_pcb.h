@@ -81,7 +81,7 @@ struct canpcb {
 	struct rwlock	canp_lock;	/* protect states and refcount */
 	int		canp_state;
 	int		canp_flags;
-	struct socket 	*canp_socket;	/* back pointer to socket */
+	struct socket 	*canp_so;	/* back pointer to socket */
 	struct ifnet 	*canp_ifp; /* interface this socket is bound to */
 
 	struct canpcbinfo 	*canp_pcbinfo;
@@ -178,7 +178,7 @@ void 	can_pcbpurgeif(struct canpcbinfo *, struct ifnet *);
 void 	can_pcbstate(struct canpcb *, int);
 struct sockaddr * 	can_sockaddr(struct canpcb *);
 int 	can_pcbsetfilter(struct canpcb *, struct can_filter *, int);
-bool 	can_pcbfilter(struct canpcb *, struct mbuf *);
+int 	can_pcbfilter(struct canpcb *, struct mbuf *);
 
 /* refcount management */
 void	canp_ref(struct canpcb *);

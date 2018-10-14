@@ -58,20 +58,23 @@
 #include "opt_can.h"
 
 #include <sys/param.h>
-#include <sys/kernel.h>
-#include <sys/lock.h>
-#include <sys/malloc.h>
-#include <sys/mutex.h>
 #include <sys/systm.h>
+#include <sys/time.h>
+#include <sys/kernel.h>
+#include <sys/module.h>
+#include <sys/mbuf.h>
 #include <sys/socket.h>
 #include <sys/socketvar.h>
+#include <sys/sockio.h>
 
 #include <net/if.h>
-#include <net/route.h>
+#include <net/if_var.h>
+#include <net/if_types.h>
+#include <net/if_can.h>
 
 #include <netcan/can.h>
-#include <netcan/can_var.h>
 #include <netcan/can_pcb.h>
+#include <netcan/can_var.h>
 
 extern struct rwlock can_pcbinfo_lock;
 extern struct canpcbinfo_head can_pcbinfo_tbl;
@@ -105,8 +108,7 @@ can_pcbinfo_init(struct canpcbinfo *pcbinfo, const char *name,
 	pcbinfo->cani_connecthashtbl = hashinit(connecthash_nelements, 
 		M_PCB, &pcbinfo->cani_connecthash);
 	pcbinfo->cani_zone = uma_zcreate(zone_name, sizeof(struct canpcb),
-		NULL, canpcbzone_init, can_canpcb_init, canpcbzone_fini,
-			 UMA_ALIGN_PTR, 0);
+		NULL, NULL, canpcbzone_init, canpcbzone_fini, UMA_ALIGN_PTR, 0);
 	uma_zone_set_max(pcbinfo->cani_zone, maxsockets);
 	uma_zone_set_warning(pcbinfo->cani_zone,
 			"kern.ipc.maxsockets limit reached");
@@ -134,8 +136,8 @@ can_pcballoc(struct socket *so, struct canpcbinfo *pcbinfo)
 		goto out;
 	}
 
-	can_init_filter->can_id = 0;
-	can_init_filter->can_mask = 0; /* accept all by default */
+	can_init_filter->cf_id = 0;
+	can_init_filter->cf_mask = 0; /* accept all by default */
 
 	canp = uma_zalloc(pcbinfo->cani_zone, M_NOWAIT);
 	if (canp == NULL) {
@@ -144,7 +146,7 @@ can_pcballoc(struct socket *so, struct canpcbinfo *pcbinfo)
 		goto out;
 	}
 	canp->canp_pcbinfo = pcbinfo;
-	canp->canp_socket = so;
+	canp->canp_so = so;
 	canp->canp_filters = can_init_filter;
 	canp->canp_nfilters = 1;
 	canp->canp_refcount = 1;
@@ -180,15 +182,15 @@ can_pcbbind(struct canpcb *canp, struct sockaddr_can *scan,
 			 * XXX:
 			 * XXX: as replacement for..
 			 * */
-		    canp->canp_ifp->if_type != IFT_OTHER) { 
+		    canp->canp_ifp->if_type != IFT_CAN) { 
 			canp->canp_ifp = NULL;
 			error = EADDRNOTAVAIL;
 			goto out;
 		}
-		soisconnected(canp->canp_socket);
+		soisconnected(canp->canp_so);
 	} else {
 		canp->canp_ifp = NULL;
-		canp->canp_socket->so_state &= ~SS_ISCONNECTED;
+		canp->canp_so->so_state &= ~SS_ISCONNECTED;
 	}
 	can_pcbstate(canp, CANP_BOUND);
 	error = 0;
@@ -209,7 +211,7 @@ can_pcbconnect(struct canpcb *canp, struct sockaddr_can *scan)
 	int error;
 
 	CANP_WLOCK(canp);
-	(void)memcpy(&canp->canp_dst, scan, sizeof(struct sockaddr_can));
+	bcopy(scan, &canp->canp_dst, sizeof(struct sockaddr_can));
 	can_pcbstate(canp, CANP_CONNECTED);
 	CANP_WUNLOCK(canp);
 #endif
@@ -222,7 +224,7 @@ can_pcbdisconnect(struct canpcb *canp)
 	CANP_WLOCK(canp);
 	can_pcbstate(canp, CANP_DETACHED);
 	CANP_WUNLOCK(canp);
-	if (canp->canp_socket->so_state & SS_NOFDREF)
+	if (canp->canp_so->so_state & SS_NOFDREF)
 		can_pcbdetach(canp);
 }
 
@@ -235,9 +237,9 @@ can_pcbdetach(struct canpcb *canp)
 	CANP_INFO_WLOCK_ASSERT(canp->canp_pcbinfo);
 #endif /* INVARIANTS */
  	
-	KASSERT((canp->canp_socket != NULL), 
-		("%s: canp_socket == NULL", __func__));
-	so = canp->canp_socket;
+	KASSERT((canp->canp_so != NULL), 
+		("%s: canp_so == NULL", __func__));
+	so = canp->canp_so;
 	so->so_pcb = NULL;
 
 	CANP_WLOCK(canp);
@@ -267,7 +269,7 @@ canp_unref(struct canpcb *canp)
 		return;
 	}
 	CANP_WUNLOCK(canp);
-	CANP_WLOCK_DESTROY(canp);
+	CANP_LOCK_DESTROY(canp);
 	uma_zfree(canp->canp_pcbinfo->cani_zone, canp);
 }
 
@@ -276,7 +278,7 @@ can_sockaddr(struct canpcb *canp)
 {
 	struct sockaddr_can *scan;
 	
-	scan = malloc(sizeof(*scan), M_SONAME, M_WAITOK|M_ZERO);
+	scan = malloc(sizeof(*scan), M_SONAME, M_WAITOK | M_ZERO);
 	scan->scan_family = AF_CAN;
 	scan->scan_len = sizeof(*scan);
 	
@@ -288,6 +290,8 @@ can_sockaddr(struct canpcb *canp)
 		scan->scan_ifindex = 0;
 	
 	CANP_RUNLOCK(canp);
+	
+	return ((struct sockaddr *)scan);
 }
 
 int
@@ -300,13 +304,13 @@ can_pcbsetfilter(struct canpcb *canp, struct can_filter *fp, int nfilters)
 	if (nfilters > 0) {
 		newf = malloc(sizeof(struct can_filter) * nfilters, 
 			M_TEMP, M_WAITOK);
-		(void)memcpy(newf, fp, sizeof(struct can_filter) * nfilters);
+		bcopy(fp, newf, sizeof(struct can_filter) * nfilters);
 	} else 
 		newf = NULL;
 	
-	if (canp->canp_filters != NULL) {
+	if (canp->canp_filters != NULL) 
 		free(canp->canp_filters, M_TEMP);
-	}
+
 	canp->canp_filters = newf;
 	canp->canp_nfilters = nfilters;
 
@@ -421,8 +425,9 @@ can_pcbstate(struct canpcb *canp, int state)
 }
 
 /*
- * check mbuf against socket accept filter.
- * returns true if mbuf is accepted, false otherwise
+ * Check mbuf(9) against socket(9) accept filter. 
+ * 
+ * It returns true if mbuf is accepted, false otherwise.
  *
  * XXX: I'll refactor this.
  */
@@ -438,7 +443,7 @@ can_pcbfilter(struct canpcb *canp, struct mbuf *m)
 	fmp = mtod(m, struct can_frame *);
 	for (i = 0; i < canp->canp_nfilters; i++) {
 		fip = &canp->canp_filters[i];
-		if ((fmp->can_id & fip->can_mask) == fip->can_id)
+		if ((fmp->can_id & fip->cf_mask) == fip->cf_id)
 			return (1);
 	}
 	/* no match */

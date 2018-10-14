@@ -136,8 +136,7 @@ can_nh_input(struct mbuf *m)
 	}
 	
 	if (m->m_len < sizeof(struct can_frame)) {
-		m = m_pullup(m, sizeof(struct can_frame));
-	    if (m == NULL) {
+	    if ((m = m_pullup(m, sizeof(struct can_frame))) == NULL) {
 #if 0
 		CANSTAT_INC(cans_toosmall);
 #endif	
@@ -145,8 +144,7 @@ can_nh_input(struct mbuf *m)
 		}
 	}
 	
-	sotag = m_tag_find(m, PACKET_TAG_ND_OUTGOING, NULL);
-	if (sotag != NULL) {
+	if ((sotag = m_tag_find(m, PACKET_TAG_ND_OUTGOING, NULL)) != NULL) {
 		sender_canp = *(struct canpcb **)(sotag + 1);
 		m_tag_delete(m, sotag);
 		
@@ -266,32 +264,9 @@ can_notify(struct canpcb *canp, int errno)
 void 
 can_ctlinput(int cmd, struct sockaddr *sa, void *v)
 {
-	struct ip *ip = v;
-	struct udphdr *uh;
-	void (*notify)(struct inpcb *, int) = can_notify;
-	int errno;
 
-	if (sa->sa_family != AF_CAN
-	 || sa->sa_len != sizeof(struct sockaddr_can))
-		return NULL;
-	if ((unsigned)cmd >= PRC_NCMDS)
-		return NULL;
-	errno = inetctlerrmap[cmd];
-	if (PRC_IS_REDIRECT(cmd))
-		notify = in_rtchange, ip = 0;
-	else if (cmd == PRC_HOSTDEAD)
-		ip = 0;
-	else if (errno == 0)
-		return NULL;
-	if (ip) {
-		uh = (struct udphdr *)((caddr_t)ip + (ip->ip_hl << 2));
-		in_pcbnotify(&udbtable, satosin(sa)->sin_addr, uh->uh_dport,
-		    ip->ip_src, uh->uh_sport, errno, notify);
-
-		/* XXX mapped address case */
-	} else
-		can_pcbnotifyall(&cbtable, satoscan(sa)->scan_addr, errno,
-		    notify);
-	return NULL;
+	/*
+	 * ...
+	 */
 }
 #endif
