@@ -112,7 +112,7 @@ slc_init(void *xsc)
 	struct ifnet *ifp;
 
 	slc = (struct slc_softc *)xsc;
-	ifp = SLC2IFP(slc);
+	ifp = slc->slc_ifp;
 	
 	ifp->if_drv_flags |= IFF_DRV_RUNNING;
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
@@ -389,7 +389,7 @@ slc_destroy(struct slc_softc *slc)
 	struct ifnet *ifp;
 	struct tty *tp;
 	
-	ifp = SLC2IFP(slc);
+	ifp = slc->slc_ifp;
 	ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
 	ifp->if_flags &= ~IFF_UP;
 
@@ -515,7 +515,7 @@ slc_rxeof(struct slc_softc *slc)
 	
 	mtx_assert(&slc->slc_mtx, MA_OWNED);
 	
-	ifp = SLC2IFP(slc);
+	ifp = slc->slc_ifp;
 	
 	if ((m = slc->slc_inb) == NULL) {
 		error = EINVAL;
@@ -640,7 +640,7 @@ slc_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 	struct ifnet *ifp;
 
 	slc = malloc(sizeof(*slc), M_SLC, M_WAITOK | M_ZERO);
-	ifp = SLC2IFP(slc) = if_alloc(IFT_OTHER);
+	ifp = slc->slc_ifp = if_alloc(IFT_OTHER);
 	if (ifp == NULL) {
 		free(slc, M_SLC);
 		return (ENOSPC);

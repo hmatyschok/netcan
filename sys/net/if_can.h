@@ -150,22 +150,12 @@ struct can_link_timings {
 #include <sys/queue.h>
 
 /*
- * Common structure for CAN interface drivers. Should be at the 
- * start ofeach driver's softc.
+ * Common structure for CAN interface drivers maps to if_l2com.
  * 
- * XXX: On the one hand this is generic, but on the other hand it 
- * XXX: is not in sight of the binding between its communication
- * XXX: domain(9) and interface-layer.
- * XXX:
- * XXX: See implementation of 
- * XXX:
- * XXX:   if_attachdomain(9) 
- * XXX:
- * XXX: in net/if.c and domain(9) for further datails. 
+ * XXX: IFT_OTHER schould replaced by IFT_CAN.
  */
 struct canif_softc {
 	struct ifnet 	*csc_ifp; 	/* our ifnet(9) interface */
-	device_t 	csc_dev; 		/* maps to device(9), if any */
 	struct can_link_timecaps 	csc_timecaps; /* timing capabilities */
 	struct can_link_timings 	csc_timings; /* operating timing values */
 	uint32_t 	csc_linkmodes;
@@ -173,7 +163,6 @@ struct canif_softc {
 };
 
 /* common subr. */
-void 	can_mbuf_tag_clean(struct mbuf *);
 int 	can_bin2hex(struct can_frame *, u_char *);
 int 	can_hex2bin(u_char *, struct can_frame *);
 int 	can_id2hex(struct can_frame *, u_char *);

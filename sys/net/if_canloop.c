@@ -74,8 +74,6 @@
 #include <net/if_types.h>
 #include <net/if_can.h>
 
-
-
 #ifdef MAC 
 #include <security/mac/mac_framework.h>
 #endif 	/* MAC */

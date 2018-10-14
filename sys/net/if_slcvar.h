@@ -83,7 +83,7 @@
 
 #ifdef _KERNEL
 struct slc_softc {
-	struct canif_softc 		slc_csc;
+	struct ifnet 	*slc_ifp;
 	struct tty 	*slc_tp;		/* pointer to tty structure */
 	struct mbuf 	*slc_inb;
 	struct ifqueue	slc_outq;		/* queue of outgoing data */

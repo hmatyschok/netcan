@@ -122,6 +122,8 @@
  * XXX: implementaion of LLC and error control.
  */
 
+static MALLOC_DEFINE(M_IFCAN, "IFCAN", "CAN interface internals");
+
 static void 	can_input(struct ifnet *, struct mbuf *);
 static int 	can_output(struct ifnet *, struct mbuf *, 
 	const struct sockaddr *, struct route *);
@@ -205,6 +207,8 @@ can_output(struct ifnet *ifp, struct mbuf *m,
 void
 can_ifattach(struct ifnet *ifp)
 {
+	struct canif_softc *csc;
+	
 	if_attach(ifp);
 		
 	ifp->if_mtu = CAN_MTU;
@@ -212,12 +216,17 @@ can_ifattach(struct ifnet *ifp)
 	ifp->if_output = can_output; 
 	
 	bpfattach(ifp, DLT_CAN_SOCKETCAN, 0);
+	
+	csc = malloc(sizeof(struct canif_softc), M_IFCAN, M_WAITOK | M_ZERO);
+	csc->csc_ifp = ifp;
+	ifp->if_l2com = csc;
 }
 
 void
 can_ifdetach(struct ifnet *ifp)
 {
-	
+	free(ifp->if_l2com, M_IFCAN);
+
 	bpfdetach(ifp);
 	if_detach(ifp);
 }
@@ -228,23 +237,6 @@ can_ifinit_timings(struct canif_softc *csc)
 	/* uninitialized parameters is all-one */
 	(void)memset(&csc->csc_timings, 0xff, 
 		sizeof(struct can_link_timings));
-}
-
-/*
- * cleanup mbuf tag, keeping the PACKET_TAG_SO tag
- */
-void
-can_mbuf_tag_clean(struct mbuf *m)
-{
-	struct m_tag *sotag;
-
-	sotag = m_tag_find(m, PACKET_TAG_SO, NULL);
-	if (sotag != NULL)
-		m_tag_unlink(m, sotag);
-
-	m_tag_delete_nonpersistent(m);
-	if (sotag != NULL)
-		m_tag_prepend(m, sotag);
 }
 
 /*

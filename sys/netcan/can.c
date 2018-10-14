@@ -236,3 +236,20 @@ can_purgeif(struct socket *so, struct ifnet *ifp)
 	
 	return (0);
 }
+
+/*
+ * cleanup mbuf tag, keeping the PACKET_TAG_SO tag
+ */
+void
+can_mbuf_tag_clean(struct mbuf *m)
+{
+	struct m_tag *sotag;
+
+	sotag = m_tag_find(m, PACKET_TAG_SO, NULL);
+	if (sotag != NULL)
+		m_tag_unlink(m, sotag);
+
+	m_tag_delete_nonpersistent(m);
+	if (sotag != NULL)
+		m_tag_prepend(m, sotag);
+}
