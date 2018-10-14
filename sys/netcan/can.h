@@ -56,8 +56,6 @@
 #ifndef _NETCAN_CAN_H
 #define _NETCAN_CAN_H
 
-#include <sys/types.h>
-
 /* protocols */
 #define CANPROTO_CAN 	0
 #define CANPROTO_RAW 	1 /* RAW sockets */

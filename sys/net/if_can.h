@@ -144,7 +144,8 @@ struct can_link_timings {
 #define CANCLINKMODE	5 /* (uint32_t) clear bits */
 
 #ifdef _KERNEL
-
+#include <sys/ctype.h>
+#include <sys/callout.h>
 /*
  * Common structure for CAN interface drivers. Should be at the 
  * start ofeach driver's softc.
@@ -179,6 +180,6 @@ int 	can_hex2id(u_char *, struct can_frame *);
 void 	can_ifattach(struct ifnet *);
 void 	can_ifdetach(struct ifnet *);
 void 	can_bpf_mtap(struct ifnet *, struct mbuf *);
-void 	can_ifinit_timings(struct canif_softc *); z
+void 	can_ifinit_timings(struct canif_softc *);
 #endif /* _KERNEL */
 #endif /* _NET_IF_CAN_H */

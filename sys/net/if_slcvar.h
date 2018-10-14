@@ -27,6 +27,8 @@
 #ifndef _NET_IF_SLCVAR_H_
 #define _NET_IF_SLCVAR_H_
 
+#include <net/if_can.h>
+
 /* 
  * Commands for SIOC[GS]DRVSPEC ioctl(2) requests.
  * 
@@ -57,12 +59,11 @@
 #define SLCSTTY 	0
 #define SLCGTTY 	1
 
-
 /*
  * Definitions for serial line CAN interface data structures.
  */
 
-#define SLC_MTU 	33; /* includes ext. CAN frame size */
+#define SLC_MTU 	33 /* includes ext. CAN frame size */
  
 #define SLC_CMD_LEN 	1
 #define SLC_SFF_ID_LEN 	3

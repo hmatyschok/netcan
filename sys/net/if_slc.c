@@ -27,36 +27,23 @@
 
 #include <sys/cdefs.h>
 
-#include "opt_can.h"
 #include "opt_slc.h"
 
 #include <sys/param.h>
 #include <sys/systm.h>
-#include <sys/kernel.h>
 #include <sys/mbuf.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/malloc.h>
+#include <sys/kernel.h>
 #include <sys/module.h>
-#include <machine/bus.h>
-#include <sys/rman.h>
 #include <sys/socket.h>
-#include <sys/sockio.h>
-#include <sys/sysctl.h>
-
+#include <sys/tty.h>
+     
 #include <net/if.h>
-#include <net/if_var.h>
 #include <net/if_clone.h>
+#include <net/if_var.h>
 #include <net/if_types.h>
-#include <net/netisr.h>
-#include <net/route.h>
-#include <net/bpf.h>
-#include <net/if_can.h>
-
-#if CAN
-#include <netcan/can_var.h>
-#include <netcan/can_link.h>
-#else
-#error "can(4) communication domain(9) not installed"
-#endif /* CAN */
-
 #include <net/if_slcvar.h>
 
 /*
@@ -244,7 +231,7 @@ slc_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 			break;
 		default:
 			error = EINVAL;
-			break:
+			break;
 		}
 		break;
 	case SIOCSDRVSPEC:
@@ -258,7 +245,7 @@ slc_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 			break;
 		default:
 			error = EINVAL;
-			break:
+			break;
 		}
 		break;
 	case SIOCSIFMTU:
@@ -436,9 +423,9 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	
 	/* determine CAN frame type */
 	if (cf->can_id & CAN_RTR_FLAG) 
-		*bp = SLC_HC_RTR_SFF;
+		*bp = SLC_HC_SFF_RTR;
 	else
-		*bp = SLC_HC_DATA_SFF;
+		*bp = SLC_HC_SFF_DATA;
 	
 	if (cf->can_id & CAN_EFF_FLAG) 
 		*bp = toupper(*bp);
@@ -458,7 +445,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	
 	/* apply data, if any */
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) { /* XXX */
-		if (can_bin2hex(cf->data, bp) < 0) {
+		if (can_bin2hex(cf, bp) < 0) {
 			error = EINVAL;
 			goto out;
 		}
@@ -535,15 +522,15 @@ slc_rxeof(struct slc_softc *slc)
 
 	/* determine CAN frame type */
 	switch (*mtod(m, u_char *)) {
-	case SLC_HC_RTR_SFF:
+	case SLC_HC_SFF_RTR:
 		cf->can_id |= CAN_RTR_FLAG;
 					 	/* FALLTHROUGH */
-	case SLC_HC_DATA_SFF:
+	case SLC_HC_SFF_DATA:
 		break;
-	case SLC_HC_RTR_EFF:
+	case SLC_HC_EFF_RTR:
 		cf->can_id |= CAN_RTR_FLAG;
 					 	/* FALLTHROUGH */
-	case SLC_HC_DATA_EFF:
+	case SLC_HC_EFF_DATA:
 		cf->can_id |= CAN_EFF_FLAG; 
 		break;
 	default:
@@ -666,7 +653,7 @@ slc_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 	ifp->if_mtu = SLC_MTU;
 	
 	/* initialize its protective lock */
-	mtx_init(&slc->slc_mtx, "slc_mtx", NULL, MTX_DEF)
+	mtx_init(&slc->slc_mtx, "slc_mtx", NULL, MTX_DEF);
 	
 	/* initialize queue for transmission */
 	mtx_init(&slc->slc_outq.ifq_mtx, "slc_outq_mtx", NULL, MTX_DEF);

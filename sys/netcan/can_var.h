@@ -62,7 +62,6 @@ struct can_ifreq { /* XXX; incomplete.. */
 };
 
 #ifdef _KERNEL
-#include <sys/queue.h>
 
 /*
  * Implements CAN filter on interface-layer.  
