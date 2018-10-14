@@ -625,7 +625,7 @@ slc_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 	struct ifnet *ifp;
 
 	slc = malloc(sizeof(*slc), M_SLC, M_WAITOK | M_ZERO);
-	ifp = slc->slc_ifp = if_alloc(IFT_OTHER);
+	ifp = slc->slc_ifp = if_alloc(IFT_CAN);
 	if (ifp == NULL) {
 		free(slc, M_SLC);
 		return (ENOSPC);

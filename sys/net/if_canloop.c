@@ -176,7 +176,7 @@ canloop_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 {
 	struct ifnet *ifp;
 
-	if ((ifp = if_alloc(IFT_OTHER)) == NULL)
+	if ((ifp = if_alloc(IFT_CAN)) == NULL)
 		return (ENOSPC);
 
 	if_initname(ifp, canloop_name, unit);

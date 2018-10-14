@@ -176,6 +176,9 @@ struct canif_softc {
 	struct callout 	csc_timo; 	/* callout for error control */
 };
 
+#define IFT_CAN 	IFT_PVC
+
+
 /* common subr. */
 int 	can_bin2hex(struct can_frame *, u_char *);
 int 	can_hex2bin(u_char *, struct can_frame *);

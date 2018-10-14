@@ -208,8 +208,7 @@ can_output(struct ifnet *ifp, struct mbuf *m,
 void
 can_ifattach(struct ifnet *ifp)
 {
-	struct canif_softc *csc;
-	
+		
 	if_attach(ifp);
 		
 	ifp->if_mtu = CAN_MTU;
@@ -217,17 +216,11 @@ can_ifattach(struct ifnet *ifp)
 	ifp->if_output = can_output; 
 	
 	bpfattach(ifp, DLT_CAN_SOCKETCAN, 0);
-	
-	csc = malloc(sizeof(struct canif_softc), M_IFCAN, M_WAITOK | M_ZERO);
-	csc->csc_ifp = ifp;
-	ifp->if_l2com = csc;
 }
 
 void
 can_ifdetach(struct ifnet *ifp)
 {
-	free(ifp->if_l2com, M_IFCAN);
-
 	bpfdetach(ifp);
 	if_detach(ifp);
 }
@@ -405,6 +398,28 @@ can_hex2id(u_char *buf, struct can_frame *cf)
 }
 
 /*
+ * Subr. for common structure of CAm interfaces. 
+ */
+
+static void *
+can_alloc(u_char type, struct ifnet *ifp)
+{
+	struct canif_softc *csc;
+	
+	csc = malloc(sizeof(struct canif_softc), M_IFCAN, M_WAITOK | M_ZERO);
+	csc->csc_ifp = ifp;
+
+	return (csc);
+}
+
+static void
+can_free(void *com, u_char type)
+{
+
+	free(com, M_IFCAN);
+}
+
+/*
  * Module description.
  */
  
@@ -415,7 +430,11 @@ can_modevent(module_t mod, int type, void *data)
 
 	switch (type) {
 	case MOD_LOAD:
+		if_register_com_alloc(IFT_CAN, can_alloc, can_free);
+		error = 0;
+		break;
 	case MOD_UNLOAD:
+		if_deregister_com_alloc(IFT_CAN);
 		error = 0;
 		break;
 	default:
