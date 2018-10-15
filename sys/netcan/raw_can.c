@@ -368,15 +368,18 @@ rcan_getop(struct canpcb *canp, struct sockopt *sopt)
 	switch (sopt->sopt_name) {
 	case CAN_RAW_LOOPBACK:
 		optval = (canp->canp_flags & CANP_NO_LOOPBACK) ? 0 : 1;
-		error = sooptcopyout(sopt, &optval, sizeof(optval));
+		error = sooptcopyin(sopt, &optval, sizeof(optval), 
+			sizeof(optval));
 		break;
 	case CAN_RAW_RECV_OWN_MSGS: 
 		optval = (canp->canp_flags & CANP_RECEIVE_OWN) ? 1 : 0;
-		error = sooptcopyout(sopt, &optval, sizeof(optval));
+		error = sooptcopyin(sopt, &optval, sizeof(optval), 
+			sizeof(optval));
 		break;
 	case CAN_RAW_FILTER:
-		error = sooptcopyout(sopt, canp->canp_filters, 
-			sizeof(struct can_filter) * canp->canp_nfilters);
+		error = sooptcopyin(sopt, canp->canp_filters, 
+			sizeof(struct can_filter) * canp->canp_nfilters, 
+				sizeof(struct can_filter) * canp->canp_nfilters);
 		break;
 	default:
 		error = ENOPROTOOPT;
