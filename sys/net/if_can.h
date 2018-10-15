@@ -150,7 +150,6 @@ struct can_link_timings {
 #define CANCLINKMODE	5 /* (uint32_t) clear bits */
 
 #ifdef _KERNEL
-
 #include <sys/ctype.h>
 #include <sys/callout.h>
 #include <sys/queue.h>
@@ -174,10 +173,10 @@ struct canif_softc {
 	struct can_link_timings 	csc_timings; /* operating timing values */
 	uint32_t 	csc_linkmodes;
 	struct callout 	csc_timo; 	/* callout for error control */
+	struct mtx 	csc_mtx;
 };
 
 #define IFT_CAN 	IFT_PVC
-
 
 /* common subr. */
 int 	can_bin2hex(struct can_frame *, u_char *);

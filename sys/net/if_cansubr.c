@@ -208,6 +208,7 @@ can_output(struct ifnet *ifp, struct mbuf *m,
 void
 can_ifattach(struct ifnet *ifp)
 {
+	struct canif_softc *csc;
 		
 	if_attach(ifp);
 		
@@ -216,11 +217,23 @@ can_ifattach(struct ifnet *ifp)
 	ifp->if_output = can_output; 
 	
 	bpfattach(ifp, DLT_CAN_SOCKETCAN, 0);
+	
+	KASSERT((ifp->if_l2com != NULL),
+	    ("%s: ifp->if_l2com == NULL", __func__));
+	csc = ifp->if_l2com; 
+	mtx_init(&csc->csc_mtx, "csc_mtx", NULL, MTX_DEF);
 }
 
 void
 can_ifdetach(struct ifnet *ifp)
 {
+	struct canif_softc *csc;
+
+	KASSERT((ifp->if_l2com != NULL),
+	    ("%s: ifp->if_l2com == NULL", __func__));
+	csc = ifp->if_l2com; 
+	mtx_destroy(&csc->csc_mtx);
+	
 	bpfdetach(ifp);
 	if_detach(ifp);
 }
@@ -408,14 +421,14 @@ can_alloc(u_char type, struct ifnet *ifp)
 	
 	csc = malloc(sizeof(struct canif_softc), M_IFCAN, M_WAITOK | M_ZERO);
 	csc->csc_ifp = ifp;
-
+	
 	return (csc);
 }
 
 static void
 can_free(void *com, u_char type)
 {
-
+	
 	free(com, M_IFCAN);
 }
 
