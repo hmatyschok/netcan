@@ -405,7 +405,7 @@ rcan_setop(struct canpcb *canp, struct sockopt *sopt)
 		}
 		break;
 	case CAN_RAW_RECV_OWN_MSGS: 
-		error = sockopt_getint(sopt, &optval);
+		error = sooptcopyout(sopt, &optval, sizeof(optval));
 		if (error == 0) {
 			if (optval != 0) 
 				canp->canp_flags |= CANP_RECEIVE_OWN;
