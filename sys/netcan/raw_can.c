@@ -288,8 +288,8 @@ rcan_sockaddr(struct socket *so, struct sockaddr **nam)
 }
 
 static int
-rcan_send(struct socket *so, struct mbuf *m, struct sockaddr *nam,
-    struct mbuf *control, struct thread *td)
+rcan_send(struct socket *so, int flags, struct mbuf *m, 
+	struct sockaddr *nam, struct mbuf *control, struct thread *td)
 {
 	struct sockaddr_can *scan = (struct sockaddr_can *)nam;
 	struct canpcb *canp;
@@ -467,5 +467,4 @@ struct pr_usrreqs rcan_usrreqs = {
 	.pru_shutdown = 		rcan_shutdown,
 	.pru_sockaddr = 		rcan_sockaddr,
 	.pru_send = 		rcan_send,
-	.pru_sendoob = 		rcan_sendoob,
 };
