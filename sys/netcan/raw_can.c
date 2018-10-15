@@ -396,7 +396,7 @@ rcan_setop(struct canpcb *canp, struct sockopt *sopt)
 
 	switch (sopt->sopt_name) {
 	case CAN_RAW_LOOPBACK:
-		error = sockopt_getint(sopt, &optval);
+		error = sooptcopyout(sopt, &optval, sizeof(optval));
 		if (error == 0) {
 			if (optval != 0) 
 				canp->canp_flags &= ~CANP_NO_LOOPBACK;
