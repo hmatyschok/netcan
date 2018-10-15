@@ -77,7 +77,7 @@ struct can_ifaddr {
 extern struct domain candomain;
 
 /* raw userreqs */
-extern const struct pr_usrreqs rcan_usrreqs;
+extern struct pr_usrreqs rcan_usrreqs;
 
 /* CANPROTO_CAN */
 void 	can_mbuf_tag_clean(struct mbuf *);

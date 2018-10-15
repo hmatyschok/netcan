@@ -65,11 +65,11 @@
 #include <sys/module.h>
 #include <sys/mbuf.h>
 #include <sys/proc.h>
+#include <sys/protosw.h>
 #include <sys/socket.h>
 #include <sys/socketvar.h>
 #include <sys/sockio.h>
 #include <sys/sysctl.h>
-
 
 #include <net/if.h>
 #include <net/if_var.h>
@@ -415,14 +415,14 @@ rcan_setop(struct canpcb *canp, struct sockopt *sopt)
 		break;
 	case CAN_RAW_FILTER:
 		{
-		int nfilters = sopt->sopt_size / sizeof(struct can_filter);
+		int nfilters = sopt->sopt_valsize / sizeof(struct can_filter);
 
-		if (sopt->sopt_size % sizeof(struct can_filter) != 0) {
+		if (sopt->sopt_valsize % sizeof(struct can_filter) != 0) {
 			error = EINVAL;
 			break;
 		}
 		CANP_WLOCK(canp);
-		error = can_pcbsetfilter(canp, sopt->sopt_data, nfilters);
+		error = can_pcbsetfilter(canp, sopt->sopt_val, nfilters);
 		CANP_WUNLOCK(canp);
 		break;
 		}
@@ -458,16 +458,14 @@ rcan_ctloutput(struct socket *so, struct sockopt *sopt)
 }
 
 struct pr_usrreqs rcan_usrreqs = {
-	.pr_attach = 		rcan_attach,
-	.pr_detach = 		rcan_detach,
-	.pr_bind = 		rcan_bind,
-	.pr_listen = 		rcan_listen,
-	.pr_connect = 		rcan_connect,
+	.pru_attach = 		rcan_attach,
+	.pru_detach = 		rcan_detach,
+	.pru_bind = 		rcan_bind,
+	.pru_connect = 		rcan_connect,
 	.pru_control =		can_control,	
-	.pr_disconnect = 		rcan_disconnect,
-	.pr_shutdown = 		rcan_shutdown,
-	.pr_sockaddr = 		rcan_sockaddr,
-	.pr_send = 		rcan_send,
-	.pr_sendoob = 		rcan_sendoob,
-	.pr_purgeif = 		rcan_purgeif,
+	.pru_disconnect = 		rcan_disconnect,
+	.pru_shutdown = 		rcan_shutdown,
+	.pru_sockaddr = 		rcan_sockaddr,
+	.pru_send = 		rcan_send,
+	.pru_sendoob = 		rcan_sendoob,
 };
