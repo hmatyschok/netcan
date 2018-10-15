@@ -58,13 +58,19 @@
 #include "opt_can.h"
 
 #include <sys/param.h>
-#include <sys/socket.h>
+#include <sys/kernel.h>
 #include <sys/protosw.h>
 #include <sys/domain.h>
-#include <sys/mbuf.h>
+#include <sys/socket.h>
+#include <sys/sysctl.h>
 
 #include <net/if.h>
-#include <net/route.h>
+#include <net/if_var.h>
+#include <net/if_can.h>
+
+#include <netcan/can.h>
+#include <netcan/can_pcb.h>
+#include <netcan/can_var.h>
 
 /*
  * CAN protocol family

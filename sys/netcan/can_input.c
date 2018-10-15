@@ -220,12 +220,12 @@ can_nh_input(struct mbuf *m)
 			}
 		
 			/* enqueue mbuf(9) */
-			if (sbappendaddr(&canp->canp_socket->so_rcv,
+			if (sbappendaddr(&canp->canp_so->so_rcv,
 					(struct sockaddr *) &from, mc,
 					(struct mbuf *) 0) == 0) {
 				m_freem(mc);
 			} else
-				sorwakeup(canp->canp_socket);
+				sorwakeup(canp->canp_so);
 		
 			CANP_RUNLOCK(canp);
 		
@@ -253,9 +253,9 @@ static void
 can_notify(struct canpcb *canp, int errno)
 {
 
-	canp->canp_socket->so_error = errno;
-	sorwakeup(canp->canp_socket);
-	sowwakeup(canp->canp_socket);
+	canp->canp_so->so_error = errno;
+	sorwakeup(canp->canp_so);
+	sowwakeup(canp->canp_so);
 }
 
 /*
