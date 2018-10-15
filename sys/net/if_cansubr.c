@@ -411,7 +411,7 @@ can_hex2id(u_char *buf, struct can_frame *cf)
 }
 
 /*
- * Subr. for common structure of CAm interfaces. 
+ * Subr. for common structure of CAN interface. 
  */
 
 static void *

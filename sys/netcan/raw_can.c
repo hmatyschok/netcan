@@ -61,12 +61,15 @@
 #include <sys/systm.h>
 #include <sys/time.h>
 #include <sys/kernel.h>
+#include <sys/eventhandler.h>
 #include <sys/module.h>
 #include <sys/mbuf.h>
+#include <sys/proc.h>
 #include <sys/socket.h>
 #include <sys/socketvar.h>
 #include <sys/sockio.h>
 #include <sys/sysctl.h>
+
 
 #include <net/if.h>
 #include <net/if_var.h>
@@ -85,7 +88,7 @@ u_long	rcan_sendspace = 4096;		/* really max datagram size */
 SYSCTL_ULONG(_net_can_raw, OID_AUTO, sendspace, CTLFLAG_RW,
     &rcan_sendspace, 0, "Maximum outgoing raw CAN frame size");
 
-u_long	rcan_revcspace = 40 * (1024 + sizeof(struct sockaddr_can));
+u_long	rcan_recvspace = 40 * (1024 + sizeof(struct sockaddr_can));
 					/* 40 1K datagrams */
 SYSCTL_ULONG(_net_can_raw, OID_AUTO, recvspace, CTLFLAG_RW,
     &rcan_recvspace, 0, "Maximum space for incoming raw CAN frames");
@@ -98,7 +101,7 @@ static void
 rcan_zone_change(void *tag)
 {
 
-	uma_zone_set_max(canpcbinfo.cani_zone, maxsockets);
+	uma_zone_set_max(rcan_pcbinfo.cani_zone, maxsockets);
 }
 
 static int
@@ -106,7 +109,7 @@ rcan_pcb_init(void *mem, int size, int flags)
 {
 	struct canpcb *canp = mem;
 
-	CANP_WLOCK_INIT(canp, "canp", "rawcanp");
+	CANP_LOCK_INIT(canp, "canp", "rawcanp");
 	return (0);
 }
 
@@ -114,7 +117,7 @@ void
 rcan_init(void)
 {
 
-	can_pcbinit(&rcan_pcbinfo, "rawcan", "rawcanp", 
+	can_pcbinfo_init(&rcan_pcbinfo, "rawcan", "rawcanp", 
 		rcan_pcb_init, NULL, can_hashsize, can_hashsize);
 	EVENTHANDLER_REGISTER(maxsockets_change, rcan_zone_change, NULL,
 	    EVENTHANDLER_PRI_ANY);	
@@ -127,13 +130,13 @@ rcan_init(void)
 static int
 rcan_attach(struct socket *so, int proto, struct thread *td)
 {
-	struct inpcb *inp;
+	struct canpcb *canp;
 	int error;
 
 	canp = sotocanpcb(so);
 	KASSERT(canp == NULL, ("%s: canp != NULL", __func__));
 
-	error = soreserve(so, rcan_sendspace, rcan_revcspace);
+	error = soreserve(so, rcan_sendspace, rcan_recvspace);
 	if (error != 0) 
 		goto out;
 	
@@ -328,7 +331,7 @@ rcan_send(struct socket *so, struct mbuf *m, struct sockaddr *nam,
 			error = 0;
 	}
 	
-	if (error != 0)
+	if (error != 0) 
 		goto bad;
 	
 	error = can_output(m, canp);
@@ -345,13 +348,11 @@ rcan_send(struct socket *so, struct mbuf *m, struct sockaddr *nam,
 		CANP_WUNLOCK(canp);
 	}
 	
-	if (error != 0)
-		goto bad;
-		
+	if (error != 0) {
+bad:		
+		m_freem(m);
+	}
 	return (error);
-bad:
-	m_freem(m);
-	goto out;
 }
 
 /*

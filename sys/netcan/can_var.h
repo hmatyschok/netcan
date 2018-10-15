@@ -90,6 +90,7 @@ int 	can_control(struct socket *, u_long, caddr_t,
 	struct ifnet *, struct thread *);
 
 /* CANPROTO_RAW */
+void 	rcan_init(void);
 int 	rcan_ctloutput(struct socket *, struct sockopt *);
 
 #endif /* _KERNEL */
