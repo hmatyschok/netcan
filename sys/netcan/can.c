@@ -93,7 +93,7 @@ can_control(struct socket *so, u_long cmd, caddr_t data,
 	struct ifnet *ifp, struct thread *td)
 {
 	struct ifdrv *ifd = (struct ifdrv *)data;
-	int error = 0;
+	int error;
 
 	if (ifp == NULL) {
 		error = EADDRNOTAVAIL;
@@ -126,6 +126,7 @@ can_control(struct socket *so, u_long cmd, caddr_t data,
 		case CANSLINKMODE:
 		case CANCLINKMODE: 	/* FALLTHROUGH */
 			error = can_set_netlink(ifp, ifd);
+			break;
 		default:
 			error = (*ifp->if_ioctl)(ifp, cmd, data);
 			break;
