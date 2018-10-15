@@ -76,10 +76,69 @@
 #include <netcan/can_pcb.h>
 #include <netcan/can_var.h>
 
+/* 
+ * XXX: Incomplete, but work in progress.. 
+ */
+
+static int 	can_get_netlink(struct ifnet *, struct ifdrv *);
+static int 	can_set_netlink(struct ifnet *, struct ifdrv *);
+
 /*
  * Generic control operations.
  */
  
+/* ARGSUSED */
+int
+can_control(struct socket *so, u_long cmd, caddr_t data, 
+	struct ifnet *ifp, struct thread *td)
+{
+	struct ifdrv *ifd = (struct ifdrv *)data;
+	int error = 0;
+
+	if (ifp == NULL) {
+		error = EADDRNOTAVAIL;
+		goto out;
+	}
+	
+	if (ifp->if_ioctl == NULL) {
+		error = EOPNOTSUPP;
+		goto out;
+	}
+	
+	switch (cmd) {
+	case SIOCGDRVSPEC:
+	
+		switch (ifd->ifd_cmd) {
+		case CANGLINKTIMECAP:
+		case CANGLINKTIMINGS:
+		case CANGLINKMODE:
+			error = can_get_netlink(ifp, ifd);
+			break;
+		default:
+			error = (*ifp->if_ioctl)(ifp, cmd, data);
+			break;
+		}
+		break;
+	case SIOCSDRVSPEC:
+		
+		switch (ifd->ifd_cmd) {
+		case CANSLINKTIMINGS:
+		case CANSLINKMODE:
+		case CANCLINKMODE: 	/* FALLTHROUGH */
+			error = can_set_netlink(ifp, ifd);
+		default:
+			error = (*ifp->if_ioctl)(ifp, cmd, data);
+			break;
+		}
+		break;
+	default:
+		error = (*ifp->if_ioctl)(ifp, cmd, data);
+		break;
+	}
+out:	
+	return (error);
+}
+
 static int
 can_get_netlink(struct ifnet *ifp, struct ifdrv *ifd)
 {
@@ -154,7 +213,7 @@ can_set_netlink(struct ifnet *ifp, struct ifdrv *ifd)
 	if (error != 0)
 		goto out;
 		
-	switch(ifd->ifd_cmd) {
+	switch (ifd->ifd_cmd) {
 	case CANSLINKTIMINGS:
 		if (ifd->ifd_len != sizeof(struct can_link_timings))
 			error = EINVAL;
@@ -194,57 +253,23 @@ out:
 	return (error);
 }
 
-/* 
- * XXX: Well, this should be reimplemented. 
- */
-/* ARGSUSED */
-static int
-can_control(struct socket *so, u_long cmd, caddr_t data, struct ifnet *ifp,
-    struct thread *td)
-{
-	struct ifdrv *ifd = (struct ifdrv *)data;
-#if 0	
-	struct ifreq *ifr = (struct ifreq *)data;
-	struct sockaddr_can *scan = (struct sockaddr_can *)&ifr->ifr_addr;
-#endif
-	int error = 0;
 
-	if (ifp == NULL) {
-		error = EADDRNOTAVAIL;
-		goto out;
-	}
-
-	switch (cmd) {
-	case SIOCGDRVSPEC:
-		error = can_get_netlink(ifp, ifd);
-		break;
-	case SIOCSDRVSPEC:
-		error = can_set_netlink(ifp, ifd);
-		break;
-	default:
-		if (ifp->if_ioctl != NULL)
-			error = (*ifp->if_ioctl)(ifp, cmd, data);
-		else	
-			error = EOPNOTSUPP;
-		
-		break;
-	}
-out:	
-	return (error);
-}
 
 /* 
- * XXX: Well, this should be reimplemented. 
+ * XXX: Well, this comes from the implementation for 
+ * XXX: NetBSD 8.0 OS and should be reimplemented. 
  */
+#if 0 
 static int
 can_purgeif(struct socket *so, struct ifnet *ifp)
 {
 	
 	return (0);
 }
+#endif
 
 /*
- * cleanup mbuf tag, keeping the PACKET_TAG_ND_OUTGOING tag
+ * Cleanup mbuf(9) tag, keeping the PACKET_TAG_ND_OUTGOING tag.
  */
 void
 can_mbuf_tag_clean(struct mbuf *m)

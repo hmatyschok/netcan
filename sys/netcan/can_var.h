@@ -86,6 +86,8 @@ int 	can_ctloutput(struct socket *, struct sockopt *);
 void 	can_init(void);
 void 	can_nh_input(struct mbuf *);
 int 	can_output(struct mbuf *, struct canpcb *);
+int 	can_control(struct socket *, u_long, caddr_t, 
+	struct ifnet *, struct thread *);
 
 /* CANPROTO_RAW */
 int 	rcan_ctloutput(struct socket *, struct sockopt *);
