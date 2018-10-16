@@ -341,12 +341,11 @@ rcan_send(struct socket *so, int flags, struct mbuf *m,
 		can_pcbbind(canp, &lscan, td->td_ucred);
 		CANP_WUNLOCK(canp);
 	}
-	
-	if (error != 0) {
-bad:		
-		m_freem(m);
-	}
+out:
 	return (error);
+bad:	
+	m_freem(m);
+	goto out;
 }
 
 /*

@@ -92,6 +92,7 @@ static struct netisr_handler	can_nh = {
 #endif
 };
 
+/* Superset of PCB on PF_CAN with its protective lock */
 struct rwlock can_pcbinfo_lock;
 struct canpcbinfo_head can_pcbinfo_tbl;
 

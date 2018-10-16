@@ -129,8 +129,7 @@ can_pcballoc(struct socket *so, struct canpcbinfo *pcbinfo)
 	CANP_INFO_WLOCK_ASSERT(pcbinfo);
 #endif /* INVARIANTS */
 
-	can_init_filter = malloc(sizeof(struct can_filter), M_TEMP, 
-		M_NOWAIT);
+	can_init_filter = malloc(sizeof(struct can_filter), M_TEMP, M_NOWAIT);
 	if (can_init_filter == NULL) {
 		error = ENOMEM;
 		goto out;
@@ -139,8 +138,7 @@ can_pcballoc(struct socket *so, struct canpcbinfo *pcbinfo)
 	can_init_filter->cf_id = 0;
 	can_init_filter->cf_mask = 0; /* accept all by default */
 
-	canp = uma_zalloc(pcbinfo->cani_zone, M_NOWAIT);
-	if (canp == NULL) {
+	if ((canp = uma_zalloc(pcbinfo->cani_zone, M_NOWAIT)) == NULL) {
 		free(can_init_filter, M_TEMP);
 		error = ENOBUFS;
 		goto out;
@@ -173,15 +171,6 @@ can_pcbbind(struct canpcb *canp, struct sockaddr_can *scan,
 	if (scan->scan_ifindex != 0) {
 		canp->canp_ifp = ifnet_byindex(scan->scan_ifindex);
 		if (canp->canp_ifp == NULL || 
-			/* 
-			 * XXX: DLT_CAN_SOCKETCAN 
-			 * XXX:
-			 * XXX:  or 
-			 * XXX:
-			 * XXX: ifp->if_afdata[AF_CAN]->... 
-			 * XXX:
-			 * XXX: as replacement for..
-			 * */
 		    canp->canp_ifp->if_type != IFT_CAN) { 
 			canp->canp_ifp = NULL;
 			error = EADDRNOTAVAIL;
@@ -189,8 +178,8 @@ can_pcbbind(struct canpcb *canp, struct sockaddr_can *scan,
 		}
 		soisconnected(canp->canp_so);
 	} else {
-		canp->canp_ifp = NULL;
 		canp->canp_so->so_state &= ~SS_ISCONNECTED;
+		canp->canp_ifp = NULL;
 	}
 	can_pcbstate(canp, CANP_BOUND);
 	error = 0;
