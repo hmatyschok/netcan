@@ -329,6 +329,7 @@ rcan_send(struct socket *so, int flags, struct mbuf *m,
 		goto bad;
 	
 	error = can_output(m, canp);
+out:
 	if (nam != NULL) {
 		struct sockaddr_can lscan;
 		
@@ -341,7 +342,6 @@ rcan_send(struct socket *so, int flags, struct mbuf *m,
 		can_pcbbind(canp, &lscan, td->td_ucred);
 		CANP_WUNLOCK(canp);
 	}
-out:
 	return (error);
 bad:	
 	m_freem(m);
