@@ -78,10 +78,10 @@ struct can_frame {
 #define CAN_MTU         (sizeof(struct can_frame))
 
 /* Serial line CAN */
-#define SLC_CMD_LEN 	1
-#define SLC_SFF_ID_LEN 	3
-#define SLC_EFF_ID_LEN 	8
-#define SLC_DLC_LEN 	1 
+#define SLC_CMD_LEN 	(sizeof(u_char))
+#define SLC_SFF_ID_LEN 	(sizeof(u_char) * 3)
+#define SLC_EFF_ID_LEN 	(sizeof(u_char) * 8)
+#define SLC_DLC_LEN 	(sizeof(u_char)) 
 
 /*
  * CAN ID based filter

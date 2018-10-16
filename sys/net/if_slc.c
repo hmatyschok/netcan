@@ -277,8 +277,7 @@ slc_rint(struct tty *tp, char c, int flags)
 
 	/* allocate mbuf(9) and initialize */
 	if ((m = slc->slc_inb) == NULL) {
-		m = m_gethdr(M_NOWAIT, MT_DATA);
-		if (m == NULL) {
+		if ((m = m_gethdr(M_NOWAIT, MT_DATA)) == NULL) {
 			error = ENOBUFS;
 			goto out1;
 		}
@@ -526,7 +525,7 @@ slc_rxeof(struct slc_softc *slc)
 		error = EINVAL;
 		goto bad;
 	}
-	m_adj(m, sizeof(u_char));
+	m_adj(m, SLC_CMD_LEN);
 	
 	/* fetch id */
 	if ((len = can_hex2id(mtod(m, u_char *), cf)) < 0) {
@@ -548,7 +547,7 @@ slc_rxeof(struct slc_softc *slc)
 		goto bad;
 	}
 	cf->can_dlc -= SLC_HC_DLC_INF;
-	m_adj(m, sizeof(u_char));
+	m_adj(m, SLC_DLC_LEN);
 	
 	/* fetch data, if any */
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) { 
