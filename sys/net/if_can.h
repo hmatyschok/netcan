@@ -161,7 +161,7 @@ struct can_link_timings {
  * XXX:
  * XXX:  IFT_CAN maps to IFT_PVC		= 0xf1
  * XXX:
- * XXX: see  
+ * XXX: from net/if_types.h see  
  * XXX: 
  * XXX:  if_[dr]egister_com_alloc(9)
  * XXX:

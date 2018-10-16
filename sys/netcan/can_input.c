@@ -92,7 +92,7 @@ static struct netisr_handler	can_nh = {
 #endif
 };
 
-/* Superset of PCB on PF_CAN with its protective lock */
+/* Superset of PCBs on PF_CAN with its protective lock */
 struct rwlock can_pcbinfo_lock;
 struct canpcbinfo_head can_pcbinfo_tbl;
 
@@ -267,7 +267,9 @@ can_ctlinput(int cmd, struct sockaddr *sa, void *v)
 {
 
 	/*
-	 * ...
+	 * XXX: It seems to me, that this might be a 
+	 * XXX: service-primitive from a CAN module 
+	 * XXX: for tunneling CAN frames by udp(4).
 	 */
 }
 #endif
