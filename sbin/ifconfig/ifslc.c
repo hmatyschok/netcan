@@ -58,7 +58,7 @@ slc_cmd(int s, u_long cmd, void *arg, size_t len)
 	ifd.ifd_len = len;
 	ifd.ifd_data = arg;
 
-	return (ioctl(s, (cmd) ? SIOCGDRVSPEC : SIOCSDRVSPEC, &ifd));
+	return (ioctl(s, (cmd & 0x01) ? SIOCGDRVSPEC : SIOCSDRVSPEC, &ifd));
 }
 
 static void
@@ -97,14 +97,8 @@ slc_stty(const char *val, int d, int s, const struct afswtch *afp)
 static void
 slc_dtty(const char *val, int d, int s, const struct afswtch *afp)
 {
-	struct ifdrv ifd;
 
-	(void)memset(&ifd, 0, sizeof(ifd));
-	(void)strlcpy(ifd.ifd_name, ifr.ifr_name, sizeof(ifd.ifd_name));
-	
-	ifd.ifd_cmd = SLCDTTY;
-
-	(void)ioctl(s, SIOCSDRVSPEC, &ifd));
+	(void)slc_cmd(s, SLCDTTY, NULL, 0);
 }
 
 static struct cmd slc_cmds[] = {
