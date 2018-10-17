@@ -228,6 +228,5 @@ static moduledata_t canloop_mod = {
 	0
 };
 
-DECLARE_MODULE(if_canloop, canloop_mod, SI_SUB_PROTO_IFATTACHDOMAIN, 
-	SI_ORDER_ANY);
+DECLARE_MODULE(if_canloop, canloop_mod, SI_SUB_PSEUDO, SI_ORDER_ANY);
 MODULE_DEPEND(if_canloop, can, 1, 1, 1);
