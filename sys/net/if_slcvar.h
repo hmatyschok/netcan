@@ -58,6 +58,7 @@
  */
 #define SLCSTTY 	0
 #define SLCGTTY 	1
+#define SLCDTTY 	2
 
 /*
  * Definitions for serial line CAN interface data structures.

@@ -131,7 +131,7 @@ can_nh_input(struct mbuf *m)
 	
 	if (m->m_pkthdr.len < sizeof(struct can_frame)) {
 #if 0
-		CANSTAT_INC(cans_toosmall);
+		CANSTAT_INC(cans_tooshort);
 #endif	
 		goto out;
 	}
@@ -209,8 +209,7 @@ can_nh_input(struct mbuf *m)
 				 * we can't be sure we won't need 
 				 * the original mbuf later so copy 
 				 */
-				mc = m_copypacket(m, M_NOWAIT);
-				if (mc == NULL) {
+				if ((mc = m_copypacket(m, M_NOWAIT)) == NULL) {
 					/* deliver this mbuf and abort */
 					mc = m;
 					m = NULL;

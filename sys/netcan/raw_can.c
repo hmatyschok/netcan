@@ -128,7 +128,8 @@ rcan_attach(struct socket *so, int proto, struct thread *td)
 	int error;
 
 	canp = sotocanpcb(so);
-	KASSERT(canp == NULL, ("%s: canp != NULL", __func__));
+	KASSERT((canp == NULL), 
+		("%s: canp != NULL", __func__));
 
 	if ((error = soreserve(so, rcan_sendspace, rcan_recvspace)) == 0) { 
 		CANP_INFO_WLOCK(&rcan_pcbinfo);	
@@ -155,9 +156,11 @@ rcan_detach(struct socket *so)
 static int
 rcan_bind(struct socket *so, struct sockaddr *nam, struct thread *td)
 {
-	struct sockaddr_can *scan = (struct sockaddr_can *)nam;
+	struct sockaddr_can *scan;
 	struct canpcb *canp;
 	int error;
+
+	scan = (struct sockaddr_can *)nam;
 
 	if (scan->scan_len != sizeof(*scan)) {
 		error = EINVAL;
@@ -190,9 +193,11 @@ static int
 rcan_connect(struct socket *so, struct sockaddr *nam, 
 	struct thread *td)
 {
-	struct sockaddr_can *scan = (struct sockaddr_can *)nam;
+	struct sockaddr_can *scan;
 	struct canpcb *canp;
 	int error;
+	
+	scan = (struct sockaddr_can *)nam;
 	
 	if (nam->sa_len != sizeof(*scan)) {
 		error = EINVAL;
@@ -213,7 +218,7 @@ rcan_connect(struct socket *so, struct sockaddr *nam,
 		("%s: canp == NULL", __func__));
 
 	CANP_INFO_WLOCK(&rcan_pcbinfo);
-	error = can_pcbconnect(canp, (struct sockaddr_can *)nam);
+	error = can_pcbconnect(canp, scan);
 	if (error != 0)
 		soisconnected(so);
 	CANP_INFO_WUNLOCK(&rcan_pcbinfo);	
@@ -281,10 +286,11 @@ static int
 rcan_send(struct socket *so, int flags, struct mbuf *m, 
 	struct sockaddr *nam, struct mbuf *control, struct thread *td)
 {
-	struct sockaddr_can *scan = (struct sockaddr_can *)nam;
+	struct sockaddr_can *scan;
 	struct canpcb *canp;
 	int error;
 
+	scan = (struct sockaddr_can *)nam;
 	canp = sotocanpcb(so);
 	KASSERT((canp != NULL), 
 		("%s: canp == NULL", __func__));
@@ -426,8 +432,10 @@ rcan_setop(struct canpcb *canp, struct sockopt *sopt)
 int
 rcan_ctloutput(struct socket *so, struct sockopt *sopt)
 {
-	struct canpcb *canp = sotocanpcb(so);
+	struct canpcb *canp;
 	int error;
+
+	canp = sotocanpcb(so);
 
 	if (sopt->sopt_level == so->so_proto->pr_protocol) { /* XXX: CANPROTO_RAW */
 		switch (sopt->sopt_dir) {

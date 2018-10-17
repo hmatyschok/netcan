@@ -71,6 +71,7 @@ static int 	slc_encap(struct slc_softc *, struct mbuf **);
 static int 	slc_rxeof(struct slc_softc *); 
 static int 	slc_gtty(struct slc_softc *, void *); 
 static int 	slc_stty(struct slc_softc *, void *); 
+static int 	slc_dtty(struct slc_softc *);
  
 /* Interface-level routines. */
 static void 	slc_init(void *);
@@ -233,6 +234,9 @@ slc_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 			else
 				error = slc_stty(slc, ifd->ifd_data);
 			break;
+		case SLCDTTY:	
+			error = slc_dtty(slc);
+			break;	
 		default:
 			error = EINVAL;
 			break;
@@ -379,7 +383,6 @@ static void
 slc_destroy(struct slc_softc *slc)
 {
 	struct ifnet *ifp;
-	struct tty *tp;
 	
 	ifp = slc->slc_ifp;
 	ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
@@ -389,13 +392,9 @@ slc_destroy(struct slc_softc *slc)
 	if_free(ifp);
 	
 	/* detach hook, if any and flush queue */
-	if ((tp = slc->slc_tp) != NULL) {
-		tty_lock(tp);
-		ttyhook_unregister(tp);
-	}
-	IF_DRAIN(&slc->slc_outq);
-	mtx_destroy(&slc->slc_outq.ifq_mtx);
+	(void)slc_dtty(slc);
 	
+	mtx_destroy(&slc->slc_outq.ifq_mtx);
 	mtx_destroy(&slc->slc_mtx);
 	free(slc, M_SLC);
 }
@@ -478,18 +477,34 @@ out:
 }
 
 static int 
+slc_dtty(struct slc_softc *slc)
+{
+	struct tty *tp;
+	int error;
+	
+	if ((tp = slc->slc_tp) != NULL) {
+		tty_lock(tp);
+		ttyhook_unregister(tp);
+		mtx_lock(&slc->slc_mtx);
+		slc->slc_tp = NULL;	
+		mtx_unlock(&slc->slc_mtx);
+		IF_DRAIN(&slc->slc_outq);
+		error = 0;
+	} else
+		error = ESRCH;
+
+	return (error);
+}
+
+static int 
 slc_gtty(struct slc_softc *slc, void *data)
 {
 	dev_t *d = (dev_t *)data;
-	
-	mtx_lock(&slc->slc_mtx);
 	
 	if (slc->slc_tp != NULL)
 		*d = tty_udev(slc->slc_tp);	
 	else
 		*d = NODEV;
-
-	mtx_unlock(&slc->slc_mtx);
 
 	return (0);
 }
@@ -596,7 +611,7 @@ slc_stty(struct slc_softc *slc, void *data)
 	struct proc *p;
 	int error;
 	
-	mtx_lock(&slc->slc_mtx);
+	
 	
 	if (slc->slc_tp != NULL) {
 		error = EBUSY;
@@ -614,10 +629,11 @@ slc_stty(struct slc_softc *slc, void *data)
 	}
 	_PHOLD(p);
 	PROC_UNLOCK(p);
+	mtx_lock(&slc->slc_mtx);
 	error = ttyhook_register(&slc->slc_tp, p, fd, &slc_hook, slc);
+	mtx_unlock(&slc->slc_mtx);
 	PRELE(p);	
 out:
-	mtx_unlock(&slc->slc_mtx);
 	return (error);
 }
 
@@ -632,8 +648,7 @@ slc_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 	struct ifnet *ifp;
 
 	slc = malloc(sizeof(*slc), M_SLC, M_WAITOK | M_ZERO);
-	ifp = slc->slc_ifp = if_alloc(IFT_CAN);
-	if (ifp == NULL) {
+	if ((ifp = slc->slc_ifp = if_alloc(IFT_CAN)) == NULL) {
 		free(slc, M_SLC);
 		return (ENOSPC);
 	}

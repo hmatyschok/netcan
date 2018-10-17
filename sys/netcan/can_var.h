@@ -57,6 +57,28 @@
 #ifndef _NETCAN_CAN_VAR_H_
 #define _NETCAN_CAN_VAR_H_
 
+/* statistics */
+struct can_stat {
+	uint64_t cans_total;		/* total frames received */
+	uint64_t cans_tooshort;		/* frame too short */
+	uint64_t cans_toosmall; 	/* not enough data */
+	uint64_t cans_forward; 		/* frames forwarded */
+	uint64_t cans_sff_rxd; 			/* rx'd SFF frames */
+	uint64_t cans_eff_rxd; 			/* rx'd EFF frames */
+	uint64_t cans_rtr_rxd; 			/* rx'd RTR frames */	
+	uint64_t cans_err_rxd; 			/* rx'd ERR frames */	
+	uint64_t cans_sff_txd; 			/* tx'd SFF frames */
+	uint64_t cans_eff_txd; 			/* tx'd EFF frames */
+	uint64_t cans_rtr_txd; 			/* tx'd RTR frames */	
+	uint64_t cans_err_txd; 			/* tx'd ERR frames */	
+	uint64_t cans_unknown; 	/* unknown or unsupported protocol */
+	uint64_t cans_delivered; 	/* frames delivered to upper level*/
+	uint64_t cans_localout; 	/* total frames generated here */
+	uint64_t cans_odropped; 	/* lost frames due to nobufs, etc. */
+	uint64_t cans_rawout; 	/* total raw CAN frames generated */
+	uint64_t cans_badid; 	/* invalid address on header */
+};
+
 struct can_ifreq { /* XXX; incomplete.. */
 	char            cfr_name[IFNAMSIZ];	/* if name, e.g. "sja0" */
 };
