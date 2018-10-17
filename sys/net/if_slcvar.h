@@ -66,17 +66,6 @@
 
 #define SLC_MTU 	33 /* includes ext. CAN frame size */
 
-#define SLC_HC_SFF_DATA 	't'
-#define SLC_HC_SFF_RTR 	'r'
-#define SLC_HC_EFF_DATA 	'T'
-#define SLC_HC_EFF_RTR 	'R'
-
-#define SLC_HC_CR 		'\r'
-#define SLC_HC_BEL 		'\a'
-
-#define SLC_HC_DLC_INF 	'0'
-#define SLC_HC_DLC_SUP 	'9'
-
 #ifdef _KERNEL
 struct slc_softc {
 	struct ifnet 	*slc_ifp;

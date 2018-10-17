@@ -83,6 +83,17 @@ struct can_frame {
 #define SLC_EFF_ID_LEN 	(sizeof(u_char) * 8)
 #define SLC_DLC_LEN 	(sizeof(u_char)) 
 
+#define SLC_HC_SFF_DATA 	't'
+#define SLC_HC_SFF_RTR 	'r'
+#define SLC_HC_EFF_DATA 	'T'
+#define SLC_HC_EFF_RTR 	'R'
+
+#define SLC_HC_CR 		'\r'
+#define SLC_HC_BEL 		'\a'
+
+#define SLC_HC_DLC_INF 	'0'
+#define SLC_HC_DLC_SUP 	'9'
+
 /*
  * CAN ID based filter
  * checks received can_id & can_filter.cf_mask against
