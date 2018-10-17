@@ -116,7 +116,11 @@ slc_init(void *xsc)
 		ifp->if_flags |= IFF_UP;
 	else
 		ifp->if_flags &= ~IFF_UP;
-
+		
+	if (ifp->if_flags & IFF_UP)
+		ifp->if_drv_flags |= IFF_DRV_RUNNING;
+	else
+		ifp->if_drv_flags &= ~IFF_DRV_RUNNING;		
 }
 
 static void
@@ -143,7 +147,8 @@ slc_start_locked(struct ifnet *ifp)
 	
 	mtx_assert(&slc->slc_mtx, MA_OWNED);
 	
-	if ((ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
+	if ((ifp->if_drv_flags & (IFF_DRV_RUNNING | IFF_DRV_OACTIVE)) !=
+	    IFF_DRV_RUNNING)
 		return;
 			
 	ifp->if_drv_flags |= IFF_DRV_OACTIVE;

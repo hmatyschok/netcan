@@ -103,6 +103,10 @@ canloop_start(struct ifnet *ifp)
 {
 	struct mbuf *m;
 
+	if ((ifp->if_drv_flags & (IFF_DRV_RUNNING | IFF_DRV_OACTIVE)) !=
+	    IFF_DRV_RUNNING)
+		return;
+		
 	ifp->if_drv_flags |= IFF_DRV_OACTIVE;
 	for (;;) {
 		IFQ_DEQUEUE(&ifp->if_snd, m);
@@ -168,7 +172,7 @@ canloop_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 static void
 canloop_clone_destroy(struct ifnet *ifp)
 {
-	ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
+	ifp->if_drv_flags &= ~(IFF_DRV_RUNNING | IFF_DRV_OACTIVE);
 	ifp->if_flags &= ~IFF_UP;
 
 	can_ifdetach(ifp);
