@@ -370,10 +370,14 @@ static size_t
 slc_txeof_poll(struct tty *tp)
 {
 	struct slc_softc *slc;
+	size_t outqlen;
 
-	slc = ttyhook_softc(tp);
+	if ((slc = ttyhook_softc(tp)) != NULL)
+		outqlen = slc->slc_outqlen;
+	else
+		outqlen = 0;
 
-	return (slc->slc_outqlen);
+	return (outqlen);
 }
 
 /*
