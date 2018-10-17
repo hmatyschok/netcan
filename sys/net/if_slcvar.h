@@ -34,7 +34,7 @@
  * 
  * Example:
  *
- *  (void)memset(&ifd, 0, sizoef(ifd));
+ *  (void)memset(&ifd, 0, sizeof(ifd));
  *  (void)strlcpy(ifd.ifd_name, "slc0", strlen("slc0"));
  * 
  *  if ((slc_fd = socket(AF_LOCAL, SOCK_DGRAM, 0) < 0) 

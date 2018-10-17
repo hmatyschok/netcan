@@ -54,10 +54,10 @@
 /*
  * Serial line CAN interface implemented as TTY hook.
  * 
- * XXX: Missing error control [ISO 11898-1] due the 
- * XXX: the case of transmission by uart(4), but it's  
- * XXX: a work in progress and should understood as a 
- * XXX: prototype for a TTY Device-driver class.
+ * XXX: Missing error control [ISO 11898-1] due to the 
+ * XXX: the case of transmission by e. g. uart(4), but   
+ * XXX: it's 'a work in progress and should understood  
+ * XXX: as a prototype for a TTY device-driver class.
  */
  
 static MALLOC_DEFINE(M_SLC, "slc", "SLCAN Interface");
@@ -743,3 +743,4 @@ static moduledata_t slc_mod = {
 }; 
 
 DECLARE_MODULE(if_slc, slc_mod, SI_SUB_PSEUDO, SI_ORDER_ANY);
+MODULE_DEPEND(if_slc, can, 1, 1, 1);
