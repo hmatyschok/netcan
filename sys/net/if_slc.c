@@ -330,7 +330,8 @@ slc_txeof(struct tty *tp, void *buf, size_t len)
 	size_t off = 0;
 	size_t m_len;
 
-	slc = ttyhook_softc(tp);
+	if ((slc = ttyhook_softc(tp)) == NULL)
+		goto out; 	/* XXX */
 
 	while (len > 0) {
 		IF_DEQUEUE(&slc->slc_outq, m);
@@ -361,7 +362,7 @@ slc_txeof(struct tty *tp, void *buf, size_t len)
 	slc->slc_outqlen -= off;
 	IF_UNLOCK(&slc->slc_outq);
 	MPASS(slc->slc_outqlen >= 0);
-
+out:
 	return (off);
 }
 
