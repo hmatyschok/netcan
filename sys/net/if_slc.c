@@ -527,7 +527,10 @@ slc_rxeof(struct slc_softc *slc)
 	
 	mtx_assert(&slc->slc_mtx, MA_OWNED);
 	
-	ifp = slc->slc_ifp;
+	if ((ifp = slc->slc_ifp) == NULL) {
+		error = ENXIO;
+		goto out;
+	}
 	
 	if ((m = slc->slc_inb) == NULL) {
 		error = EINVAL;
@@ -615,8 +618,6 @@ slc_stty(struct slc_softc *slc, void *data)
 	int fd = *(int *)data;
 	struct proc *p;
 	int error;
-	
-	
 	
 	if (slc->slc_tp != NULL) {
 		error = EBUSY;
