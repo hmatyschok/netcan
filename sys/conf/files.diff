@@ -1,5 +1,5 @@
---- /usr/src/sys/conf/files	2018-10-18 14:16:25.819957000 +0200
-+++ files	2018-10-18 14:16:01.059958000 +0200
+--- /usr/src/sys/conf/files.orig	2018-10-18 14:16:25.819957000 +0200
++++ /usr/src/sys/conf/files	2018-10-18 14:16:01.059958000 +0200
 @@ -4749,3 +4749,16 @@
  xdr/xdr_mem.c			optional krpc | nfslockd | nfscl | nfsd
  xdr/xdr_reference.c		optional krpc | nfslockd | nfscl | nfsd
