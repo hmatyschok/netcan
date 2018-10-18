@@ -1,5 +1,5 @@
 <pre><code> 
-can(4) - Controller Area Network protocol domain(9) for FreeBSD 11.x 
+can(4) - Controller Area Network protocol domain(9) for FreeBSD 11.2 
 ====================================================================
 
  Port of AF_CAN communication domain(9) from NetBSD 8.0: 
@@ -13,16 +13,22 @@ can(4) - Controller Area Network protocol domain(9) for FreeBSD 11.x
   (b) A lot of bugfixes, because this implementation is 
       not finished yet and a work in progress.
   
-  (c)  ...    
+  (c) Operational Line-discipline based on if_slc(4). 
+  
+  (d) Device-driver for Adapter with Philips SJA1000 controller.
+  
+  (D)  ...    
  
 Legal Notice: 
 -------------
  
-  (a) NetBSD is a trademark of the NetBSD Foundation.
+  (a) NetBSD is a registered trademark of the NetBSD Foundation.
   
-  (b) FreeBSD is a trademark of the FreeBSD Foundation. 
+  (b) FreeBSD is a registered trademark of the FreeBSD Foundation. 
   
-  (C) Don't use this software on production systems!
+  (c) PHILIPS is a registered trademark of Koninklijke Philips N.V.
+  
+  (D) Don't use this software on production systems!
   
 Additional information about contacting
 ---------------------------------------
