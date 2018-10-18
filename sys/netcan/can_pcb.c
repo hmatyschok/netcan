@@ -309,13 +309,16 @@ can_pcbsetfilter(struct canpcb *canp, struct can_filter *fp, int nfilters)
 
 #if 0
 /*
- * Pass some notification to all connections of a protocol
- * associated with address dst.  The local address and/or port numbers
- * may be specified to limit the search.  The "usual action" will be
- * taken, depending on the ctlinput cmd.  The caller must filter any
- * cmds that are uninteresting (e.g., no error in the map).
- * Call the protocol specific routine (if any) to report
- * any errors for each matching socket.
+ * Pass some notification to all connections of a protocol associated 
+ * with address dst.  
+ * 
+ * The local address and / or port numbers may be specified to limit 
+ * the search. The "usual action" will be taken, depending on the 
+ * ctlinput cmd. 
+ * 
+ * The caller must filter any cmds that are uninteresting (e.g., no 
+ * error in the map). Call the protocol specific routine (if any) to 
+ * report any errors for each matching socket.
  *
  * Must be called at splsoftnet. <-- XXX: NO!!11!
  */
@@ -418,7 +421,7 @@ can_pcbstate(struct canpcb *canp, int state)
  * 
  * It returns true if mbuf is accepted, false otherwise.
  *
- * XXX: I'll refactor this.
+ * XXX: I'll refactor this, e. g. accept_filter(9).
  */
 int
 can_pcbfilter(struct canpcb *canp, struct mbuf *m)

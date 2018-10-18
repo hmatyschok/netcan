@@ -2,28 +2,27 @@
 can(4) - Controller Area Network protocol domain(9) for FreeBSD 11.x 
 ====================================================================
 
- Port of raw socket(2) on AF_CAN communication domain(9) from 
- NetBSD 8.0 for FreeBSD 11.x operation system.
+ Port of AF_CAN communication domain(9) from NetBSD 8.0: 
  
- There is a lot of work on my TODO list:
+  http://cvsweb.netbsd.org/bsdweb.cgi/src/sys/netcan/?only_with_tag=MAIN
+ 
+ There are a lot of work on my TODO list:
  
   (a) Porting of canconfig(8) and possible merge with ifconfig(8).
   
   (b) A lot of bugfixes, because this implementation is 
       not finished yet and a work in progress.
-      
-  (c) Purchasing a PCI adapter based on SJA1000 controller.
   
-  (d)  ...    
+  (c)  ...    
  
 Legal Notice: 
 -------------
  
   (a) NetBSD is a trademark of the NetBSD Foundation.
   
-  (a) FreeBSD is a trademark of the FreeBSD Foundation. 
+  (b) FreeBSD is a trademark of the FreeBSD Foundation. 
   
-  (b) Don't use this software on production systems!
+  (C) Don't use this software on production systems!
   
 Additional information about contacting
 ---------------------------------------
