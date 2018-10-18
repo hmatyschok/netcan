@@ -15,5 +15,5 @@
 +
 +# can(4) interface-layer
 +net/if_cansubr.c 		optional can
-+net/if_canloop.c 		optional if_canloop can
-+net/if_slc.c 			optional if_slc can 
++net/if_canloop.c 		optional canloop can | if_canloop can
++net/if_slc.c 			optional slc can | if_slc can 
