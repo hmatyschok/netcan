@@ -1,0 +1,19 @@
+--- /usr/src/sys/conf/files	2018-10-18 14:16:25.819957000 +0200
++++ files	2018-10-18 14:16:01.059958000 +0200
+@@ -4749,3 +4749,16 @@
+ xdr/xdr_mem.c			optional krpc | nfslockd | nfscl | nfsd
+ xdr/xdr_reference.c		optional krpc | nfslockd | nfscl | nfsd
+ xdr/xdr_sizeof.c		optional krpc | nfslockd | nfscl | nfsd
++
++# can(4) communication domain(9)
++netcan/can.c 			optional can
++netcan/can_input.c 		optional can     
++netcan/can_output.c 	optional can
++netcan/can_pcb.c 		optional can
++netcan/can_proto.c 		optional can
++netcan/raw_can.c 		optional can
++
++# can(4) interface-layer
++net/if_cansubr.c 		optional can
++net/if_canloop.c 		optional if_canloop can
++net/if_slc.c 			optional if_slc can 
