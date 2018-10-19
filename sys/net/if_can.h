@@ -194,6 +194,7 @@ int 	can_bin2hex(struct can_frame *, u_char *);
 int 	can_hex2bin(u_char *, struct can_frame *);
 int 	can_id2hex(struct can_frame *, u_char *);
 int 	can_hex2id(u_char *, struct can_frame *);
+void 	can_mbuf_tag_clean(struct mbuf *);
 
 /* interface-layer */
 void 	can_ifattach(struct ifnet *);

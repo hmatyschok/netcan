@@ -263,6 +263,22 @@ can_bpf_mtap(struct ifnet *ifp, struct mbuf *m)
 }
 
 /*
+ * Cleanup mbuf(9) tag, keeping the PACKET_TAG_ND_OUTGOING tag.
+ */
+void
+can_mbuf_tag_clean(struct mbuf *m)
+{
+	struct m_tag *sotag;
+
+	if ((sotag = m_tag_find(m, PACKET_TAG_ND_OUTGOING, NULL)) != NULL)
+		m_tag_unlink(m, sotag);
+
+	m_tag_delete_nonpersistent(m);
+	if (sotag != NULL)
+		m_tag_prepend(m, sotag);
+}
+
+/*
  * Utility functions.
  *
  * See sys/cam/ctl/ctl.c [@ line #4486] and the licence 

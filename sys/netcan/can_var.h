@@ -102,7 +102,6 @@ extern struct domain candomain;
 extern struct pr_usrreqs rcan_usrreqs;
 
 /* CANPROTO_CAN */
-void 	can_mbuf_tag_clean(struct mbuf *);
 void 	can_ctlinput(int, struct sockaddr *, void *);
 int 	can_ctloutput(struct socket *, struct sockopt *);
 void 	can_init(void);
