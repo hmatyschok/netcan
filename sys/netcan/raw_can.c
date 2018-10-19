@@ -388,8 +388,7 @@ rcan_setop(struct canpcb *canp, struct sockopt *sopt)
 	int error;
 
 	switch (sopt->sopt_name) {
-	case CAN_RAW_LOOPBACK:
-		
+	case CAN_RAW_LOOPBACK:	
 		error = sooptcopyin(sopt, &optval, sizeof(optval), 
 			sizeof(optval));
 		if (error == 0) {
@@ -409,25 +408,22 @@ rcan_setop(struct canpcb *canp, struct sockopt *sopt)
 				canp->canp_flags &= ~CANP_RECEIVE_OWN;
 		}
 		break;
-	case CAN_RAW_FILTER:
-		{
-		int nfilters;
-			
+	case CAN_RAW_FILTER:	
 		error = sooptcopyin(sopt, canp->canp_filters, 
 			sizeof(struct can_filter) * canp->canp_nfilters, 
 				sizeof(struct can_filter) * canp->canp_nfilters);
-		
-		nfilters = sopt->sopt_valsize / sizeof(struct can_filter);
+		if (error != 0) {		
+			int nfilters = sopt->sopt_valsize / sizeof(struct can_filter);
 
-		if (sopt->sopt_valsize % sizeof(struct can_filter) != 0) {
-			error = EINVAL;
-			break;
+			if (sopt->sopt_valsize % sizeof(struct can_filter) != 0) {
+				error = EINVAL;
+				break;
+			}
+			CANP_WLOCK(canp);
+			error = can_pcbsetfilter(canp, sopt->sopt_val, nfilters);
+			CANP_WUNLOCK(canp);
 		}
-		CANP_WLOCK(canp);
-		error = can_pcbsetfilter(canp, sopt->sopt_val, nfilters);
-		CANP_WUNLOCK(canp);
 		break;
-		}
 	default:
 		error = ENOPROTOOPT;
 		break;

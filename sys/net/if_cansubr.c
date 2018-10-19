@@ -196,7 +196,7 @@ can_output(struct ifnet *ifp, struct mbuf *m,
 
 #ifdef MAC
 	error = mac_ifnet_check_transmit(ifp, m);
-	if (error) {
+	if (error != 0) {
 		m_freem(m);
 		return (error);
 	}
