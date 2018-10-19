@@ -412,7 +412,7 @@ rcan_setop(struct canpcb *canp, struct sockopt *sopt)
 		error = sooptcopyin(sopt, canp->canp_filters, 
 			sizeof(struct can_filter) * canp->canp_nfilters, 
 				sizeof(struct can_filter) * canp->canp_nfilters);
-		if (error != 0) {		
+		if (error == 0) {		
 			int nfilters = sopt->sopt_valsize / sizeof(struct can_filter);
 
 			if (sopt->sopt_valsize % sizeof(struct can_filter) != 0) {
