@@ -77,6 +77,20 @@ struct can_frame {
 
 #define CAN_MTU         (sizeof(struct can_frame))
 
+/* CAN-FD frame */
+#define CANFD_MAX_DLEN 	64
+
+struct canfd_frame {
+	canid_t	can_id; /* ID + EFF/RTR/ERR flags */
+	uint8_t	can_dlc; /* frame SDU length in byte (0 .. CAN_MAX_DLEN) */
+	uint8_t	__pad;
+	uint8_t	__res0;
+	uint8_t __res1;
+	uint8_t	can_data[CANFD_MAX_DLEN] __aligned(8);
+};
+
+#define CANFD_MTU         (sizeof(struct canfd_frame))
+
 /* Serial line CAN */
 #define SLC_CMD_LEN 	(sizeof(u_char))
 #define SLC_SFF_ID_LEN 	(sizeof(u_char) * 3)
