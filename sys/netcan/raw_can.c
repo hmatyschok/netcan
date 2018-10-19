@@ -364,18 +364,15 @@ rcan_getop(struct canpcb *canp, struct sockopt *sopt)
 	switch (sopt->sopt_name) {
 	case CAN_RAW_LOOPBACK:
 		optval = (canp->canp_flags & CANP_NO_LOOPBACK) ? 0 : 1;
-		error = sooptcopyin(sopt, &optval, sizeof(optval), 
-			sizeof(optval));
+		error = sooptcopyout(sopt, &optval, sizeof(optval));
 		break;
 	case CAN_RAW_RECV_OWN_MSGS: 
 		optval = (canp->canp_flags & CANP_RECEIVE_OWN) ? 1 : 0;
-		error = sooptcopyin(sopt, &optval, sizeof(optval), 
-			sizeof(optval));
+		error = sooptcopyout(sopt, &optval, sizeof(optval));
 		break;
 	case CAN_RAW_FILTER:
-		error = sooptcopyin(sopt, canp->canp_filters, 
-			sizeof(struct can_filter) * canp->canp_nfilters, 
-				sizeof(struct can_filter) * canp->canp_nfilters);
+		error = sooptcopyout(sopt, canp->canp_filters, 
+			sizeof(struct can_filter) * canp->canp_nfilters);
 		break;
 	default:
 		error = ENOPROTOOPT;
@@ -392,7 +389,9 @@ rcan_setop(struct canpcb *canp, struct sockopt *sopt)
 
 	switch (sopt->sopt_name) {
 	case CAN_RAW_LOOPBACK:
-		error = sooptcopyout(sopt, &optval, sizeof(optval));
+		
+		error = sooptcopyin(sopt, &optval, sizeof(optval), 
+			sizeof(optval));
 		if (error == 0) {
 			if (optval != 0) 
 				canp->canp_flags &= ~CANP_NO_LOOPBACK;
@@ -401,7 +400,8 @@ rcan_setop(struct canpcb *canp, struct sockopt *sopt)
 		}
 		break;
 	case CAN_RAW_RECV_OWN_MSGS: 
-		error = sooptcopyout(sopt, &optval, sizeof(optval));
+		error = sooptcopyin(sopt, &optval, sizeof(optval), 
+			sizeof(optval));
 		if (error == 0) {
 			if (optval != 0) 
 				canp->canp_flags |= CANP_RECEIVE_OWN;
@@ -411,7 +411,13 @@ rcan_setop(struct canpcb *canp, struct sockopt *sopt)
 		break;
 	case CAN_RAW_FILTER:
 		{
-		int nfilters = sopt->sopt_valsize / sizeof(struct can_filter);
+		int nfilters;
+			
+		error = sooptcopyin(sopt, canp->canp_filters, 
+			sizeof(struct can_filter) * canp->canp_nfilters, 
+				sizeof(struct can_filter) * canp->canp_nfilters);
+		
+		nfilters = sopt->sopt_valsize / sizeof(struct can_filter);
 
 		if (sopt->sopt_valsize % sizeof(struct can_filter) != 0) {
 			error = EINVAL;
