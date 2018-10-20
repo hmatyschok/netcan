@@ -58,8 +58,9 @@
 
 /* protocols */
 #define CANPROTO_CAN 	0
-#define CANPROTO_RAW 	1 /* RAW sockets */
-#define CANPROTO_NPROTO 	2 	/* XXX: Wildcard, anyone??? */
+#define CANPROTO_RAW 	1 /* RAW socket(9)s */
+#define CANPROTO_BCM 	2 /* BCM socket(9)s */
+#define CANPROTO_NPROTO 	3 	/* XXX: Wildcard, anyone??? */
 
 /*
  * Socket address, CAN style

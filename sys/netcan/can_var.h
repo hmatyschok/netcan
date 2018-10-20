@@ -79,7 +79,12 @@ struct can_stat {
 	uint64_t cans_badid; 	/* invalid address on header */
 };
 
-struct can_ifreq { /* XXX; incomplete.. */
+/* 
+ * XXX: incomplete, but it looks for me as possible 
+ * XXX: candidate of an implementation of a message 
+ * XXX: primitive for SOCK_DGRAM on CANPROTO_BCM?
+ */ 
+struct can_ifreq { 
 	char            cfr_name[IFNAMSIZ];	/* if name, e.g. "sja0" */
 };
 

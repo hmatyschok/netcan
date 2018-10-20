@@ -122,7 +122,6 @@ canloop_start(struct ifnet *ifp)
 		m->m_pkthdr.rcvif = ifp;	
 		
 #ifdef CAN
-		can_mbuf_tag_clean(m);
 		(*ifp->if_input)(ifp, m);
 #else
 		(void)printf("%s: %s: can't handle CAN frame\n", 

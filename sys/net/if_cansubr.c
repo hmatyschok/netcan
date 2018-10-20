@@ -169,7 +169,10 @@ can_input(struct ifnet *ifp, struct mbuf *m)
 #ifdef MAC
 	mac_ifnet_create_mbuf(ifp, m);
 #endif 	/* MAC */
-
+	
+	if (ifp->if_flags & IFF_LOOPBACK)
+		can_mbuf_tag_clean(m);
+		
 	if_inc_counter(ifp, IFCOUNTER_IBYTES, m->m_pkthdr.len);
 	
 	M_SETFIB(m, ifp->if_fib);
@@ -240,9 +243,12 @@ can_ifdetach(struct ifnet *ifp)
 void
 can_ifinit_timings(struct canif_softc *csc)
 {
+	mtx_lock(&csc->csc_mtx);	
+	
 	/* uninitialized parameters is all-one */
 	(void)memset(&csc->csc_timings, 0xff, 
 		sizeof(struct can_link_timings));
+	mtx_unlock(&csc->csc_mtx);
 }
 
 /*
