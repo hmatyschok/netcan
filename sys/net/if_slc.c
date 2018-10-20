@@ -60,7 +60,7 @@ static MALLOC_DEFINE(M_SLC, "slc", "SLCAN Interface");
 
 static struct mtx slc_list_mtx;
 static TAILQ_HEAD(slc_head, slc_softc) slc_list = 
-	TAILQ_HEAD_INITIAZIER(slc_list);
+	TAILQ_HEAD_INITIALIZER(slc_list);
  
 /* Subr. */ 
 static void 	slc_destroy(struct slc_softc *);
