@@ -54,9 +54,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <sys/cdefs.h>
-
-#include "opt_can.h"
-
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/time.h>

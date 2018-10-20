@@ -191,20 +191,45 @@ static int
 can_output(struct ifnet *ifp, struct mbuf *m, 
 	const struct sockaddr *dst, struct route *ro)
 {
-#ifdef MAC
 	int error;
-#endif 	/* MAC */
+
+	if (dst == NULL) {
+		error = EINVAL;
+		goto bad;
+	}
 	
-	M_ASSERTPKTHDR(m);
+	if (dst->sa_family != AF_CAN) {
+		error = EINVAL;
+		goto bad;
+	}
+	
+	if (ifp->if_l2com == NULL) {
+		error = ENXIO;
+		goto out;
+	}
+	
+	if (ifp->if_flags & IFF_MONITOR) {
+		error = ENETDOWN;
+		goto bad;
+	}
+	
+	if (((ifp->if_flags & IFF_UP) == 0) &&
+	    ((ifp->if_drv_flags & IFF_DRV_RUNNING) != 0)) {
+		error = ENETDOWN;
+		goto bad;
+	}
 
 #ifdef MAC
-	error = mac_ifnet_check_transmit(ifp, m);
-	if (error != 0) {
-		m_freem(m);
-		return (error);
-	}
+	if ((error = mac_ifnet_check_transmit(ifp, m)) != 0) 
+		goto bad;
 #endif 	/* MAC */
-	return ((*ifp->if_transmit)(ifp, m));
+
+	error = (*ifp->if_transmit)(ifp, m);
+out:
+	return (error);
+bad:
+	m_freem(m);
+	goto out;
 }
 
 void
