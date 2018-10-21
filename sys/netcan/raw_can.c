@@ -408,7 +408,7 @@ rcan_setop(struct canpcb *canp, struct sockopt *sopt)
 				canp->canp_flags &= ~CANP_RECEIVE_OWN;
 		}
 		break;
-	case CAN_RAW_FILTER:	
+	case CAN_RAW_FILTER:
 		error = sooptcopyin(sopt, canp->canp_filters, 
 			sizeof(struct can_filter) * canp->canp_nfilters, 
 				sizeof(struct can_filter) * canp->canp_nfilters);

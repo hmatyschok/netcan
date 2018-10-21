@@ -1,4 +1,4 @@
-/*	$NetBSD: if_canloop.c,v 1.2.2.1 2018/01/02 10:20:34 snj Exp $	*/
+/*	$NetBSD: if_canlo.c,v 1.2.2.1 2018/01/02 10:20:34 snj Exp $	*/
 
 /*-
  * Copyright (c) 2017 The NetBSD Foundation, Inc.
@@ -78,24 +78,24 @@
  * Loopback interface driver for the CAN protocol
  */
 
-static int		canloop_ioctl(struct ifnet *, u_long, caddr_t);
-static void 	canloop_start(struct ifnet *);
+static int		canlo_ioctl(struct ifnet *, u_long, caddr_t);
+static void 	canlo_start(struct ifnet *);
 
-static void 	canloop_clone_destroy(struct ifnet *);
-static int 	canloop_clone_create(struct if_clone *, int, caddr_t);
+static void 	canlo_clone_destroy(struct ifnet *);
+static int 	canlo_clone_create(struct if_clone *, int, caddr_t);
 
 /*
  * Interface cloner.
  */ 
 
-static struct if_clone *canloop_cloner;
-static const char canloop_name[] = "canlo";
+static struct if_clone *canlo_cloner;
+static const char canlo_name[] = "canlo";
 
 /*
  * Dequeue for transmission.
  */
 static void
-canloop_start(struct ifnet *ifp)
+canlo_start(struct ifnet *ifp)
 {
 	struct mbuf *m;
 
@@ -134,7 +134,7 @@ canloop_start(struct ifnet *ifp)
  */
 /* ARGSUSED */
 static int
-canloop_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
+canlo_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
 	struct ifreq *ifr = (struct ifreq *)data;
 	int error = 0;
@@ -165,7 +165,7 @@ canloop_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
  */
 
 static void
-canloop_clone_destroy(struct ifnet *ifp)
+canlo_clone_destroy(struct ifnet *ifp)
 {
 	ifp->if_drv_flags &= ~(IFF_DRV_RUNNING | IFF_DRV_OACTIVE);
 	ifp->if_flags &= ~IFF_UP;
@@ -175,18 +175,18 @@ canloop_clone_destroy(struct ifnet *ifp)
 }
 
 static int
-canloop_clone_create(struct if_clone *ifc, int unit, caddr_t data)
+canlo_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 {
 	struct ifnet *ifp;
 
 	if ((ifp = if_alloc(IFT_CAN)) == NULL)
 		return (ENOSPC);
 
-	if_initname(ifp, canloop_name, unit);
+	if_initname(ifp, canlo_name, unit);
 	
-	ifp->if_flags = IFF_LOOPBACK;
-	ifp->if_ioctl = canloop_ioctl;
-	ifp->if_start = canloop_start;
+	ifp->if_flags = IFF_LOOPBACK | IFF_MULTICAST;
+	ifp->if_ioctl = canlo_ioctl;
+	ifp->if_start = canlo_start;
 	
 	can_ifattach(ifp);
 
@@ -197,17 +197,17 @@ canloop_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 }
 
 static int
-canloop_modevent(module_t mod, int type, void *data)
+canlo_modevent(module_t mod, int type, void *data)
 {
 	int error;
 
 	switch (type) {
 	case MOD_LOAD:
-		canloop_cloner = if_clone_simple(canloop_name, 
-			canloop_clone_create, canloop_clone_destroy, 0);
+		canlo_cloner = if_clone_simple(canlo_name, 
+			canlo_clone_create, canlo_clone_destroy, 0);
 		error = 0;
 	case MOD_UNLOAD:
-		if_clone_detach(canloop_cloner);
+		if_clone_detach(canlo_cloner);
 		error = 0;
 		break;
 	default:
@@ -217,11 +217,11 @@ canloop_modevent(module_t mod, int type, void *data)
 	return (error);
 }
 
-static moduledata_t canloop_mod = {
-	"if_canloop",
-	canloop_modevent,
+static moduledata_t canlo_mod = {
+	"if_canlo",
+	canlo_modevent,
 	0
 };
 
-DECLARE_MODULE(if_canloop, canloop_mod, SI_SUB_PSEUDO, SI_ORDER_ANY);
-MODULE_DEPEND(if_canloop, can, 1, 1, 1);
+DECLARE_MODULE(if_canlo, canlo_mod, SI_SUB_PSEUDO, SI_ORDER_ANY);
+MODULE_DEPEND(if_canlo, can, 1, 1, 1);
