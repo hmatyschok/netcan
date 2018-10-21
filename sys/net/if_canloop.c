@@ -1,4 +1,4 @@
-/*	$NetBSD: if_canlo.c,v 1.2.2.1 2018/01/02 10:20:34 snj Exp $	*/
+/*	$NetBSD: if_canloop.c,v 1.2.2.1 2018/01/02 10:20:34 snj Exp $	*/
 
 /*-
  * Copyright (c) 2017 The NetBSD Foundation, Inc.
