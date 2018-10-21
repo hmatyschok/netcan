@@ -55,6 +55,9 @@
  */
  
 #include <sys/cdefs.h>
+
+#include "opt_canlo.h"
+
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/time.h>
@@ -69,10 +72,6 @@
 #include <net/if_var.h>
 #include <net/if_types.h>
 #include <net/if_can.h>
-
-#ifdef MAC 
-#include <security/mac/mac_framework.h>
-#endif 	/* MAC */
 
 /*
  * Loopback interface driver for the CAN protocol

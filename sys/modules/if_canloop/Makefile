@@ -1,7 +1,7 @@
 
 .PATH: ${SRCTOP}/sys/net
 
-KMOD=	if_canloop
-SRCS=	if_canloop.c opt_can.h opt_canloop.h
+KMOD=	if_canlo
+SRCS=	if_canloop.c opt_canlo.h
 
 .include <bsd.kmod.mk>
