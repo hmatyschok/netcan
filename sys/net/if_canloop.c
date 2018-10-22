@@ -56,7 +56,7 @@
  
 #include <sys/cdefs.h>
 
-#include "opt_canlo.h"
+#include "opt_can.h"
 
 #include <sys/param.h>
 #include <sys/systm.h>
