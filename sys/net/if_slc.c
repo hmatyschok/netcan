@@ -51,7 +51,7 @@
 #include <net/if_slcvar.h>
 
 /*
- * Serial line CAN interface implemented as TTY hook.
+ * Serial line CAN interface implemented by TTY hook.
  * 
  * XXX: Missing error control [ISO 11898-1] due to the 
  * XXX: the case of transmission by e. g. uart(4), but   
@@ -717,6 +717,7 @@ slc_modevent(module_t mod, int type, void *data)
 		error = 0;
 		break;
 	case MOD_UNLOAD:
+		if_clone_detach(slc_cloner);
 		mtx_lock(&slc_list_mtx);
 		while ((slc = TAILQ_FIRST(&slc_list)) != NULL) {
 			TAILQ_REMOVE(&slc_list, slc, slc_next);
@@ -726,7 +727,6 @@ slc_modevent(module_t mod, int type, void *data)
 		}
 		mtx_unlock(&slc_list_mtx);
 		mtx_destroy(&slc_list_mtx);
-		if_clone_detach(slc_cloner);
 		error = 0;
 		break;
 	default:
