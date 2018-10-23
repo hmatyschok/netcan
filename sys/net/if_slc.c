@@ -34,6 +34,7 @@
 #include <sys/mbuf.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/conf.h>
 #include <sys/malloc.h>
 #include <sys/kernel.h>
 #include <sys/lock.h>
@@ -70,16 +71,23 @@ static void 	slc_destroy(struct slc_softc *);
 static int 	slc_encap(struct slc_softc *, struct mbuf **);
 static int 	slc_rxeof(struct slc_softc *); 
 static int 	slc_gtty(struct slc_softc *, void *); 
-static int 	slc_stty(struct slc_softc *, void *); 
+static int 	slc_stty(struct slc_softc *, void *, struct thread *); 
 static int 	slc_dtty(struct slc_softc *);
  
+/* Interface cloner */
+static void 	slc_clone_destroy(struct ifnet *); 
+static int 	slc_clone_create(struct if_clone *, int, caddr_t);
+
+static struct if_clone *slc_cloner;
+static const char slc_name[] = "slc";
+
 /* Interface-level routines. */
 static void 	slc_init(void *);
-static int 	slc_ioctl(struct ifnet *, u_long, caddr_t);
+static int 	slc_ifioctl(struct ifnet *, u_long, caddr_t);
 static void 	slc_start_locked(struct ifnet *);
 static void 	slc_start(struct ifnet *);
 
-/* Bottom-level routines, */
+/* Bottom-level routines */
 static th_getc_inject_t 	slc_txeof;
 static th_getc_poll_t 	slc_txeof_poll;
 static th_rint_t 	slc_rint;
@@ -93,12 +101,16 @@ static struct ttyhook slc_hook = {
 	.th_rint_poll = 	slc_rint_poll,
 };
 
-/* Interface cloner */
-static void 	slc_clone_destroy(struct ifnet *); 
-static int 	slc_clone_create(struct if_clone *, int, caddr_t);
+/* Device-level routines */
+static d_open_t		slc_open;
+static d_ioctl_t	slc_ioctl;
 
-static struct if_clone *slc_cloner;
-static const char slc_name[] = "slc";
+static struct cdevsw slc_cdevsw = {
+	.d_version	= D_VERSION,
+	.d_open		= slc_open,
+	.d_ioctl	= slc_ioctl,
+	.d_name		= slc_name,
+};
 
 /*
  * Interface-level routines.
@@ -197,7 +209,7 @@ slc_start_locked(struct ifnet *ifp)
  */
 /* ARGSUSED */
 static int
-slc_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
+slc_ifioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
 	struct ifreq *ifr = (struct ifreq *)data;
 	struct ifdrv *ifd = (struct ifdrv *)data;
@@ -226,21 +238,7 @@ slc_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 		}
 		break;
 	case SIOCSDRVSPEC:
-	
-		switch (ifd->ifd_cmd) {
-		case SLCSTTY:
-			if (ifd->ifd_len != sizeof(int))
-				error = EINVAL;
-			else
-				error = slc_stty(slc, ifd->ifd_data);
-			break;
-		case SLCDTTY:	
-			error = slc_dtty(slc);
-			break;	
-		default:
-			error = EINVAL;
-			break;
-		}
+		error = EINVAL;
 		break;
 	case SIOCSIFMTU:
 		if (ifr->ifr_mtu == CAN_MTU) /* XXX */
@@ -381,6 +379,41 @@ slc_txeof_poll(struct tty *tp)
 }
 
 /*
+ * Device-level routines.
+ */
+ 
+static int
+slc_ioctl(struct cdev *dev, u_long cmd, caddr_t data, int flags,
+    struct thread *td)
+{
+	struct slc_softc *slc;
+	int error;
+
+	slc = dev->si_drv1;
+
+	switch (cmd) {
+	case SLCSTTY:
+		error = slc_stty(slc, data, td);
+		break;
+	case SLCGTTY:
+		error = slc_gtty(slc, data);
+		break;
+	default:
+		error = ENOTTY;
+		break;
+	}
+	return (error);
+}
+
+static int
+slc_open(struct cdev *dev, int flag, int mode, struct thread *td)
+{
+	
+	return (0);
+}
+
+
+/*
  * Subr.
  */
 
@@ -388,6 +421,7 @@ static void
 slc_destroy(struct slc_softc *slc)
 {
 	struct ifnet *ifp;
+	struct cdev *dev;
 	
 	ifp = slc->slc_ifp;
 	ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
@@ -401,6 +435,9 @@ slc_destroy(struct slc_softc *slc)
 	
 	mtx_destroy(&slc->slc_outq.ifq_mtx);
 	mtx_destroy(&slc->slc_mtx);
+	
+	dev = slc->slc_dev;
+	destroy_dev(dev);
 	free(slc, M_SLC);
 }
 
@@ -613,18 +650,18 @@ bad:
 }
 
 static int 
-slc_stty(struct slc_softc *slc, void *data)
+slc_stty(struct slc_softc *slc, void *data, struct thread *td)
 {
-	int fd = *(int *)data;
 	struct proc *p;
+	int fd;
 	int error;
 	
-	if (slc->slc_tp != NULL) {
-		error = EBUSY;
+	if (td == NULL) {
+		error = ESRCH;
 		goto out;
 	}
 	
-	if ((p = pfind(fd)) == NULL) {
+	if ((p = td->td_proc) == NULL) {
 		error = ESRCH;
 		goto out;
 	}
@@ -633,12 +670,10 @@ slc_stty(struct slc_softc *slc, void *data)
 		error = ESRCH;
 		goto out;
 	}
-	_PHOLD(p);
-	PROC_UNLOCK(p);
+	fd = *(int *)data;
 	mtx_lock(&slc->slc_mtx);
 	error = ttyhook_register(&slc->slc_tp, p, fd, &slc_hook, slc);
-	mtx_unlock(&slc->slc_mtx);
-	PRELE(p);	
+	mtx_unlock(&slc->slc_mtx);	
 out:
 	return (error);
 }
@@ -665,12 +700,17 @@ slc_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 	ifp->if_flags = IFF_POINTOPOINT | IFF_MULTICAST;
 	ifp->if_init = slc_init;
 	ifp->if_start = slc_start;
-	ifp->if_ioctl = slc_ioctl;
+	ifp->if_ioctl = slc_ifioctl;
 	
 	can_ifattach(ifp);
 
 	ifp->if_mtu = SLC_MTU;
 	
+	/* initialize char-device */
+	slc->slc_dev = make_dev(&slc_cdevsw, unit,
+		    UID_ROOT, GID_WHEEL, 0600, "%s%d", slc_name, unit);
+	slc->slc_dev->si_drv1 = slc;
+		    
 	/* initialize its protective lock */
 	mtx_init(&slc->slc_mtx, "slc_mtx", NULL, MTX_DEF);
 	

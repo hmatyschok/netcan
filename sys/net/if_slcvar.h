@@ -69,6 +69,7 @@
 #ifdef _KERNEL
 struct slc_softc {
 	struct ifnet 	*slc_ifp;
+	struct cdev 	*slc_dev;
 	struct tty 	*slc_tp;		/* pointer to tty structure */
 	struct mbuf 	*slc_inb;
 	struct ifqueue	slc_outq;		/* queue of outgoing data */
