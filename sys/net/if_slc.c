@@ -398,6 +398,9 @@ slc_ioctl(struct cdev *dev, u_long cmd, caddr_t data, int flags,
 	case SLCGTTY:
 		error = slc_gtty(slc, data);
 		break;
+	case SLCDTTY:
+		error = slc_dtty(slc);
+		break;	
 	default:
 		error = ENOTTY;
 		break;
