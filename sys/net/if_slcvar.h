@@ -27,10 +27,11 @@
 #ifndef _NET_IF_SLCVAR_H_
 #define _NET_IF_SLCVAR_H_
 
+#include <sys/ioccom.h>
 #include <net/if_can.h>
 
 /* 
- * Commands for SIOC[GS]DRVSPEC ioctl(2) requests.
+ * Commands for ioctl(2) requests.
  * 
  * Example:
  *
@@ -40,25 +41,24 @@
  *  if ((slc_fd = socket(AF_LOCAL, SOCK_DGRAM, 0) < 0) 
  *      fatal(EX_DATAERR, "Can't open %s", ifd.ifd_name);
  * 
- *  (void)strlcpy(tty_name, "/dev/ttyU0", strlen("/dev/ttyU0"));
+ *  ifd.ifd_cmd = SLCGTTY;
+ *  ifd.ifd_len = sizeof(dev_t);
+ *  ifd.ifd_data = &tty_dev;
  * 
- *  if ((tty_fd = open(tty_name, O_RDONLY | O_NONBLOCK)) < 0)
- *      fatal(EX_DATAERR, "Can't open %s device", tty_name); 
- *
- *  ifd.ifd_cmd = SLCSTTY;
- *  ifd.ifd_len = sizeof(int);
- *  ifd.ifd_data = &tty_fd;
- * 
- *  if (ioctl(slc_fd, SIOCSDRVSPEC, &ifd) != 0)
+ *  if (ioctl(slc_fd, SIOCGDRVSPEC, &ifd) != 0)
  *      fatal(EX_UNAVAILABLE, "Can't attach %s @ %s", 
  *          tty_name, ifd.ifd_name);
  *
- *  (void)close(tty_fd);
- *  (void)close(slc_fd);   
+ *  (void)printf("%s attached @ %s\n", ifd.ifd_name, 
+ *      devname(tty_dev, S_IFCHR));
+ * 
+ *  (void)close(slc_fd); 
+ * 
+ * ...  
  */
-#define SLCSTTY 	0
-#define SLCGTTY 	1
-#define SLCDTTY 	2
+#define SLCSTTY 	_IOW('T', 0, int)
+#define SLCGTTY 	_IOW('T', 1, dev_t)
+#define SLCDTTY 	_IO('T', 2)
 
 /*
  * Definitions for serial line CAN interface data structures.

@@ -42,69 +42,29 @@
 
 #include "ifconfig.h"
 
-
-static int 	slc_cmd(int s, u_long cmd, void *arg, size_t len);
-static void 	slc_status(int s);
-
-static int
-slc_cmd(int s, u_long cmd, void *arg, size_t len)
-{
-	struct ifdrv ifd;
-
-	(void)memset(&ifd, 0, sizeof(ifd));
-	(void)strlcpy(ifd.ifd_name, ifr.ifr_name, sizeof(ifd.ifd_name));
-	
-	ifd.ifd_cmd = cmd;
-	ifd.ifd_len = len;
-	ifd.ifd_data = arg;
-
-	return (ioctl(s, (cmd & 0x01) ? SIOCGDRVSPEC : SIOCSDRVSPEC, &ifd));
-}
-
 static void
 slc_status(int s)
 {
-	dev_t tty_dev = 0;
+	struct ifdrv ifd;
+	dev_t tty_dev;	
 	
-	if (slc_cmd(s, SLCGTTY, &tty_dev, sizeof(tty_dev)) < 0)
+	tty_dev = NODEV;
+	
+	(void)memset(&ifd, 0, sizeof(ifd));
+	(void)strlcpy(ifd.ifd_name, ifr.ifr_name, sizeof(ifd.ifd_name));
+	
+	ifd.ifd_cmd = SLGTTY;
+	ifd.ifd_len = sizeof(tty_dev);
+	ifd.ifd_data = &tty_dev;
+
+	if (ioctl(s, SIOCGDRVSPEC, &ifd) < 0)
+		return;
+	
+	if (tty_dev == NODEV)
 		return;
 		
 	(void)printf("\attached @ %s\n", devname(tty_dev, S_IFCHR));
 } 
-
-static void
-slc_stty(const char *val, int d, int s, const struct afswtch *afp)
-{
-	char tty_name[IFNAMSIZ];
-	int tty_fd;
-
-	(void)memset(tty_name, 0, sizeof(tty_name));
-	(void)strlcpy(tty_name, val, sizeof(tty_name));
-	
-	if ((tty_fd = open(tty_name, O_RDONLY | O_NONBLOCK)) < 0)
-		err(1, "SLCSTTY Can't open %s device", tty_name); 	
-	
-	if (isatty(tty_fd) == 0)
-		err(1, "SLCSTTY %s not a terminal type device", tty_name);
-	
-	if (slc_cmd(s, SLCSTTY, &tty_fd, sizeof(tty_fd)) < 0)
-		err(1, "SLCSTTY Can't attach %s @ %s", 
-			tty_name, ifr.ifr_name);
-			
-	(void)close(tty_fd);
-}
-
-static void
-slc_dtty(const char *val, int d, int s, const struct afswtch *afp)
-{
-
-	(void)slc_cmd(s, SLCDTTY, NULL, 0);
-}
-
-static struct cmd slc_cmds[] = {
-	DEF_CMD_ARG("stty",		slc_stty),
-	DEF_CMD("dtty", 0,		slc_dtty),
-};
 
 static struct afswtch af_slc = {
 	.af_name	= "af_slc",
@@ -115,9 +75,6 @@ static struct afswtch af_slc = {
 static __constructor void
 slc_ctor(void)
 {
-	int i;
-
-	for (i = 0; i < nitems(slc_cmds);  i++)
-		cmd_register(&slc_cmds[i]);
+	
 	af_register(&af_slc);
 }

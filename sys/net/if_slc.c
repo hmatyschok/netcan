@@ -30,6 +30,7 @@
 #include "opt_can.h"
 
 #include <sys/param.h>
+#include <sys/filio.h>
 #include <sys/systm.h>
 #include <sys/mbuf.h>
 #include <sys/time.h>
@@ -103,6 +104,7 @@ static struct ttyhook slc_hook = {
 
 /* Device-level routines */
 static d_open_t		slc_open;
+static d_close_t		slc_close;
 static d_ioctl_t	slc_ioctl;
 
 static struct cdevsw slc_cdevsw = {
@@ -415,7 +417,6 @@ slc_open(struct cdev *dev, int flag, int mode, struct thread *td)
 	return (0);
 }
 
-
 /*
  * Subr.
  */
@@ -724,11 +725,9 @@ slc_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 	/* attach */
 	mtx_lock(&slc_list_mtx);
 	TAILQ_INSERT_TAIL(&slc_list, slc, slc_next);
-	mtx_unlock(&slc_list_mtx);
-	mtx_lock(&slc->slc_mtx);
 	slc->slc_flags |= SLC_ATTACHED;
-	mtx_unlock(&slc->slc_mtx);
-
+	mtx_unlock(&slc_list_mtx);
+	
 	ifp->if_drv_flags |= IFF_DRV_RUNNING;
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 
