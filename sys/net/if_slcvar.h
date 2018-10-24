@@ -41,7 +41,7 @@
  *  if ((slc_fd = socket(AF_LOCAL, SOCK_DGRAM, 0) < 0) 
  *      fatal(EX_DATAERR, "Can't open %s", ifd.ifd_name);
  * 
- *  ifd.ifd_cmd = SLCGTTY;
+ *  ifd.ifd_cmd = IFSLCGTTY;
  *  ifd.ifd_len = sizeof(dev_t);
  *  ifd.ifd_data = &tty_dev;
  * 
@@ -56,6 +56,8 @@
  * 
  * ...  
  */
+#define IFSLCGTTY 	0 
+ 
 #define SLCSTTY 	_IOW('T', 0, int)
 #define SLCGTTY 	_IOW('T', 1, dev_t)
 #define SLCDTTY 	_IO('T', 2)

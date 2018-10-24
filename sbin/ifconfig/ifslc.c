@@ -53,7 +53,7 @@ slc_status(int s)
 	(void)memset(&ifd, 0, sizeof(ifd));
 	(void)strlcpy(ifd.ifd_name, ifr.ifr_name, sizeof(ifd.ifd_name));
 	
-	ifd.ifd_cmd = SLGTTY;
+	ifd.ifd_cmd = IFSLCGTTY;
 	ifd.ifd_len = sizeof(tty_dev);
 	ifd.ifd_data = &tty_dev;
 
