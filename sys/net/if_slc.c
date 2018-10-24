@@ -104,7 +104,6 @@ static struct ttyhook slc_hook = {
 
 /* Device-level routines */
 static d_open_t		slc_open;
-static d_close_t		slc_close;
 static d_ioctl_t	slc_ioctl;
 
 static struct cdevsw slc_cdevsw = {
