@@ -76,17 +76,17 @@ static int 	slc_stty(struct slc_softc *, void *, struct thread *);
 static int 	slc_dtty(struct slc_softc *);
  
 /* Interface cloner */
-static void 	slc_clone_destroy(struct ifnet *); 
-static int 	slc_clone_create(struct if_clone *, int, caddr_t);
+static void 	slc_ifclone_destroy(struct ifnet *); 
+static int 	slc_ifclone_create(struct if_clone *, int, caddr_t);
 
 static struct if_clone *slc_cloner;
 static const char slc_name[] = "slc";
 
 /* Interface-level routines. */
-static void 	slc_init(void *);
+static void 	slc_ifinit(void *);
 static int 	slc_ifioctl(struct ifnet *, u_long, caddr_t);
-static void 	slc_start_locked(struct ifnet *);
-static void 	slc_start(struct ifnet *);
+static void 	slc_ifstart_locked(struct ifnet *);
+static void 	slc_ifstart(struct ifnet *);
 
 /* Bottom-level routines */
 static th_getc_inject_t 	slc_txeof;
@@ -103,14 +103,16 @@ static struct ttyhook slc_hook = {
 };
 
 /* Device-level routines */
-static d_open_t		slc_open;
-static d_ioctl_t	slc_ioctl;
+static d_open_t 	slc_open;
+static d_close_t 	slc_close;
+static d_ioctl_t 	slc_ioctl;
 
 static struct cdevsw slc_cdevsw = {
-	.d_version	= D_VERSION,
-	.d_open		= slc_open,
-	.d_ioctl	= slc_ioctl,
-	.d_name		= slc_name,
+	.d_version = 	D_VERSION,
+	.d_open = 	slc_open,
+	.d_close = 	slc_close,
+	.d_ioctl = 	slc_ioctl,
+	.d_name = 	slc_name,
 };
 
 /*
@@ -118,7 +120,7 @@ static struct cdevsw slc_cdevsw = {
  */
  
 static void
-slc_init(void *xsc)
+slc_ifinit(void *xsc)
 {
 	struct slc_softc *slc;
 	struct ifnet *ifp;
@@ -138,19 +140,19 @@ slc_init(void *xsc)
 }
 
 static void
-slc_start(struct ifnet *ifp)
+slc_ifstart(struct ifnet *ifp)
 {
 	struct slc_softc *slc;
 		
 	slc = ifp->if_softc;
 	
 	mtx_lock(&slc->slc_mtx);
-	slc_start_locked(ifp);
+	slc_ifstart_locked(ifp);
 	mtx_unlock(&slc->slc_mtx);
 }
 
 static void
-slc_start_locked(struct ifnet *ifp)
+slc_ifstart_locked(struct ifnet *ifp)
 {
 	struct slc_softc *slc;
 	struct tty *tp;
@@ -382,7 +384,21 @@ slc_txeof_poll(struct tty *tp)
 /*
  * Device-level routines.
  */
+
+static int
+slc_open(struct cdev *dev, int flag, int mode, struct thread *td)
+{
+	
+	return (0);
+}
  
+static int
+slc_close(struct cdev *dev, int flag, int mode, struct thread *td)
+{
+	
+	return (0);
+} 
+
 static int
 slc_ioctl(struct cdev *dev, u_long cmd, caddr_t data, int flags,
     struct thread *td)
@@ -407,13 +423,6 @@ slc_ioctl(struct cdev *dev, u_long cmd, caddr_t data, int flags,
 		break;
 	}
 	return (error);
-}
-
-static int
-slc_open(struct cdev *dev, int flag, int mode, struct thread *td)
-{
-	
-	return (0);
 }
 
 /*
@@ -686,7 +695,7 @@ out:
  */ 
 
 static int
-slc_clone_create(struct if_clone *ifc, int unit, caddr_t data)
+slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 {
 	struct slc_softc *slc;
 	struct ifnet *ifp;
@@ -701,8 +710,8 @@ slc_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 	if_initname(ifp, slc_name, unit);
 	
 	ifp->if_flags = IFF_POINTOPOINT | IFF_MULTICAST;
-	ifp->if_init = slc_init;
-	ifp->if_start = slc_start;
+	ifp->if_init = slc_ifinit;
+	ifp->if_start = slc_ifstart;
 	ifp->if_ioctl = slc_ifioctl;
 	
 	can_ifattach(ifp);
@@ -734,7 +743,7 @@ slc_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 }
 
 static void
-slc_clone_destroy(struct ifnet *ifp)
+slc_ifclone_destroy(struct ifnet *ifp)
 {
 	struct slc_softc *slc = ifp->if_softc;
 
@@ -754,7 +763,7 @@ slc_modevent(module_t mod, int type, void *data)
 	case MOD_LOAD:
 		mtx_init(&slc_list_mtx, "slc_list_mtx", NULL, MTX_DEF);
 		slc_cloner = if_clone_simple(slc_name, 
-			slc_clone_create, slc_clone_destroy, 0);
+			slc_ifclone_create, slc_ifclone_destroy, 0);
 		error = 0;
 		break;
 	case MOD_UNLOAD:
