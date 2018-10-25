@@ -285,11 +285,6 @@ slc_rint(struct tty *tp, char c, int flags)
 
 	mtx_lock(&slc->slc_mtx);
 
-#if 0
-	if (slc->slc_flags & SLC_ERROR) 
-		goto out1; /* XXX */
-#endif 
-
 	/* allocate mbuf(9) and initialize */
 	if ((m = slc->slc_inb) == NULL) {
 		if ((m = m_gethdr(M_NOWAIT, MT_DATA)) == NULL) {
@@ -453,9 +448,7 @@ slc_destroy(struct slc_softc *slc)
 	free(slc, M_SLC);
 }
 
-/*
- * Serialize data and enqueue for trsnsmision.
- */ 
+/* Serialize data and enqueue for trsnsmision. */ 
 static int 
 slc_encap(struct slc_softc *slc, struct mbuf **mp)
 {
