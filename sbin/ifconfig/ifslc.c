@@ -110,8 +110,7 @@ slc_dtty(const char *val, int d, int s, const struct afswtch *afp)
 		err(1, "cannot open(2) %s", dev);	
 
 	if (ioctl(slc_fd, TIOCNOTTY) < 0)
-		err(1, "TIOCSETD Can't attach %s to %s", 
-			dev, ifr.ifr_name);
+		err(1, "TIOCNOTTY Can't detach");
 
 	(void)close(slc_fd);
 }
