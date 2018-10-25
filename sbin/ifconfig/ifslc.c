@@ -69,29 +69,28 @@ slc_status(int s)
 static void
 slc_stty(const char *val, int d, int s, const struct afswtch *afp)
 {
-	char dev_name[MAXPATHLEN];
+	char dev[MAXPATHLEN];
 	int slc_fd, tty_fd;
 
-	(void)memset(dev_name, 0, sizeof(dev_name));
-	(void)snprintf(dev_name, sizeof(dev_name), "%s%s", 
+	(void)memset(dev, 0, sizeof(dev));
+	(void)snprintf(dev, sizeof(dev), "%s%s", 
 		_PATH_DEV, ifr.ifr_name);
 	
-	if ((slc_fd = open(dev_name, O_RDONLY)) < 0)
-		err(1, "cannot open(2) %s", dev_name);	
+	if ((slc_fd = open(dev, O_RDONLY)) < 0)
+		err(1, "cannot open(2) %s", dev);	
 
-	(void)memset(dev_name, 0, sizeof(dev_name));
-	(void)snprintf(dev_name, sizeof(dev_name), "%s%s", 
-		_PATH_DEV, val);
+	(void)memset(dev, 0, sizeof(dev));
+	(void)snprintf(dev, sizeof(dev), "%s%s", _PATH_DEV, val);
 	
-	if ((tty_fd = open(dev_name, O_RDONLY | O_NONBLOCK)) < 0)
-		err(1, "TIOCSETD Can't open %s device", dev_name); 	
+	if ((tty_fd = open(dev, O_RDONLY | O_NONBLOCK)) < 0)
+		err(1, "TIOCSETD Can't open %s device", dev); 	
 	
 	if (isatty(tty_fd) == 0)
-		err(1, "TIOCSETD %s not a terminal type device", dev_name);
+		err(1, "TIOCSETD %s not a terminal type device", dev);
 	
-	if (ioctl(slc_dev, TIOCSETD, &tty_fd) < 0)
+	if (ioctl(slc_fd, TIOCSETD, &tty_fd) < 0)
 		err(1, "TIOCSETD Can't attach %s to %s", 
-			dev_name, ifr.ifr_name);
+			dev, ifr.ifr_name);
 			
 	(void)close(tty_fd);
 	(void)close(slc_fd);
@@ -100,19 +99,19 @@ slc_stty(const char *val, int d, int s, const struct afswtch *afp)
 static void
 slc_dtty(const char *val, int d, int s, const struct afswtch *afp)
 {
-	char dev_name[MAXPATHLEN];
+	char dev[MAXPATHLEN];
 	int slc_fd;
 
-	(void)memset(dev_name, 0, sizeof(dev_name));
-	(void)snprintf(dev_name, sizeof(dev_name), "%s%s", 
+	(void)memset(dev, 0, sizeof(dev));
+	(void)snprintf(dev, sizeof(dev), "%s%s", 
 		_PATH_DEV, ifr.ifr_name);
 	
-	if ((slc_fd = open(dev_name, O_RDONLY)) < 0)
-		err(1, "cannot open(2) %s", dev_name);	
+	if ((slc_fd = open(dev, O_RDONLY)) < 0)
+		err(1, "cannot open(2) %s", dev);	
 
-	if (ioctl(slc_dev, TIOCNOTTY) < 0)
+	if (ioctl(slc_fd, TIOCNOTTY) < 0)
 		err(1, "TIOCSETD Can't attach %s to %s", 
-			dev_name, ifr.ifr_name);
+			dev, ifr.ifr_name);
 
 	(void)close(slc_fd);
 }
@@ -135,5 +134,6 @@ slc_ctor(void)
 
 	for (i = 0; i < nitems(slc_cmds);  i++)
 		cmd_register(&slc_cmds[i]);
+
 	af_register(&af_slc);
 }
