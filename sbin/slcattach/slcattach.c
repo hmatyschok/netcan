@@ -40,6 +40,10 @@
 #include <sysexits.h>
 #include <unistd.h>
 
+/*
+ * XXX: incomplete, work in progress..
+ */
+
 static char	dev_name[MAXPATHLEN]; /* path name of cdev{} maps to if_slc(4) */
 static int dev_fd = -1;
 
@@ -52,7 +56,6 @@ int
 main(int argc, char *argv[])
 {
 	struct stat sb;
-	sigset_t nsigset;
 
 	if (argc != 3) {
 		(void)fprintf(stderr, 
@@ -100,6 +103,8 @@ main(int argc, char *argv[])
 	sigemptyset(&nsigset);
 	for (;;)
 		sigsuspend(&nsigset);
+		
+	exit(EX_OK);
 		
 	/* NOTREACHED */	
 }
