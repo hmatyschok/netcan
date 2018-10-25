@@ -42,6 +42,10 @@
 
 #include "ifconfig.h"
 
+#ifndef _PATH_DEV
+#define _PATH_DEV 	"/dev/"
+#endif
+
 static void
 slc_status(int s)
 {
