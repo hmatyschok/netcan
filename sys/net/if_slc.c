@@ -61,13 +61,16 @@
  * XXX: as a prototype for a TTY device-driver class.
  */
  
-static MALLOC_DEFINE(M_SLC, "slc", "SLCAN Interface");
+static struct if_clone *slc_cloner;
+static const char slc_name[] = "slc"; 
 
 static struct mtx slc_list_mtx;
 static TAILQ_HEAD(slc_head, slc_softc) slc_list = 
 	TAILQ_HEAD_INITIALIZER(slc_list);
+	
+static MALLOC_DEFINE(M_SLC, "slc", "SLCAN Interface"); 
  
-/* Subr. */ 
+/* Subr. */
 static void 	slc_destroy(struct slc_softc *);
 static int 	slc_encap(struct slc_softc *, struct mbuf **);
 static int 	slc_rxeof(struct slc_softc *); 
@@ -78,9 +81,6 @@ static int 	slc_dtty(struct slc_softc *);
 /* Interface cloner */
 static void 	slc_ifclone_destroy(struct ifnet *); 
 static int 	slc_ifclone_create(struct if_clone *, int, caddr_t);
-
-static struct if_clone *slc_cloner;
-static const char slc_name[] = "slc";
 
 /* Interface-level routines. */
 static void 	slc_ifinit(void *);
@@ -94,6 +94,13 @@ static th_getc_poll_t 	slc_txeof_poll;
 static th_rint_t 	slc_rint;
 static th_rint_poll_t 	slc_rint_poll;
 
+/* device(9)-level routines */
+static d_open_t 	slc_open;
+static d_close_t 	slc_close;
+static d_read_t 	slc_read;
+static d_write_t 	slc_write;
+static d_ioctl_t 	slc_ioctl;
+
 /* TTY hook */
 static struct ttyhook slc_hook = {
 	.th_getc_inject = 	slc_txeof,
@@ -102,21 +109,20 @@ static struct ttyhook slc_hook = {
 	.th_rint_poll = 	slc_rint_poll,
 };
 
-/* Device-level routines */
-static d_open_t 	slc_open;
-static d_close_t 	slc_close;
-static d_ioctl_t 	slc_ioctl;
-
+/* device(9) */
 static struct cdevsw slc_cdevsw = {
 	.d_version = 	D_VERSION,
 	.d_open = 	slc_open,
 	.d_close = 	slc_close,
+	.d_read = 	slc_read,
+	.d_write = 	slc_write,	
 	.d_ioctl = 	slc_ioctl,
 	.d_name = 	slc_name,
 };
 
-/*
+/*-
  * Interface-level routines.
+ * 
  */
  
 static void
@@ -267,10 +273,14 @@ out:
 	return (error);
 }
 
-/*
+/*-
  * Bottom-level subr.
+ * 
  */
 
+/*
+ * Rx-interrupt.
+ */
 static int
 slc_rint(struct tty *tp, char c, int flags)
 {
@@ -318,6 +328,9 @@ slc_rint_poll(struct tty *tp)
 	return (1);
 }
 
+/*
+ * Tx-interrupt.
+ */
 static size_t
 slc_txeof(struct tty *tp, void *buf, size_t len)
 {
@@ -376,8 +389,9 @@ slc_txeof_poll(struct tty *tp)
 	return (outqlen);
 }
 
-/*
+/*-
  * Device-level routines.
+ * 
  */
 
 static int
@@ -393,6 +407,20 @@ slc_close(struct cdev *dev, int flag, int mode, struct thread *td)
 	
 	return (0);
 } 
+
+static int
+slc_read(struct cdev *dev, struct uio *uio, int flag)
+{
+	
+	return (EIO);	
+}
+
+static int
+slc_write(struct cdev *dev, struct uio *uio, int flag)
+{
+			
+	return (EIO);		
+}
 
 static int
 slc_ioctl(struct cdev *dev, u_long cmd, caddr_t data, int flags,
@@ -420,8 +448,9 @@ slc_ioctl(struct cdev *dev, u_long cmd, caddr_t data, int flags,
 	return (error);
 }
 
-/*
+/*-
  * Subr.
+ * 
  */
 
 static void
@@ -448,7 +477,9 @@ slc_destroy(struct slc_softc *slc)
 	free(slc, M_SLC);
 }
 
-/* Serialize data and enqueue for trsnsmision. */ 
+/* 
+ * Serialize data and enqueue for transmission. 
+ */ 
 static int 
 slc_encap(struct slc_softc *slc, struct mbuf **mp)
 {
@@ -523,6 +554,9 @@ out:
 	return (error);
 }
 
+/* 
+ * Detach tty(4) hook. 
+ */
 static int 
 slc_dtty(struct slc_softc *slc)
 {
@@ -543,6 +577,9 @@ slc_dtty(struct slc_softc *slc)
 	return (error);
 }
 
+/* 
+ * Get id from hooked line. 
+ */
 static int 
 slc_gtty(struct slc_softc *slc, void *data)
 {
@@ -556,6 +593,9 @@ slc_gtty(struct slc_softc *slc, void *data)
 	return (0);
 }
 
+/* 
+ * De-serialize rx'd data, handoff into protocol-layer. 
+ */ 
 static int
 slc_rxeof(struct slc_softc *slc)
 {
@@ -654,6 +694,9 @@ bad:
 	goto out;
 }
 
+/* 
+ * Attach tty(4) hook on selected line 
+ */
 static int 
 slc_stty(struct slc_softc *slc, void *data, struct thread *td)
 {
@@ -683,16 +726,21 @@ out:
 	return (error);
 }
 
-/* 
+/*- 
  * Interface cloner and module description. 
+ * 
  */ 
 
+/* 
+ * Ctor. 
+ */
 static int
 slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 {
 	struct slc_softc *slc;
 	struct ifnet *ifp;
-
+	struct cdev *dev;
+	
 	slc = malloc(sizeof(*slc), M_SLC, M_WAITOK | M_ZERO);
 	if ((ifp = slc->slc_ifp = if_alloc(IFT_CAN)) == NULL) {
 		free(slc, M_SLC);
@@ -712,9 +760,10 @@ slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 	ifp->if_mtu = SLC_MTU;
 	
 	/* initialize char-device */
-	slc->slc_dev = make_dev(&slc_cdevsw, unit,
+	dev = make_dev(&slc_cdevsw, unit,
 		    UID_ROOT, GID_WHEEL, 0600, "%s%d", slc_name, unit);
-	slc->slc_dev->si_drv1 = slc;
+	dev->si_drv1 = slc;
+	slc->slc_dev = dev;
 		    
 	/* initialize its protective lock */
 	mtx_init(&slc->slc_mtx, "slc_mtx", NULL, MTX_DEF);
@@ -731,15 +780,20 @@ slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 	
 	ifp->if_drv_flags |= IFF_DRV_RUNNING;
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
-
+	
 	return (0);
 }
 
+/* 
+ * Dtor. 
+ */
 static void
 slc_ifclone_destroy(struct ifnet *ifp)
 {
-	struct slc_softc *slc = ifp->if_softc;
+	struct slc_softc *slc;
 
+	slc = ifp->if_softc;
+	
 	mtx_lock(&slc_list_mtx);
 	TAILQ_REMOVE(&slc_list, slc, slc_next);
 	mtx_unlock(&slc_list_mtx);
@@ -756,11 +810,12 @@ slc_modevent(module_t mod, int type, void *data)
 	case MOD_LOAD:
 		mtx_init(&slc_list_mtx, "slc_list_mtx", NULL, MTX_DEF);
 		slc_cloner = if_clone_simple(slc_name, 
-			slc_ifclone_create, slc_ifclone_destroy, 0);
+		slc_ifclone_create, slc_ifclone_destroy, 0);
 		error = 0;
 		break;
 	case MOD_UNLOAD:
 		if_clone_detach(slc_cloner);
+		
 		mtx_lock(&slc_list_mtx);
 		while ((slc = TAILQ_FIRST(&slc_list)) != NULL) {
 			TAILQ_REMOVE(&slc_list, slc, slc_next);
@@ -777,13 +832,7 @@ slc_modevent(module_t mod, int type, void *data)
 		break;
 	}
 	return (error);
-} 
+}
 
-static moduledata_t slc_mod = { 
-	"if_slc", 
-	slc_modevent, 
-	0
-}; 
-
-DECLARE_MODULE(if_slc, slc_mod, SI_SUB_PSEUDO, SI_ORDER_ANY);
+DEV_MODULE(if_slc, slc_modevent, NULL);
 MODULE_DEPEND(if_slc, can, 1, 1, 1);

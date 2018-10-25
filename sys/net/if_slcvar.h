@@ -27,6 +27,9 @@
 #ifndef _NET_IF_SLCVAR_H_
 #define _NET_IF_SLCVAR_H_
 
+#ifndef _KERNEL
+#include <sys/types.h>
+#endif
 #include <sys/ioccom.h>
 #include <net/if_can.h>
 
@@ -57,10 +60,11 @@
  * ...  
  */
 #define IFSLCGTTY 	0 
- 
-#define SLCSTTY 	_IOW('T', 0, int)
-#define SLCGTTY 	_IOW('T', 1, dev_t)
-#define SLCDTTY 	_IO('T', 2)
+
+#define SLCSTTY 	_IOW('t', 3, int)
+#define SLCGTTY 	_IOWR('t', 4, dev_t)
+#define SLCDTTY 	_IO('t', 5)
+
 
 /*
  * Definitions for serial line CAN interface data structures.
