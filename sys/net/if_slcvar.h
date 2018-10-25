@@ -59,12 +59,7 @@
  * 
  * ...  
  */
-#define IFSLCGTTY 	0 
-
-#define SLCSTTY 	_IOW('t', 3, int)
-#define SLCGTTY 	_IOWR('t', 4, dev_t)
-#define SLCDTTY 	_IO('t', 5)
-
+#define IFSLCGTTY 	0
 
 /*
  * Definitions for serial line CAN interface data structures.

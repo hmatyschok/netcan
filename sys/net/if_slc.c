@@ -97,8 +97,6 @@ static th_rint_poll_t 	slc_rint_poll;
 /* device(9)-level routines */
 static d_open_t 	slc_open;
 static d_close_t 	slc_close;
-static d_read_t 	slc_read;
-static d_write_t 	slc_write;
 static d_ioctl_t 	slc_ioctl;
 
 /* TTY hook */
@@ -113,9 +111,7 @@ static struct ttyhook slc_hook = {
 static struct cdevsw slc_cdevsw = {
 	.d_version = 	D_VERSION,
 	.d_open = 	slc_open,
-	.d_close = 	slc_close,
-	.d_read = 	slc_read,
-	.d_write = 	slc_write,	
+	.d_close = 	slc_close,	
 	.d_ioctl = 	slc_ioctl,
 	.d_name = 	slc_name,
 };
@@ -409,20 +405,6 @@ slc_close(struct cdev *dev, int flag, int mode, struct thread *td)
 } 
 
 static int
-slc_read(struct cdev *dev, struct uio *uio, int flag)
-{
-	
-	return (EIO);	
-}
-
-static int
-slc_write(struct cdev *dev, struct uio *uio, int flag)
-{
-			
-	return (EIO);		
-}
-
-static int
 slc_ioctl(struct cdev *dev, u_long cmd, caddr_t data, int flags,
     struct thread *td)
 {
@@ -432,13 +414,13 @@ slc_ioctl(struct cdev *dev, u_long cmd, caddr_t data, int flags,
 	slc = dev->si_drv1;
 
 	switch (cmd) {
-	case SLCSTTY:
+	case TIOCSETD:
 		error = slc_stty(slc, data, td);
 		break;
-	case SLCGTTY:
+	case TIOCGETD:
 		error = slc_gtty(slc, data);
 		break;
-	case SLCDTTY:
+	case TIOCNOTTY:
 		error = slc_dtty(slc);
 		break;	
 	default:
