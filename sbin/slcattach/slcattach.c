@@ -87,7 +87,7 @@ main(int argc, char *argv[])
 	if ((sb.st_mode & S_IFMT) != S_IFCHR)
 		errx(EX_DATAERR, "%s is not a character device", tty_name);
 
-	if (ioctl(dev_fd, SLCSTTY, &tty_fd) != 0)
+	if (ioctl(dev_fd, TIOCSETD, &tty_fd) != 0)
 		errx(EX_UNAVAILABLE, "cannot attach %s to %s",
 			dev_name, tty_name);
 	
