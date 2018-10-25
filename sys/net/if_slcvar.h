@@ -33,34 +33,6 @@
 #include <sys/ioccom.h>
 #include <net/if_can.h>
 
-/* 
- * Commands for ioctl(2) requests.
- * 
- * Example:
- *
- *  (void)memset(&ifd, 0, sizeof(ifd));
- *  (void)strlcpy(ifd.ifd_name, "slc0", strlen("slc0"));
- * 
- *  if ((slc_fd = socket(AF_LOCAL, SOCK_DGRAM, 0) < 0) 
- *      fatal(EX_DATAERR, "Can't open %s", ifd.ifd_name);
- * 
- *  ifd.ifd_cmd = IFSLCGTTY;
- *  ifd.ifd_len = sizeof(dev_t);
- *  ifd.ifd_data = &tty_dev;
- * 
- *  if (ioctl(slc_fd, SIOCGDRVSPEC, &ifd) != 0)
- *      fatal(EX_UNAVAILABLE, "Can't attach %s @ %s", 
- *          tty_name, ifd.ifd_name);
- *
- *  (void)printf("%s attached @ %s\n", ifd.ifd_name, 
- *      devname(tty_dev, S_IFCHR));
- * 
- *  (void)close(slc_fd); 
- * 
- * ...  
- */
-#define IFSLCGTTY 	0
-
 /*
  * Definitions for serial line CAN interface data structures.
  */

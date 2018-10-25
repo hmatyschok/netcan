@@ -63,7 +63,7 @@ slc_status(int s)
 	if (tty_dev == NODEV)
 		return;
 		
-	(void)printf("\tattached @ %s\n", devname(tty_dev, S_IFCHR));
+	(void)printf("\tattached: %s\n", devname(tty_dev, S_IFCHR));
 } 
 
 static struct afswtch af_slc = {
