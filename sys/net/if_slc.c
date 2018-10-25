@@ -304,7 +304,7 @@ slc_rint(struct tty *tp, char c, int flags)
 	m->m_len++;
 	m->m_pkthdr.len++;
 
-	if (m->m_len < SLC_MTU) {
+	if (m->m_len < MHLEN) {
 		if (c == SLC_HC_BEL || c == SLC_HC_CR) {
 			m->m_data = m->m_pktdat;
 			error = slc_rxeof(slc);
