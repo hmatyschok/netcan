@@ -68,7 +68,7 @@ static struct mtx slc_list_mtx;
 static TAILQ_HEAD(slc_head, slc_softc) slc_list = 
 	TAILQ_HEAD_INITIALIZER(slc_list);
 	
-static MALLOC_DEFINE(M_SLC, "slc", "SLCAN Interface"); 
+static MALLOC_DEFINE(M_SLC, "slc", "Serial line CAN Interface"); 
  
 /* Subr. */
 static void 	slc_destroy(struct slc_softc *);
@@ -303,9 +303,15 @@ slc_rint(struct tty *tp, char c, int flags)
 	m->m_len++;
 	m->m_pkthdr.len++;
 
-	if (c == SLC_HC_BEL || c == SLC_HC_CR || m->m_len >= SLC_MTU) {
-		m->m_data = m->m_pktdat;
-		error = slc_rxeof(slc);
+	if (m->m_len < SLC_MTU) {
+		if (c == SLC_HC_BEL || c == SLC_HC_CR) {
+			m->m_data = m->m_pktdat;
+			error = slc_rxeof(slc);
+		}
+	} else {
+		error = EFBIG;
+		m_freem(m);
+		slc->slc_inb = NULL;
 	}
 out1:
 	mtx_unlock(&slc->slc_mtx);
