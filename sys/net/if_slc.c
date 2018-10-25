@@ -278,13 +278,14 @@ slc_rint(struct tty *tp, char c, int flags)
 {
 	struct slc_softc *slc;
 	struct mbuf *m;
-	int error = 0;
+	int error;
 
 	tty_lock_assert(tp, MA_OWNED);
 
-	if ((slc = ttyhook_softc(tp)) == NULL)
+	if ((slc = ttyhook_softc(tp)) == NULL) {
+		error = ENETDOWN;
 		goto out;
-
+	}
 	mtx_lock(&slc->slc_mtx);
 
 	/* allocate mbuf(9) and initialize */
@@ -307,7 +308,8 @@ slc_rint(struct tty *tp, char c, int flags)
 		if (c == SLC_HC_BEL || c == SLC_HC_CR) {
 			m->m_data = m->m_pktdat;
 			error = slc_rxeof(slc);
-		}
+		} else 
+			error = 0;
 	} else {
 		error = EFBIG;
 		m_freem(m);
