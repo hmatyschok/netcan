@@ -286,13 +286,12 @@ slc_rint(struct tty *tp, char c, int flags)
 		error = ENETDOWN;
 		goto out;
 	}
-	mtx_lock(&slc->slc_mtx);
 
 	/* allocate mbuf(9) and initialize */
 	if ((m = slc->slc_inb) == NULL) {
 		if ((m = m_gethdr(M_NOWAIT, MT_DATA)) == NULL) {
 			error = ENOBUFS;
-			goto out1;
+			goto out;
 		}
 		m->m_len = m->m_pkthdr.len = 0;
 		slc->slc_inb = m;
@@ -315,8 +314,6 @@ slc_rint(struct tty *tp, char c, int flags)
 		m_freem(m);
 		slc->slc_inb = NULL;
 	}
-out1:
-	mtx_unlock(&slc->slc_mtx);
 out:
 	return (error);
 }
@@ -670,9 +667,7 @@ slc_rxeof(struct slc_softc *slc)
 	bcopy(buf, mtod(m, u_char *), len);
 	
 	/* pass CAN frame to layer above */
- 	mtx_unlock(&slc->slc_mtx);
  	(*ifp->if_input)(ifp, m);
- 	mtx_lock(&slc->slc_mtx);
 out:
 	return (error);			
 bad:
