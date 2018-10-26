@@ -589,9 +589,7 @@ slc_rxeof(struct slc_softc *slc)
 	u_char *bp;
 	struct can_frame *cf;
 	int len;
-	
-	mtx_assert(&slc->slc_mtx, MA_OWNED);
-	
+		
 	if ((ifp = slc->slc_ifp) == NULL) {
 		error = ENXIO;
 		goto out;
