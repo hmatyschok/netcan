@@ -134,7 +134,8 @@ static int 	can_output(struct ifnet *, struct mbuf *,
 static void
 can_input(struct ifnet *ifp, struct mbuf *m)
 {
-
+	struct can_hdr *ch; 
+	
 	M_ASSERTPKTHDR(m);
 	KASSERT(m->m_pkthdr.rcvif != NULL,
 	    ("%s: NULL interface pointer", __func__));
@@ -165,19 +166,31 @@ can_input(struct ifnet *ifp, struct mbuf *m)
 			goto bad1;
 		}
 	}
+	ch = mtod(m, struct can_hdr *);
 	
+	switch (ch->ch_id & CAN_FLAG_MASK) {
+	case CAN_STD_FRM:
+	case CAN_EXT_FRM:
+	case CAN_RTR_FRM:
+	case CAN_ERR_FRM:
+		break;
+	default:
+		goto bad1;
+	}
+#ifdef CAN	
 #ifdef MAC
 	mac_ifnet_create_mbuf(ifp, m);
 #endif 	/* MAC */
 	
 	if (ifp->if_flags & IFF_LOOPBACK)
 		can_mbuf_tag_clean(m);
-		
+
 	if_inc_counter(ifp, IFCOUNTER_IBYTES, m->m_pkthdr.len);
-	
+
 	M_SETFIB(m, ifp->if_fib);
 	netisr_dispatch(NETISR_CAN, m);
 	return;
+#endif /* CAN */
 bad1:
 	if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
 bad:
