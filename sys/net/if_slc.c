@@ -310,9 +310,9 @@ slc_rint(struct tty *tp, char c, int flags)
 		} else 
 			error = 0;
 	} else {
+		slc->slc_inb = NULL;
 		error = EFBIG;
 		m_freem(m);
-		slc->slc_inb = NULL;
 	}
 out:
 	return (error);
