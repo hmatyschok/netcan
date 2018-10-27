@@ -173,18 +173,27 @@ can_input(struct ifnet *ifp, struct mbuf *m)
 	case CAN_EXT_FRM:
 	case CAN_RTR_FRM:
 	case CAN_ERR_FRM:
+#ifdef DIAGNOSTIC
+		if_printf(ifp, "%s: ", __func__);
+		m_print(m);
+#endif /* DIAGNOSTiC */
 		break;
 	default:
 		goto bad1;
 	}
-#ifdef CAN	
+	
 #ifdef MAC
 	mac_ifnet_create_mbuf(ifp, m);
-#endif 	/* MAC */
-	
+#endif /* MAC */
+
+	/* IAP for rx'd frames */
+	can_bpf_mtap(ifp, m);
+
+	/* remove annotated meta- */
 	if (ifp->if_flags & IFF_LOOPBACK)
 		can_mbuf_tag_clean(m);
 
+#ifdef CAN	
 	if_inc_counter(ifp, IFCOUNTER_IBYTES, m->m_pkthdr.len);
 
 	M_SETFIB(m, ifp->if_fib);
@@ -220,6 +229,11 @@ can_output(struct ifnet *ifp, struct mbuf *m,
 		error = ENXIO;
 		goto out;
 	}
+
+#ifdef MAC
+	if ((error = mac_ifnet_check_transmit(ifp, m)) != 0) 
+		goto bad;
+#endif 	/* MAC */
 	
 	if (ifp->if_flags & IFF_MONITOR) {
 		error = ENETDOWN;
@@ -231,11 +245,6 @@ can_output(struct ifnet *ifp, struct mbuf *m,
 		error = ENETDOWN;
 		goto bad;
 	}
-
-#ifdef MAC
-	if ((error = mac_ifnet_check_transmit(ifp, m)) != 0) 
-		goto bad;
-#endif 	/* MAC */
 
 	error = (*ifp->if_transmit)(ifp, m);
 out:

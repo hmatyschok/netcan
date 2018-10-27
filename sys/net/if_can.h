@@ -90,6 +90,7 @@ struct can_hdr {
 	uint8_t __res1;
 };
 #define CAN_STD_FRM 	0x00000000U
+#define CAN_
 #define CAN_EXT_FRM 	CAN_EFF_FLAG
 #define CAN_RTR_FRM 	CAN_RTR_FLAG
 #define CAN_ERR_FRM 	CAN_ERR_FLAG

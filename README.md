@@ -17,7 +17,7 @@ can(4) - Controller Area Network protocol domain(9) for FreeBSD 11.2
   
   (d) Device-driver for Adapter with Philips SJA1000 controller.
   
-  (D)  ...    
+  (e)  ...    
  
 Legal Notice: 
 -------------
@@ -28,7 +28,7 @@ Legal Notice:
   
   (c) PHILIPS is a registered trademark of Koninklijke Philips N.V.
   
-  (D) Don't use this software on production systems!
+  (d) Don't use this software on production systems!
   
 Additional information about contacting
 ---------------------------------------
