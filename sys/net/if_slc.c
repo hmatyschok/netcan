@@ -328,7 +328,6 @@ bad:
 	mtx_lock(&slc->slc_mtx);
 	slc->slc_inb = NULL;
 	mtx_unlock(&slc->slc_mtx);
-	error = EFBIG;
 	m_freem(m);
 	goto out;
 }
