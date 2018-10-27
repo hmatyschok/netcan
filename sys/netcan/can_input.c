@@ -168,6 +168,11 @@ can_nh_input(struct mbuf *m)
 	from.scan_ifindex = rcv_ifindex;
 	from.scan_len = sizeof(struct sockaddr_can);
 	from.scan_family = AF_CAN;
+
+#ifdef DIAGNOSTIC
+		if_printf(ifp, "%s: ", __func__);
+		m_print(m);
+#endif /* DIAGNOSTIC */
 	
 	rw_rlock(&can_pcbinfo_lock);
 	

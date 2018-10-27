@@ -90,7 +90,7 @@ can_output(struct mbuf *m, struct canpcb *canp)
 {
 	int error = 0;
 	struct ifnet *ifp;
-	struct canif_softc *csc; 
+	struct can_ifsoftc *csc; 
 	struct m_tag *sotag;
 	struct sockaddr_can dst;
 	const struct sockaddr_can *gw;

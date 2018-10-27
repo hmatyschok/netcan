@@ -140,7 +140,7 @@ out:
 static int
 can_get_netlink(struct ifnet *ifp, struct ifdrv *ifd)
 {
-	struct canif_softc *csc;
+	struct can_ifsoftc *csc;
 	int error;
 
 	/* XXX */
@@ -189,7 +189,7 @@ out:
 static int
 can_set_netlink(struct ifnet *ifp, struct ifdrv *ifd)
 {
-	struct canif_softc *csc;
+	struct can_ifsoftc *csc;
 	uint32_t mode;
 	int error;
 

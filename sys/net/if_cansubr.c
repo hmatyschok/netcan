@@ -189,7 +189,7 @@ can_input(struct ifnet *ifp, struct mbuf *m)
 	/* IAP for rx'd frames */
 	can_bpf_mtap(ifp, m);
 
-	/* remove annotated meta- */
+	/* remove annotated meta-data */
 	if (ifp->if_flags & IFF_LOOPBACK)
 		can_mbuf_tag_clean(m);
 
@@ -257,7 +257,7 @@ bad:
 void
 can_ifattach(struct ifnet *ifp)
 {
-	struct canif_softc *csc;
+	struct can_ifsoftc *csc;
 		
 	if_attach(ifp);
 		
@@ -271,12 +271,14 @@ can_ifattach(struct ifnet *ifp)
 	    ("%s: ifp->if_l2com == NULL", __func__));
 	csc = ifp->if_l2com; 
 	mtx_init(&csc->csc_mtx, "csc_mtx", NULL, MTX_DEF);
+	
+	if_printf(ifp, "Index: %d\n", ifp->if_index);
 }
 
 void
 can_ifdetach(struct ifnet *ifp)
 {
-	struct canif_softc *csc;
+	struct can_ifsoftc *csc;
 
 	KASSERT((ifp->if_l2com != NULL),
 	    ("%s: ifp->if_l2com == NULL", __func__));
@@ -288,7 +290,7 @@ can_ifdetach(struct ifnet *ifp)
 }
 
 void
-can_ifinit_timings(struct canif_softc *csc)
+can_ifinit_timings(struct can_ifsoftc *csc)
 {
 	mtx_lock(&csc->csc_mtx);	
 	
@@ -485,9 +487,9 @@ can_hex2id(u_char *buf, struct can_frame *cf)
 static void *
 can_alloc(u_char type, struct ifnet *ifp)
 {
-	struct canif_softc *csc;
+	struct can_ifsoftc *csc;
 	
-	csc = malloc(sizeof(struct canif_softc), M_IFCAN, M_WAITOK | M_ZERO);
+	csc = malloc(sizeof(struct can_ifsoftc), M_IFCAN, M_WAITOK | M_ZERO);
 	csc->csc_ifp = ifp;
 	
 	return (csc);

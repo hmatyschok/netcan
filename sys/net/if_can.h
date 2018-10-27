@@ -222,7 +222,7 @@ struct can_link_timings {
  * XXX:
  * XXX: in net/if.c for futher details.
  */
-struct canif_softc {
+struct can_ifsoftc {
 	struct ifnet 	*csc_ifp; 	/* our ifnet(9) interface */
 	struct can_link_timecaps 	csc_timecaps; /* timing capabilities */
 	struct can_link_timings 	csc_timings; /* operating timing values */
@@ -244,6 +244,6 @@ void 	can_mbuf_tag_clean(struct mbuf *);
 void 	can_ifattach(struct ifnet *);
 void 	can_ifdetach(struct ifnet *);
 void 	can_bpf_mtap(struct ifnet *, struct mbuf *);
-void 	can_ifinit_timings(struct canif_softc *);
+void 	can_ifinit_timings(struct can_ifsoftc *);
 #endif /* _KERNEL */
 #endif /* _NET_IF_CAN_H */
