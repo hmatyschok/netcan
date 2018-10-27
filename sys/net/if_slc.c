@@ -551,6 +551,11 @@ slc_dtty(struct slc_softc *slc)
 		ttyhook_unregister(tp);
 		mtx_lock(&slc->slc_mtx);
 		slc->slc_tp = NULL;	
+		
+		if (slc->slc_inb != NULL) {
+			m_freem(slc->slc_inb);
+			slc->slc_inb = NULL;
+		}
 		mtx_unlock(&slc->slc_mtx);
 		IF_DRAIN(&slc->slc_outq);
 		error = 0;
