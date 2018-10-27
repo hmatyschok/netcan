@@ -204,7 +204,7 @@ can_nh_input(struct mbuf *m)
 				continue;
 			}
 
-			/* skip if the accept filter doen't match this pkt */
+			/* skip if the accept filter doesn't match this pkt */
 			if (can_pcbfilter(canp, m) == 0) {
 				CANP_RUNLOCK(canp);
 				continue;

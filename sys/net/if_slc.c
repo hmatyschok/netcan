@@ -299,6 +299,11 @@ slc_rint(struct tty *tp, char c, int flags)
 		mtx_unlock(&slc->slc_mtx);
 	}
 	
+	if (flags != 0) {
+		error = ECONNABORTED;	
+		goto bad;
+	}
+	
 	*mtod(m, u_char *) = c;
 	
 	m->m_data++;
@@ -314,12 +319,18 @@ slc_rint(struct tty *tp, char c, int flags)
 		} else 
 			error = 0;
 	} else {
-		slc->slc_inb = NULL;
 		error = EFBIG;
-		m_freem(m);
+		goto bad;
 	}
 out:
 	return (error);
+bad:
+	mtx_lock(&slc->slc_mtx);
+	slc->slc_inb = NULL;
+	mtx_unlock(&slc->slc_mtx);
+	error = EFBIG;
+	m_freem(m);
+	goto out;
 }
 
 static size_t
