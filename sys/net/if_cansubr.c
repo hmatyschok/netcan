@@ -160,8 +160,7 @@ can_input(struct ifnet *ifp, struct mbuf *m)
 	}
 	
 	if (m->m_len < sizeof(struct can_frame)) {
-		m = m_pullup(m, sizeof(struct can_frame));
-	    if (m == NULL) {
+	    if ((m = m_pullup(m, sizeof(struct can_frame))) == NULL) {
 			if_printf(ifp, "m_pullup(9) failed, discard CAN frame.");
 			goto bad1;
 		}

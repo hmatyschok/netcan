@@ -114,7 +114,6 @@ void
 can_nh_input(struct mbuf *m)
 {
 	struct sockaddr_can from;
-	struct canpcb   *canp;
 	struct m_tag	*sotag;
 	struct canpcb	*sender_canp;
 	struct ifnet 	*ifp;
@@ -175,9 +174,11 @@ can_nh_input(struct mbuf *m)
 #endif /* DIAGNOSTIC */
 	
 	rw_rlock(&can_pcbinfo_lock);
-	
+
+	/* fetch PCB maps to interface by its index, if any */	
 	TAILQ_FOREACH(cani, &can_pcbinfo_tbl, cani_next) {
-		/* fetch PCB maps to interface by its index, if any */
+		struct canpcb   *canp;
+
 		TAILQ_FOREACH(canp, &cani->cani_queue, canp_queue) {
 			struct mbuf *mc;
 		

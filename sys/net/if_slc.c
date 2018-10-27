@@ -665,6 +665,8 @@ slc_rxeof(struct slc_softc *slc)
 	bcopy(buf, mtod(m, u_char *), len);
 	
 	/* pass CAN frame to layer above */
+	m->m_pkthdr.rcvif = ifp;
+ 	
  	(*ifp->if_input)(ifp, m);
 out:
 	return (error);			
@@ -700,7 +702,10 @@ slc_stty(struct slc_softc *slc, void *data, struct thread *td)
 	fd = *(int *)data;
 	mtx_lock(&slc->slc_mtx);
 	error = ttyhook_register(&slc->slc_tp, p, fd, &slc_hook, slc);
-	mtx_unlock(&slc->slc_mtx);	
+	mtx_unlock(&slc->slc_mtx);
+	
+	if (error == 0)
+		(*slc->slc_ifp->if_init)(slc);
 out:
 	return (error);
 }

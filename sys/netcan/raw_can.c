@@ -82,7 +82,9 @@
 
 extern int can_hashsize;
 
-static struct canpcbinfo rcan_pcbinfo;
+static struct canpcbinfo rcan_pcbinfo = {
+	.cani_queue = TAILQ_HEAD_INITIALIZER(rcan_pcbinfo.cani_queue),
+};
 
 u_long	rcan_sendspace = 4096;		/* really max datagram size */
 u_long	rcan_recvspace = 40 * (1024 + sizeof(struct sockaddr_can));
