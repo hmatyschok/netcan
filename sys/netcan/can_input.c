@@ -171,7 +171,7 @@ can_nh_input(struct mbuf *m)
 
 #ifdef DIAGNOSTIC
 		if_printf(ifp, "%s: ", __func__);
-		m_print(m);
+		m_print(m, CANFD_MTU);
 #endif /* DIAGNOSTIC */
 	
 	rw_rlock(&can_pcbinfo_lock);
