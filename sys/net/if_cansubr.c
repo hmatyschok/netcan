@@ -227,7 +227,7 @@ can_output(struct ifnet *ifp, struct mbuf *m,
 	
 	if (ifp->if_l2com == NULL) {
 		error = ENXIO;
-		goto out;
+		goto bad;
 	}
 
 #ifdef MAC
