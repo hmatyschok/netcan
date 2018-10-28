@@ -762,10 +762,6 @@ slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 	IFQ_SET_MAXLEN(&slc->slc_outq, ifqmaxlen);
 	
 	/* attach */
-	mtx_lock(&slc_list_mtx);
-	TAILQ_INSERT_TAIL(&slc_list, slc, slc_next);
-	mtx_unlock(&slc_list_mtx);
-	
 	ifp->if_softc = slc;
 	
 	if_initname(ifp, slc_name, unit);
@@ -778,6 +774,10 @@ slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 	can_ifattach(ifp);
 
 	ifp->if_mtu = SLC_MTU;
+	
+	mtx_lock(&slc_list_mtx);
+	TAILQ_INSERT_TAIL(&slc_list, slc, slc_next);
+	mtx_unlock(&slc_list_mtx);
 	
 	ifp->if_drv_flags |= IFF_DRV_RUNNING;
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
