@@ -563,8 +563,8 @@ slc_dtty(struct slc_softc *slc)
 			m_freem(slc->slc_inb);
 			slc->slc_inb = NULL;
 		}
-		mtx_unlock(&slc->slc_mtx);
 		IF_DRAIN(&slc->slc_outq);
+		mtx_unlock(&slc->slc_mtx);
 		error = 0;
 	} else
 		error = ESRCH;
