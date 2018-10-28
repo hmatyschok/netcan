@@ -160,9 +160,7 @@ slc_ifstart(struct ifnet *ifp)
 	
 	slc = ifp->if_softc;
 	tp = slc->slc_tp;
-	
-	mtx_assert(&slc->slc_mtx, MA_OWNED);
-	
+		
 	if ((ifp->if_drv_flags & (IFF_DRV_RUNNING | IFF_DRV_OACTIVE)) !=
 	    IFF_DRV_RUNNING)
 		return;
