@@ -758,6 +758,7 @@ slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 	
 	can_ifattach(ifp);
 
+	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 	ifp->if_mtu = SLC_MTU;
 	
 	/* initialize char-device */
@@ -778,9 +779,6 @@ slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 	TAILQ_INSERT_TAIL(&slc_list, slc, slc_next);
 	slc->slc_flags |= SLC_ATTACHED;
 	mtx_unlock(&slc_list_mtx);
-	
-	ifp->if_drv_flags |= IFF_DRV_RUNNING;
-	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 	
 	return (0);
 }
