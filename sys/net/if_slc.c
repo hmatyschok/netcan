@@ -96,7 +96,6 @@ static int 	slc_ifclone_create(struct if_clone *, int, caddr_t);
 /* Interface-level routines. */
 static void 	slc_ifinit(void *);
 static int 	slc_ifioctl(struct ifnet *, u_long, caddr_t);
-static void 	slc_ifstart_locked(struct ifnet *);
 static void 	slc_ifstart(struct ifnet *);
 
 /* Bottom-level routines */
@@ -154,18 +153,6 @@ slc_ifinit(void *xsc)
 
 static void
 slc_ifstart(struct ifnet *ifp)
-{
-	struct slc_softc *slc;
-		
-	slc = ifp->if_softc;
-	
-	mtx_lock(&slc->slc_mtx);
-	slc_ifstart_locked(ifp);
-	mtx_unlock(&slc->slc_mtx);
-}
-
-static void
-slc_ifstart_locked(struct ifnet *ifp)
 {
 	struct slc_softc *slc;
 	struct tty *tp;
@@ -543,6 +530,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	bcopy(buf, mtod(m, u_char *), len);
 	
 	/* enqueue */
+	mtx_lock(&slc->slc_mtx);
 	IF_LOCK(&slc->slc_outq);
 	if (_IF_QFULL(&slc->slc_outq)) 
 		error = ENOSPC; /* XXX: upcall??? */
@@ -552,6 +540,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 		error = 0;
 	}
 	IF_UNLOCK(&slc->slc_outq);
+	mtx_unlock(&slc->slc_mtx);
 out:
 	*mp = m;	
 	return (error);
