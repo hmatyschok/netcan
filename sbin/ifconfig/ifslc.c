@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termios.h>
 #include <unistd.h>
 
 #include <net/if.h>
@@ -75,6 +76,7 @@ slc_stty(const char *val, int d, int s, const struct afswtch *afp)
 {
 	char dev[MAXPATHLEN];
 	int slc_fd, tty_fd;
+	struct termios tty;
 
 	(void)memset(dev, 0, sizeof(dev));
 	(void)snprintf(dev, sizeof(dev), "%s%s", 
@@ -90,7 +92,20 @@ slc_stty(const char *val, int d, int s, const struct afswtch *afp)
 		err(1, "TIOCSETD Can't open %s device", dev); 	
 	
 	if (isatty(tty_fd) == 0)
-		err(1, "TIOCSETD %s not a terminal type device", dev);
+		err(1, "TIOCSETD %s not a tty(4) device", dev);
+	
+	if (tcgetattr(tty_fd, &tty) < 0)
+		err(1, "TIOCSETD Can't tcgetattr(3) from %s", dev);
+	
+	tty.c_cflag = CREAD | CS8;
+	tty.c_iflag = 0;
+	tty.c_lflag = 0;
+	tty.c_oflag = 0;
+	tty.c_cc[VMIN] = 1;
+	tty.c_cc[VTIME] = 0;
+	
+	if (tcsetattr(tty_fd, TCSANOW, &tty) < 0)
+		err(1, "TIOCSETD Can't tcsetattr(3) to %s", dev);
 	
 	if (ioctl(slc_fd, TIOCSETD, &tty_fd) < 0)
 		err(1, "TIOCSETD Can't attach %s to %s", 

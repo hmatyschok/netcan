@@ -313,9 +313,7 @@ slc_rint(struct tty *tp, char c, int flags)
 	if (m->m_len < MHLEN) {
 		if (c == SLC_HC_BEL || c == SLC_HC_CR) {
 			m->m_data = m->m_pktdat;
-			mtx_lock(&slc->slc_mtx);
 			error = slc_rxeof(slc);
-			mtx_unlock(&slc->slc_mtx);
 		} else 
 			error = 0;
 	} else {
@@ -609,13 +607,15 @@ slc_rxeof(struct slc_softc *slc)
 	struct can_frame *cf;
 	int len;
 	
-	mtx_assert(&slc->slc_mtx, MA_OWNED);
+	mtx_lock(&slc->slc_mtx);
 		
 	if ((m = slc->slc_inb) == NULL) {
+		mtx_unlock(&slc->slc_mtx);
 		error = EINVAL;
 		goto out;
 	}
 	slc->slc_inb = NULL;
+	mtx_unlock(&slc->slc_mtx);
 
 	if ((ifp = slc->slc_ifp) == NULL) {
 		error = ENXIO;
@@ -687,9 +687,7 @@ slc_rxeof(struct slc_softc *slc)
 	
 	/* pass CAN frame to layer above */
 	m->m_pkthdr.rcvif = ifp;
- 	mtx_unlock(&slc->slc_mtx);
  	(*ifp->if_input)(ifp, m);
- 	mtx_lock(&slc->slc_mtx);
 out:
 	return (error);			
 bad:
