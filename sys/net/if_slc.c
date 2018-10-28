@@ -362,13 +362,17 @@ slc_txeof(struct tty *tp, void *buf, size_t len)
 		}
 
 		if (m != NULL) {
+			mtx_lock(&slc->slc_mtx);
 			IF_PREPEND(&slc->slc_outq, m);
+			mtx_unlock(&slc->slc_mtx);
 			break;
 		}
 	}
+	mtx_lock(&slc->slc_mtx);
 	IF_LOCK(&slc->slc_outq);
 	slc->slc_outqlen -= off;
 	IF_UNLOCK(&slc->slc_outq);
+	mtx_unlock(&slc->slc_mtx);
 	MPASS(slc->slc_outqlen >= 0);
 out:
 	return (off);

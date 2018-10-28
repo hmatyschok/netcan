@@ -58,6 +58,12 @@
 #define _NET_IF_CAN_H
 
 /*
+ * CAN frame delimeter
+ */
+#define CAN_SOF_FLAG 	0x01
+#define CAN_EOF_FLAG 	0x80
+
+/*
  * CAN id structure
  * bits 0-28	: CAN identifier (11/29 bits, see bit 31)
  * bit2 29-31	: see below
