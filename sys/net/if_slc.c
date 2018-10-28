@@ -196,7 +196,7 @@ slc_ifstart(struct ifnet *ifp)
 		if_inc_counter(ifp, IFCOUNTER_OBYTES, m->m_pkthdr.len);
 		if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);		
 		
-		/* notify the TTY */
+		/* notify the tty(4) */
 		tty_lock(tp);
 		if (tty_gone(tp) == 0)
 			ttydevsw_outwakeup(tp);
@@ -312,9 +312,11 @@ slc_rint(struct tty *tp, char c, int flags)
 out:
 	return (error);
 bad:
-	mtx_lock(&slc->slc_mtx);
-	slc->slc_inb = NULL;
-	mtx_unlock(&slc->slc_mtx);
+	if (slc->slc_inb != NULL) {
+		mtx_lock(&slc->slc_mtx);
+		slc->slc_inb = NULL;
+		mtx_unlock(&slc->slc_mtx);
+	}
 	m_freem(m);
 	goto out;
 }
