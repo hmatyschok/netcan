@@ -485,7 +485,6 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	(void)memset((bp = buf), 0, MHLEN);
 
 	m = *mp;
-	M_ASSERTPKTHDR(m);
 	cf = mtod(m, struct can_frame *);
 	
 	/* determine CAN frame type */
