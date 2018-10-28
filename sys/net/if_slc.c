@@ -59,8 +59,16 @@
  * XXX: the case of transmission by e. g. uart(4), but   
  * XXX: it's 'a work in progress and should understood  
  * XXX: as a prototype for a TTY device-driver class.
+ *
+ * Example - using uart(4) for MAC:
+ * 
+ *  a) Open /dev/cuau0 and daemonize.
+ * 
+ *  b) ifconfig slc0 create
+ * 
+ *  c) ifconfig slc0 stty cuau0 
  */
- 
+
 static struct if_clone *slc_cloner;
 static const char slc_name[] = "slc"; 
 
@@ -248,14 +256,7 @@ slc_ifioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 			error = EINVAL;
 		break;
 	case SIOCSIFFLAGS:
-		
-		if (slc->slc_tp == NULL) 
-			ifp->if_flags &= ~IFF_UP;
-			
-		if (ifp->if_flags & IFF_UP)
-			ifp->if_drv_flags |= IFF_DRV_RUNNING;
-		else
-			ifp->if_drv_flags &= ~IFF_DRV_RUNNING;	
+		slc_ifinit(slc);
 		break;
 	default:
 		error = EINVAL;
@@ -461,6 +462,8 @@ slc_destroy(struct slc_softc *slc)
 	can_ifdetach(ifp);
 	if_free(ifp);
 	
+	slc->slc_ifp = NULL;
+	
 	/* detach hook, if any and flush queue */
 	(void)slc_dtty(slc);
 	
@@ -573,7 +576,10 @@ slc_dtty(struct slc_softc *slc)
 		error = 0;
 	} else
 		error = ESRCH;
-
+	
+	if (slc->slc_ifp != NULL)
+		slc_ifinit(slc);
+	
 	return (error);
 }
 
@@ -723,10 +729,8 @@ slc_stty(struct slc_softc *slc, void *data, struct thread *td)
 	mtx_lock(&slc->slc_mtx);
 	error = ttyhook_register(&slc->slc_tp, p, fd, &slc_hook, slc);
 	mtx_unlock(&slc->slc_mtx);
-	
-	if (error == 0)
-		(*slc->slc_ifp->if_init)(slc);
 out:
+	slc_ifinit(slc);
 	return (error);
 }
 
