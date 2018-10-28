@@ -55,7 +55,7 @@
 /*
  * Serial line CAN interface implemented by tty(4) hook.
  * 
- * XXX: It's 'a work in progress and should understood as a 
+ * XXX: It's a work in progress and should be understood as  
  * XXX: RAD prototype for the purpose of developing a tty(4) 
  * XXX: device-driver class.
  * XXX:
@@ -109,7 +109,7 @@ static d_open_t 	slc_open;
 static d_close_t 	slc_close;
 static d_ioctl_t 	slc_ioctl;
 
-/* TTY hook */
+/* tty(4) hook */
 static struct ttyhook slc_hook = {
 	.th_getc_inject = 	slc_txeof,
 	.th_getc_poll = 	slc_txeof_poll,
@@ -117,7 +117,7 @@ static struct ttyhook slc_hook = {
 	.th_rint_poll = 	slc_rint_poll,
 };
 
-/* device(9) */
+/* device(9) methods */
 static struct cdevsw slc_cdevsw = {
 	.d_version = 	D_VERSION,
 	.d_open = 	slc_open,
@@ -341,6 +341,8 @@ slc_txeof(struct tty *tp, void *buf, size_t len)
 	if ((slc = ttyhook_softc(tp)) == NULL)
 		goto out; 	/* XXX */
 
+	mtx_lock(&slc->slc_mtx);
+
 	while (len > 0) {
 		IF_DEQUEUE(&slc->slc_outq, m);
 		if (m == NULL)
@@ -362,13 +364,10 @@ slc_txeof(struct tty *tp, void *buf, size_t len)
 		}
 
 		if (m != NULL) {
-			mtx_lock(&slc->slc_mtx);
 			IF_PREPEND(&slc->slc_outq, m);
-			mtx_unlock(&slc->slc_mtx);
 			break;
 		}
 	}
-	mtx_lock(&slc->slc_mtx);
 	IF_LOCK(&slc->slc_outq);
 	slc->slc_outqlen -= off;
 	IF_UNLOCK(&slc->slc_outq);
