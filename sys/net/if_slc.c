@@ -53,20 +53,23 @@
 #include <net/if_slcvar.h>
 
 /*
- * Serial line CAN interface implemented by TTY hook.
+ * Serial line CAN interface implemented by tty(4) hook.
  * 
- * XXX: Missing error control [ISO 11898-1] due to the 
- * XXX: the case of transmission by e. g. uart(4), but   
- * XXX: it's 'a work in progress and should understood  
- * XXX: as a prototype for a TTY device-driver class.
- *
+ * XXX: It's 'a work in progress and should understood as a 
+ * XXX: RAD prototype for the purpose of developing a tty(4) 
+ * XXX: device-driver class.
+ * XXX:
+ * XXX: See sys/sys/ttydevsw.h for further details.
+ * 
  * Example - using uart(4) for MAC:
  * 
- *  a) Open /dev/cuau0 and daemonize.
+ *  a) create process, open(2) uart(4) device(9) 
  * 
- *  b) ifconfig slc0 create
+ *  b) tc[gs]etattr(3) [CS8, ...] and fork(2)
  * 
- *  c) ifconfig slc0 stty cuau0 
+ *  c) ifconfig slc0 create
+ * 
+ *  d) ifconfig slc0 stty cuau0
  */
 
 static struct if_clone *slc_cloner;
@@ -455,6 +458,7 @@ slc_destroy(struct slc_softc *slc)
 	struct ifnet *ifp;
 	struct cdev *dev;
 	
+	/* destroy ifnet(9) mapping */
 	ifp = slc->slc_ifp;
 	ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
 	ifp->if_flags &= ~IFF_UP;
@@ -470,6 +474,7 @@ slc_destroy(struct slc_softc *slc)
 	mtx_destroy(&slc->slc_outq.ifq_mtx);
 	mtx_destroy(&slc->slc_mtx);
 	
+	/* destroy device(9) mapping */
 	dev = slc->slc_dev;
 	destroy_dev(dev);
 	free(slc, M_SLC);
