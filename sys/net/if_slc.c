@@ -312,11 +312,10 @@ slc_rint(struct tty *tp, char c, int flags)
 out:
 	return (error);
 bad:
-	if (slc->slc_inb != NULL) {
-		mtx_lock(&slc->slc_mtx);
-		slc->slc_inb = NULL;
-		mtx_unlock(&slc->slc_mtx);
-	}
+	mtx_lock(&slc->slc_mtx);
+	if (slc->slc_inb != NULL) 
+		slc->slc_inb = NULL;	
+	mtx_unlock(&slc->slc_mtx);
 	m_freem(m);
 	goto out;
 }
