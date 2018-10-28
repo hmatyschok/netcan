@@ -747,19 +747,6 @@ slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 		free(slc, M_SLC);
 		return (ENOSPC);
 	}
-	ifp->if_softc = slc;
-	
-	if_initname(ifp, slc_name, unit);
-	
-	ifp->if_flags = IFF_POINTOPOINT | IFF_MULTICAST;
-	ifp->if_init = slc_ifinit;
-	ifp->if_start = slc_ifstart;
-	ifp->if_ioctl = slc_ifioctl;
-	
-	can_ifattach(ifp);
-
-	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
-	ifp->if_mtu = SLC_MTU;
 	
 	/* initialize char-device */
 	dev = make_dev(&slc_cdevsw, unit,
@@ -777,8 +764,23 @@ slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 	/* attach */
 	mtx_lock(&slc_list_mtx);
 	TAILQ_INSERT_TAIL(&slc_list, slc, slc_next);
-	slc->slc_flags |= SLC_ATTACHED;
 	mtx_unlock(&slc_list_mtx);
+	
+	ifp->if_softc = slc;
+	
+	if_initname(ifp, slc_name, unit);
+	
+	ifp->if_flags = IFF_POINTOPOINT | IFF_MULTICAST;
+	ifp->if_init = slc_ifinit;
+	ifp->if_start = slc_ifstart;
+	ifp->if_ioctl = slc_ifioctl;
+	
+	can_ifattach(ifp);
+
+	ifp->if_mtu = SLC_MTU;
+	
+	ifp->if_drv_flags |= IFF_DRV_RUNNING;
+	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 	
 	return (0);
 }
