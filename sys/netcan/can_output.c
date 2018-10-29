@@ -79,7 +79,7 @@
 int can_output_cnt = 0;
 
 /*
- * Transmit frames.
+ * Transmit CAN frames.
  */
 int
 can_output(struct mbuf *m, struct canpcb *canp)

@@ -123,8 +123,8 @@
 
 static MALLOC_DEFINE(M_IFCAN, "IFCAN", "CAN interface internals");
 
-static void 	can_input(struct ifnet *, struct mbuf *);
-static int 	can_output(struct ifnet *, struct mbuf *, 
+static void 	can_ifinput(struct ifnet *, struct mbuf *);
+static int 	can_ifoutput(struct ifnet *, struct mbuf *, 
 	const struct sockaddr *, struct route *);
 
 /*
@@ -132,7 +132,7 @@ static int 	can_output(struct ifnet *, struct mbuf *,
  * in the mbuf(9) chain with the CAN header.
  */
 static void
-can_input(struct ifnet *ifp, struct mbuf *m)
+can_ifinput(struct ifnet *ifp, struct mbuf *m)
 {
 	struct can_hdr *ch; 
 	
@@ -209,7 +209,7 @@ bad:
  * Wrapper for tx CAN frame by interface-layer.
  */
 static int
-can_output(struct ifnet *ifp, struct mbuf *m, 
+can_ifoutput(struct ifnet *ifp, struct mbuf *m, 
 	const struct sockaddr *dst, struct route *ro)
 {
 	int error;
@@ -261,8 +261,8 @@ can_ifattach(struct ifnet *ifp)
 	if_attach(ifp);
 		
 	ifp->if_mtu = CAN_MTU;
-	ifp->if_input = can_input;	
-	ifp->if_output = can_output; 
+	ifp->if_input = can_ifinput;	
+	ifp->if_output = can_ifoutput; 
 	
 	bpfattach(ifp, DLT_CAN_SOCKETCAN, 0);
 	
