@@ -76,10 +76,6 @@
 #include <netcan/can_pcb.h>
 #include <netcan/can_var.h>
 
-/*
- * XXX: Some components should externalized into interface-layer.
- */
-
 int can_output_cnt = 0;
 
 /*
@@ -92,8 +88,8 @@ can_output(struct mbuf *m, struct canpcb *canp)
 	struct ifnet *ifp;
 	struct can_ifsoftc *csc; 
 	struct m_tag *sotag;
-	struct sockaddr_can dst;
-	const struct sockaddr_can *gw;
+	struct sockaddr_can scan;
+	struct sockaddr *gw;
 	
 	M_ASSERTPKTHDR(m);
 	
@@ -133,10 +129,11 @@ can_output(struct mbuf *m, struct canpcb *canp)
 	*(struct canpcb **)(sotag + 1) = canp;
 	m_tag_prepend(m, sotag);
 
-	gw = (const struct sockaddr_can *)&dst;
-	(void)memset(&dst, 0, sizeof(dst));
-	dst.scan_family = AF_CAN;
-	dst.scan_len = sizeof(dst);
+	(void)memset(&scan, 0, sizeof(scan));
+	scan.scan_family = AF_CAN;
+	scan.scan_len = sizeof(scan);
+	
+	gw = (struct sockaddr *)&scan;
 
 	if (m->m_len <= ifp->if_mtu) {
 		can_output_cnt++;
