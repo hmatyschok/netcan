@@ -172,8 +172,8 @@ can_nh_input(struct mbuf *m)
 
 #ifdef DIAGNOSTIC
 	ch = mtod(m, struct can_hdr *);
-	(void)printf("%s: type 0x%02x id 0x%08x dlc 0x%02x\n", 
-		__func__, (ch->ch_id & CAN_FLAG_MASK) >> 24, 
+	(void)printf("%s: type 0x%01x id 0x%08x dlc 0x%02x\n", 
+		__func__, (ch->ch_id & CAN_FLAG_MASK) >> 28, 
 		(ch->ch_id & CAN_EFF_MASK), ch->ch_dlc);
 #endif /* DIAGNOSTIC */
 	
