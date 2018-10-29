@@ -102,6 +102,7 @@ struct canpcbinfo_head can_pcbinfo_tbl;
 void
 can_init(void)
 {
+	
 	rw_init_flags(&can_pcbinfo_lock, "canpinfo", RW_RECURSE | RW_DUPOK);
 	TAILQ_INIT(&can_pcbinfo_tbl);
 	netisr_register(&can_nh);

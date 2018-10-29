@@ -171,7 +171,7 @@ can_pcbbind(struct canpcb *canp, struct sockaddr_can *scan,
 	if (scan->scan_ifindex != 0) {
 		canp->canp_ifp = ifnet_byindex(scan->scan_ifindex);
 		if (canp->canp_ifp == NULL || 
-		    canp->canp_ifp->if_type != IFT_CAN) { 
+				canp->canp_ifp->if_type != IFT_CAN) { 
 			canp->canp_ifp = NULL;
 			error = EADDRNOTAVAIL;
 			goto out;

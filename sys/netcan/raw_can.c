@@ -298,7 +298,6 @@ rcan_send(struct socket *so, int flags, struct mbuf *m,
 		("%s: canp == NULL", __func__));
 
 	if (control != NULL && control->m_len != 0) {
-		m_freem(control);
 		error = EINVAL;
 		goto bad;
 	}
@@ -346,9 +345,10 @@ rcan_send(struct socket *so, int flags, struct mbuf *m,
 		can_pcbbind(canp, &lscan, td->td_ucred);
 		CANP_WUNLOCK(canp);
 	}
-out:	
+out:
+	m_freem(control);
 	return (error);
-bad:	
+bad:
 	m_freem(m);
 	goto out;
 }
