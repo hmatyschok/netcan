@@ -447,7 +447,7 @@ slc_destroy(struct slc_softc *slc)
 	struct ifnet *ifp;
 	struct cdev *dev;
 	
-	/* destroy ifnet(9) mapping */
+	/* destroy its ifnet(9) mapping */
 	ifp = slc->slc_ifp;
 	ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
 	ifp->if_flags &= ~IFF_UP;
@@ -463,7 +463,7 @@ slc_destroy(struct slc_softc *slc)
 	mtx_destroy(&slc->slc_outq.ifq_mtx);
 	mtx_destroy(&slc->slc_mtx);
 	
-	/* destroy device(9) mapping */
+	/* destroy its device(9) mapping */
 	dev = slc->slc_dev;
 	destroy_dev(dev);
 	free(slc, M_SLC);

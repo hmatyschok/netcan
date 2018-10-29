@@ -174,7 +174,7 @@ can_input(struct ifnet *ifp, struct mbuf *m)
 	case CAN_ERR_FRM:
 #ifdef DIAGNOSTIC
 		if_printf(ifp, "%s: ", __func__);
-		m_print(m, CANFD_MTU);
+		m_print(m, m->m_pkthdr.len);
 #endif /* DIAGNOSTiC */
 		break;
 	default:

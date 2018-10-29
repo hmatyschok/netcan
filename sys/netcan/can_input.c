@@ -118,7 +118,9 @@ can_nh_input(struct mbuf *m)
 	struct canpcb	*sender_canp;
 	struct ifnet 	*ifp;
 	int		rcv_ifindex; /* XXX */	
-
+#ifdef DIAGNOSTIC
+	struct can_hdr *ch; 
+#endif /* DIAGNOSTIC */
 	struct canpcbinfo *cani;
 
 	M_ASSERTPKTHDR(m);
@@ -169,8 +171,10 @@ can_nh_input(struct mbuf *m)
 	from.scan_family = AF_CAN;
 
 #ifdef DIAGNOSTIC
-		if_printf(ifp, "%s: ", __func__);
-		m_print(m, CANFD_MTU);
+	ch = mtod(m, struct can_hdr *);
+	(void)printf("%s: type 0x%02x id 0x%08x dlc 0x%02x\n", 
+		__func__, (ch->ch_id & CAN_FLAG_MASK) >> 24, 
+		(ch->ch_id & CAN_EFF_MASK), ch->ch_dlc);
 #endif /* DIAGNOSTIC */
 	
 	rw_rlock(&can_pcbinfo_lock);
