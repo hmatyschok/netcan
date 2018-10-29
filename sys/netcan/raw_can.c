@@ -346,9 +346,9 @@ rcan_send(struct socket *so, int flags, struct mbuf *m,
 		CANP_WUNLOCK(canp);
 	}
 out:
-	m_freem(control);
 	return (error);
 bad:
+	m_freem(control);
 	m_freem(m);
 	goto out;
 }
