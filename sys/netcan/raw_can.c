@@ -297,9 +297,13 @@ rcan_send(struct socket *so, int flags, struct mbuf *m,
 	KASSERT((canp != NULL), 
 		("%s: canp == NULL", __func__));
 
-	if (control != NULL && control->m_len != 0) {
-		error = EINVAL;
-		goto bad;
+	if (control != NULL) {
+		if (control->m_len != 0) {
+			m_freem(control);
+			error = EINVAL;
+			goto bad;
+		}
+		m_freem(control);
 	}
 
 	if (m->m_len > sizeof(struct can_frame) ||
@@ -348,7 +352,6 @@ rcan_send(struct socket *so, int flags, struct mbuf *m,
 out:
 	return (error);
 bad:
-	m_freem(control);
 	m_freem(m);
 	goto out;
 }
