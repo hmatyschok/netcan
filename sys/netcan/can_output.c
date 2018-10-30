@@ -90,6 +90,9 @@ can_output(struct mbuf *m, struct canpcb *canp)
 	struct m_tag *sotag;
 	struct sockaddr_can scan;
 	struct sockaddr *gw;
+#ifdef DIAGNOSTIC
+	struct can_hdr *ch; 
+#endif /* DIAGNOSTIC */
 	
 	M_ASSERTPKTHDR(m);
 	
@@ -134,6 +137,13 @@ can_output(struct mbuf *m, struct canpcb *canp)
 	scan.scan_len = sizeof(scan);
 	
 	gw = (struct sockaddr *)&scan;
+
+#ifdef DIAGNOSTIC
+	ch = mtod(m, struct can_hdr *);
+	(void)printf("%s: type 0x%01x id 0x%08x dlc 0x%02x\n", 
+		__func__, (ch->ch_id & CAN_FLAG_MASK) >> 28, 
+		(ch->ch_id & CAN_EFF_MASK), ch->ch_dlc);
+#endif /* DIAGNOSTIC */
 
 	if (m->m_len <= ifp->if_mtu) {
 		can_output_cnt++;

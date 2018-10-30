@@ -101,6 +101,7 @@ struct can_ifaddr {
 	struct sockaddr_can cia_addr;	/* reserve space for CAN Filter */
 };
 
+/* AF_CAN communication domain(9) */
 extern struct domain candomain;
 
 /* raw userreqs */

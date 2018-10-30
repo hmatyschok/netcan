@@ -133,11 +133,17 @@ rcan_attach(struct socket *so, int proto, struct thread *td)
 	KASSERT((canp == NULL), 
 		("%s: canp != NULL", __func__));
 
+	if (proto >= CANPROTO_NPROTO || proto < 0) {
+		error = EPROTONOSUPPORT;
+		goto out;
+	}
+
 	if ((error = soreserve(so, rcan_sendspace, rcan_recvspace)) == 0) { 
 		CANP_INFO_WLOCK(&rcan_pcbinfo);	
 		error = can_pcballoc(so, &rcan_pcbinfo);
 		CANP_INFO_WUNLOCK(&rcan_pcbinfo);
 	}
+out:	
 	return (error);
 }
 
