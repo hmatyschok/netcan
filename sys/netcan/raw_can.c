@@ -158,6 +158,7 @@ rcan_detach(struct socket *so)
 	
 	CANP_LOCK(canp);
 	can_pcbdetach(canp);
+	CANP_UNLOCK(canp);
 	can_pcbfree(canp);	
 }
 

@@ -240,8 +240,7 @@ can_pcbdetach(struct canpcb *canp)
 void
 can_pcbfree(struct canpcb *canp)
 {
-	
-	CANP_UNLOCK(canp);
+
 	CANP_LOCK_DESTROY(canp);	
 	uma_zfree(canp->canp_pcbinfo->cani_zone, canp);
 }
