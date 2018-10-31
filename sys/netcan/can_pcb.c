@@ -96,8 +96,8 @@ int	can_hashsize = CAN_HASHSIZE;
  */ 
 void 
 can_pcbinfo_init(struct canpcbinfo *pcbinfo, const char *name, 
-	const char *zone_name, uma_init canpcbzone_init, 
-	uma_fini canpcbzone_fini, int bindhash_nelements, 
+	const char *zone_name, uma_ctor canpcb_ctor, 
+	uma_dtor canpcb_dtor, int bindhash_nelements, 
 	int connecthash_nelements)
 {
 	CANP_INFO_LOCK_INIT(pcbinfo, name);
@@ -108,7 +108,7 @@ can_pcbinfo_init(struct canpcbinfo *pcbinfo, const char *name,
 	pcbinfo->cani_connecthashtbl = hashinit(connecthash_nelements, 
 		M_PCB, &pcbinfo->cani_connecthash);
 	pcbinfo->cani_zone = uma_zcreate(zone_name, sizeof(struct canpcb),
-		NULL, NULL, canpcbzone_init, canpcbzone_fini, UMA_ALIGN_PTR, 0);
+		canpcb_ctor, canpcb_dtor, NULL, NULL, UMA_ALIGN_PTR, 0);
 	uma_zone_set_max(pcbinfo->cani_zone, maxsockets);
 	uma_zone_set_warning(pcbinfo->cani_zone,
 			"kern.ipc.maxsockets limit reached");

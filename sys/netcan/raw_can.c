@@ -101,7 +101,7 @@ rcan_zone_change(void *tag)
 }
 
 static int
-rcan_pcb_init(void *mem, int size, int flags)
+rcan_pcb_init(void *mem, int size, void *arg, int flags)
 {
 	struct canpcb *canp = mem;
 

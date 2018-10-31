@@ -146,7 +146,7 @@ void 	can_pcbdetach(struct canpcb *);
 void 	can_pcbdisconnect(struct canpcb *);
 void 	can_pcbfree(struct canpcb *);
 void 	can_pcbinfo_init(struct canpcbinfo *, const char *, 
-	const char *, uma_init, uma_fini, int, int);
+	const char *, uma_ctor, uma_dtor, int, int);
 int 	can_pcbnotify(struct canpcbinfo *, uint32_t, 
 	uint32_t, int, void (*)(struct canpcb *, int));
 void 	can_pcbnotifyall(struct canpcbinfo *, uint32_t, int, 
