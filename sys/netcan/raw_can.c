@@ -310,11 +310,8 @@ rcan_send(struct socket *so, int flags, struct mbuf *m,
 	if (nam != NULL) {
 		if ((so->so_state & SS_ISCONNECTED) != 0) 
 			error = EISCONN;
-		else {
-			CANP_WLOCK(canp);
+		else 
 			error = can_pcbbind(canp, scan, td->td_ucred);
-			CANP_WUNLOCK(canp);
-		}
 	} else {
 		if ((so->so_state & SS_ISCONNECTED) == 0) 
 			error =  EDESTADDRREQ;
@@ -335,9 +332,7 @@ rcan_send(struct socket *so, int flags, struct mbuf *m,
 		lscan.scan_family = AF_CAN;
 		lscan.scan_len = sizeof(lscan);
 
-		CANP_WLOCK(canp);
 		can_pcbbind(canp, &lscan, td->td_ucred);
-		CANP_WUNLOCK(canp);
 	}
 out:
 	return (error);

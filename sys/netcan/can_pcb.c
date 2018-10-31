@@ -163,8 +163,6 @@ can_pcbbind(struct canpcb *canp, struct sockaddr_can *scan,
 {
 	int error;
 
-	CANP_WLOCK_ASSERT(canp);
-
 	if (scan->scan_ifindex != 0) {
 		canp->canp_ifp = ifnet_byindex(scan->scan_ifindex);
 		if (canp->canp_ifp == NULL || 
@@ -198,8 +196,8 @@ can_pcbconnect(struct canpcb *canp, struct sockaddr_can *scan)
 
 	CANP_WLOCK(canp);
 	bcopy(scan, &canp->canp_dst, sizeof(struct sockaddr_can));
-	can_pcbstate(canp, CANP_CONNECTED);
 	CANP_WUNLOCK(canp);
+	can_pcbstate(canp, CANP_CONNECTED);
 #endif
 	return (EOPNOTSUPP);
 }
@@ -207,9 +205,8 @@ can_pcbconnect(struct canpcb *canp, struct sockaddr_can *scan)
 void
 can_pcbdisconnect(struct canpcb *canp)
 {
-	CANP_WLOCK(canp);
+
 	can_pcbstate(canp, CANP_DETACHED);
-	CANP_WUNLOCK(canp);
 	if (canp->canp_so->so_state & SS_NOFDREF)
 		can_pcbdetach(canp);
 }
@@ -224,10 +221,8 @@ can_pcbdetach(struct canpcb *canp)
 	so = canp->canp_so;
 	so->so_pcb = NULL;
 
-	CANP_WLOCK(canp);
 	can_pcbstate(canp, CANP_DETACHED);
 	can_pcbsetfilter(canp, NULL, 0);
-	CANP_WUNLOCK(canp);
 	
 	CANP_INFO_WLOCK(canp->canp_pcbinfo);
 	TAILQ_REMOVE(&canp->canp_pcbinfo->cani_queue, canp, canp_queue);
@@ -288,8 +283,6 @@ int
 can_pcbsetfilter(struct canpcb *canp, struct can_filter *fp, int nfilters)
 {
 	struct can_filter *newf;
-
-	CANP_WLOCK_ASSERT(canp);
 
 	if (nfilters > 0) {
 		newf = malloc(sizeof(struct can_filter) * nfilters, 
@@ -394,7 +387,7 @@ can_pcbstate(struct canpcb *canp, int state)
 {
 	int ifindex;
 
-	CANP_WLOCK_ASSERT(canp);
+	CANP_WLOCK(canp);
 	
 	ifindex = canp->canp_ifp ? canp->canp_ifp->if_index : 0;
 
@@ -414,6 +407,8 @@ can_pcbstate(struct canpcb *canp, int state)
 		break;
 	}
 	canp->canp_state = state;
+	
+	CANP_WUNLOCK(canp);
 }
 
 /*

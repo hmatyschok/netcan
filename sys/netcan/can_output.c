@@ -124,10 +124,7 @@ can_output(struct mbuf *m, struct canpcb *canp)
 		error = ENOMEM;
 		goto bad;
 	}
-	
-	CANP_WLOCK(canp);
 	canp_ref(canp);
-	CANP_WUNLOCK(canp);
 	
 	*(struct canpcb **)(sotag + 1) = canp;
 	m_tag_prepend(m, sotag);
