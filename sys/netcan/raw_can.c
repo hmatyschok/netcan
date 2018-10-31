@@ -182,12 +182,8 @@ rcan_bind(struct socket *so, struct sockaddr *nam, struct thread *td)
 	canp = sotocanpcb(so);
 	KASSERT((canp != NULL), 
 		("%s: canp == NULL", __func__));
-
-	CANP_INFO_WLOCK(&rcan_pcbinfo);
-	CANP_WLOCK(canp);
+		
 	error = can_pcbbind(canp, scan, td->td_ucred);
-	CANP_WUNLOCK(canp);
-	CANP_INFO_WUNLOCK(&rcan_pcbinfo);	
 out:	
 	return (error);
 }
@@ -220,11 +216,9 @@ rcan_connect(struct socket *so, struct sockaddr *nam,
 	KASSERT((canp != NULL), 
 		("%s: canp == NULL", __func__));
 
-	CANP_INFO_WLOCK(&rcan_pcbinfo);
 	error = can_pcbconnect(canp, scan);
 	if (error != 0)
 		soisconnected(so);
-	CANP_INFO_WUNLOCK(&rcan_pcbinfo);	
 out:
 	return (error);
 }
@@ -240,14 +234,11 @@ rcan_disconnect(struct socket *so)
 		KASSERT((canp != NULL), 
 			("%s: canp == NULL", __func__));
 
-		CANP_INFO_WLOCK(&rcan_pcbinfo);
 		SOCK_LOCK(so);
 		so->so_state &= ~SS_ISCONNECTED;
 		SOCK_UNLOCK(so);
 
 		can_pcbdisconnect(canp);
-		CANP_INFO_WUNLOCK(&rcan_pcbinfo);
-
 		error = 0;
 	} else 
 		error = ENOTCONN;
@@ -264,9 +255,7 @@ rcan_shutdown(struct socket *so)
 	KASSERT((canp != NULL), 
 		("%s: canp == NULL", __func__));
 
-	CANP_WLOCK(canp);
 	socantsendmore(so);
-	CANP_WUNLOCK(canp);
 
 	return (0);
 }
