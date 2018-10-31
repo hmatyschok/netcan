@@ -244,6 +244,7 @@ void
 canp_ref(struct canpcb *canp)
 {
 	
+	CANP_LOCK_ASSERT(canp);
 	canp->canp_refcount++;
 }
 
@@ -251,6 +252,7 @@ void
 canp_unref(struct canpcb *canp)
 {
 	
+	CANP_LOCK_ASSERT(canp);
 	canp->canp_refcount--;
 	KASSERT((canp->canp_refcount >= 0),
 		("%s: canp->canp_refcount < 0", __func__));
@@ -280,6 +282,8 @@ int
 can_pcbsetfilter(struct canpcb *canp, struct can_filter *fp, int nfilters)
 {
 	struct can_filter *newf;
+
+	CANP_LOCK_ASSERT(canp);
 
 	if (nfilters > 0) {
 		newf = malloc(sizeof(struct can_filter) * nfilters, 
