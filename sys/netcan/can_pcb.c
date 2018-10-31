@@ -262,9 +262,6 @@ canp_unref(struct canpcb *canp)
 	canp->canp_refcount--;
 	KASSERT((canp->canp_refcount >= 0),
 		("%s: canp->canp_refcount < 0", __func__));
-	
-	if (canp->canp_refcount > 0) 
-		CANP_UNLOCK(canp); 
 }
 
 struct sockaddr *
