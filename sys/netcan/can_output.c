@@ -134,7 +134,7 @@ can_output(struct mbuf *m, struct canpcb *canp)
 	(void)memset(&scan, 0, sizeof(scan));
 	scan.scan_family = AF_CAN;
 	scan.scan_len = sizeof(scan);
-	scan.can_ifindex = ifp->if_index;
+	scan.scan_ifindex = ifp->if_index;
 	
 	gw = (struct sockaddr *)&scan;
 
