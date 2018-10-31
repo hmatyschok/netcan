@@ -147,7 +147,9 @@ can_pcballoc(struct socket *so, struct canpcbinfo *pcbinfo)
 
 	so->so_pcb = canp;
 	
+	CANP_INFO_LOCK(pcbinfo);
 	TAILQ_INSERT_HEAD(&pcbinfo->cani_queue, canp, canp_queue);
+	CANP_INFO_UNLOCK(pcbinfo);
 	
 	CANP_LOCK(canp);
 	can_pcbstate(canp, CANP_ATTACHED);
@@ -228,7 +230,9 @@ can_pcbdetach(struct canpcb *canp)
 	can_pcbstate(canp, CANP_DETACHED);
 	can_pcbsetfilter(canp, NULL, 0);
 	
+	CANP_INFO_LOCK(canp->canp_pcbinfo);
 	TAILQ_REMOVE(&canp->canp_pcbinfo->cani_queue, canp, canp_queue);
+	CANP_INFO_UNLOCK(canp->canp_pcbinfo);
 
 	canp_unref(canp);
 }
