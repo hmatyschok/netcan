@@ -125,10 +125,6 @@ can_pcballoc(struct socket *so, struct canpcbinfo *pcbinfo)
 	struct can_filter *can_init_filter;
 	int error;
 
-#ifdef INVARIANTS
-	CANP_INFO_WLOCK_ASSERT(pcbinfo);
-#endif /* INVARIANTS */
-
 	can_init_filter = malloc(sizeof(struct can_filter), M_TEMP, M_NOWAIT);
 	if (can_init_filter == NULL) {
 		error = ENOMEM;
@@ -151,8 +147,11 @@ can_pcballoc(struct socket *so, struct canpcbinfo *pcbinfo)
 
 	so->so_pcb = canp;
 
-	CANP_WLOCK(canp);
+	CANP_INFO_WLOCK(pcbinfo);	
 	TAILQ_INSERT_HEAD(&pcbinfo->cani_queue, canp, canp_queue);
+	CANP_INFO_WUNLOCK(pcbinfo);
+	
+	CANP_WLOCK(canp);
 	can_pcbstate(canp, CANP_ATTACHED);
 	CANP_WUNLOCK(canp);
 	error = 0;
@@ -165,8 +164,6 @@ can_pcbbind(struct canpcb *canp, struct sockaddr_can *scan,
 	struct ucred *cred)
 {
 	int error;
-
-	CANP_WLOCK_ASSERT(canp);
 
 	if (scan->scan_ifindex != 0) {
 		canp->canp_ifp = ifnet_byindex(scan->scan_ifindex);
@@ -221,10 +218,6 @@ void
 can_pcbdetach(struct canpcb *canp)
 {
 	struct socket *so;
-
-#ifdef INVARIANTS	
-	CANP_INFO_WLOCK_ASSERT(canp->canp_pcbinfo);
-#endif /* INVARIANTS */
  	
 	KASSERT((canp->canp_so != NULL), 
 		("%s: canp_so == NULL", __func__));
@@ -235,7 +228,11 @@ can_pcbdetach(struct canpcb *canp)
 	can_pcbstate(canp, CANP_DETACHED);
 	can_pcbsetfilter(canp, NULL, 0);
 	CANP_WUNLOCK(canp);
+	
+	CANP_INFO_WLOCK(canp->canp_pcbinfo);
 	TAILQ_REMOVE(&canp->canp_pcbinfo->cani_queue, canp, canp_queue);
+	CANP_INFO_WUNLOCK(canp->canp_pcbinfo);
+	
 	canp_unref(canp);
 }
 
@@ -253,12 +250,13 @@ canp_unref(struct canpcb *canp)
 	canp->canp_refcount--;
 	KASSERT((canp->canp_refcount >= 0),
 		("%s: canp->canp_refcount < 0", __func__));
+	
 	if (canp->canp_refcount > 0) {
 		CANP_WUNLOCK(canp);
 		return;
 	}
 	CANP_WUNLOCK(canp);
-	CANP_LOCK_DESTROY(canp);
+	CANP_LOCK_DESTROY(canp);	
 	uma_zfree(canp->canp_pcbinfo->cani_zone, canp);
 }
 

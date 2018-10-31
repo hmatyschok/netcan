@@ -138,11 +138,8 @@ rcan_attach(struct socket *so, int proto, struct thread *td)
 		goto out;
 	}
 
-	if ((error = soreserve(so, rcan_sendspace, rcan_recvspace)) == 0) { 
-		CANP_INFO_WLOCK(&rcan_pcbinfo);	
+	if ((error = soreserve(so, rcan_sendspace, rcan_recvspace)) == 0) 
 		error = can_pcballoc(so, &rcan_pcbinfo);
-		CANP_INFO_WUNLOCK(&rcan_pcbinfo);
-	}
 out:	
 	return (error);
 }
@@ -156,9 +153,7 @@ rcan_detach(struct socket *so)
 	KASSERT((canp != NULL), 
 		("%s: canp == NULL", __func__));
 	
-	CANP_INFO_WLOCK(&rcan_pcbinfo);	
-	can_pcbdetach(canp);
-	CANP_INFO_WUNLOCK(&rcan_pcbinfo);	
+	can_pcbdetach(canp);	
 }
 
 static int
