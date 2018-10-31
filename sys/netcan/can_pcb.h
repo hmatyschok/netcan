@@ -60,7 +60,7 @@
 
 #ifdef _KERNEL
 #include <sys/lock.h>
-#include <sys/rwlock.h>
+#include <sys/mutex.h>
 #include <vm/uma.h>
 #endif /* _KERNEL */
 
@@ -78,7 +78,7 @@ struct canpcb {
 	LIST_ENTRY(canpcb) canp_hash;
 	LIST_ENTRY(canpcb) canp_lhash;
 	TAILQ_ENTRY(canpcb) canp_queue;
-	struct rwlock	canp_lock;	/* protect states and refcount */
+	struct mtx	canp_lock;	/* protect states and refcount */
 	int		canp_state;
 	int		canp_flags;
 	struct socket 	*canp_so;	/* back pointer to socket */
@@ -90,23 +90,12 @@ struct canpcb {
 
 	int		canp_refcount;
 };
-
-#define CANP_LOCK_INIT(canp, d, t) \
-	rw_init_flags(&(canp)->canp_lock, (t), RW_RECURSE |  RW_DUPOK)
-#define CANP_LOCK_DESTROY(canp)	rw_destroy(&(canp)->canp_lock)
-#define CANP_RLOCK(canp)		rw_rlock(&(canp)->canp_lock)
-#define CANP_WLOCK(canp)		rw_wlock(&(canp)->canp_lock)
-#define CANP_TRY_RLOCK(canp)	rw_try_rlock(&(canp)->canp_lock)
-#define CANP_TRY_WLOCK(canp)	rw_try_wlock(&(canp)->canp_lock)
-#define CANP_RUNLOCK(canp)	rw_runlock(&(canp)->canp_lock)
-#define CANP_WUNLOCK(canp)	rw_wunlock(&(canp)->canp_lock)
-#define	CANP_TRY_UPGRADE(canp)	rw_try_upgrade(&(canp)->canp_lock)
-#define	CANP_DOWNGRADE(canp)	rw_downgrade(&(canp)->canp_lock)
-#define	CANP_WLOCKED(canp)	rw_wowned(&(canp)->canp_lock)
-#define	CANP_LOCK_ASSERT(canp)	rw_assert(&(canp)->canp_lock, RA_LOCKED)
-#define	CANP_RLOCK_ASSERT(canp)	rw_assert(&(canp)->canp_lock, RA_RLOCKED)
-#define	CANP_WLOCK_ASSERT(canp)	rw_assert(&(canp)->canp_lock, RA_WLOCKED)
-#define	CANP_UNLOCK_ASSERT(canp)	rw_assert(&(canp)->canp_lock, RA_UNLOCKED)
+#define	CANP_LOCK_INIT(canp, d) \
+	mtx_init(&(canp)->canp_lock, (d), NULL, MTX_DEF)
+#define	CANP_LOCK(canp) 	mtx_lock(&(canp)->canp_lock)
+#define	CANP_UNLOCK(canp) 	mtx_unlock(&(canp)->canp_lock)
+#define	CANP_LOCK_ASSERT(canp) \
+	mtx_assert(&(canp)->canp_lock, MA_OWNED)
 	
 LIST_HEAD(canpcbhead, canpcb);
 TAILQ_HEAD(canpcbqueue, canpcb);
@@ -116,7 +105,7 @@ TAILQ_HEAD(canpcbqueue, canpcb);
  */
 struct canpcbinfo {
 	TAILQ_ENTRY(canpcbinfo) cani_next;
-	struct rwlock 	cani_lock; 		/* protects PCB traversal */
+	struct mtx 	cani_lock; 		/* protects PCB traversal */
 	uma_zone_t 	cani_zone; 	/* uma(9) zone for slap allocator */
 	struct canpcbqueue 	cani_queue;
 	struct canpcbhead 	*cani_bindhashtbl;
@@ -124,26 +113,12 @@ struct canpcbinfo {
 	u_long	cani_bindhash;
 	u_long	cani_connecthash;
 };
-
-#define CANP_INFO_LOCK_INIT(cani, d) \
-	rw_init_flags(&(cani)->cani_lock, (d), RW_RECURSE)
-#define CANP_INFO_LOCK_DESTROY(cani) 	rw_destroy(&(cani)->cani_lock)
-#define CANP_INFO_RLOCK(cani) 	rw_rlock(&(cani)->cani_lock)
-#define CANP_INFO_WLOCK(cani) 	rw_wlock(&(cani)->cani_lock)
-#define CANP_INFO_TRY_RLOCK(cani) 	rw_try_rlock(&(cani)->cani_lock)
-#define CANP_INFO_TRY_WLOCK(cani) 	rw_try_wlock(&(cani)->cani_lock)
-#define CANP_INFO_TRY_UPGRADE(cani) 	rw_try_upgrade(&(cani)->cani_lock)
-#define CANP_INFO_WLOCKED(cani) 	rw_wowned(&(cani)->cani_lock)
-#define CANP_INFO_RUNLOCK(cani) 	rw_runlock(&(cani)->cani_lock)
-#define CANP_INFO_WUNLOCK(cani) 	rw_wunlock(&(cani)->cani_lock)
-#define	CANP_INFO_LOCK_ASSERT(cani)	\
-	rw_assert(&(cani)->cani_lock, RA_LOCKED)
-#define CANP_INFO_RLOCK_ASSERT(cani) \
-	rw_assert(&(cani)->cani_lock, RA_RLOCKED)
-#define CANP_INFO_WLOCK_ASSERT(cani) \
-	rw_assert(&(cani)->cani_lock, RA_WLOCKED)
-#define CANP_INFO_UNLOCK_ASSERT(cani) \
-	rw_assert(&(cani)->cani_lock, RA_UNLOCKED)
+#define	CANP_INFO_LOCK_INIT(cani, d) \
+	mtx_init(&(cani)->cani_lock, (d), NULL, MTX_DEF)
+#define	CANP_INFO_LOCK(cani) 	mtx_lock(&(cani)->cani_lock)
+#define	CANP_INFO_UNLOCK(cani) 	mtx_unlock(&(cani)->cani_lock)
+#define	CANP_INFO_LOCK_ASSERT(cani) \
+	mtx_assert(&(cani)->cani_lock, MA_OWNED)
 
 TAILQ_HEAD(canpcbinfo_head, canpcbinfo);
 	

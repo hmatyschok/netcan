@@ -137,9 +137,12 @@ rcan_attach(struct socket *so, int proto, struct thread *td)
 		error = EPROTONOSUPPORT;
 		goto out;
 	}
-
-	if ((error = soreserve(so, rcan_sendspace, rcan_recvspace)) == 0) 
-		error = can_pcballoc(so, &rcan_pcbinfo);
+	
+	error = soreserve(so, rcan_sendspace, rcan_recvspace);
+	if (error != 0)
+		goto out;
+	 
+	error = can_pcballoc(so, &rcan_pcbinfo);
 out:	
 	return (error);
 }
