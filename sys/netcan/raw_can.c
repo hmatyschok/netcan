@@ -105,7 +105,7 @@ rcan_pcb_init(void *mem, int size, int flags)
 {
 	struct canpcb *canp = mem;
 
-	CANP_LOCK_INIT(canp, "canp", "rawcanp");
+	CANP_LOCK_INIT(canp, "rawcanp");
 	return (0);
 }
 
@@ -141,8 +141,10 @@ rcan_attach(struct socket *so, int proto, struct thread *td)
 	error = soreserve(so, rcan_sendspace, rcan_recvspace);
 	if (error != 0)
 		goto out;
-	 
+	
+	CANP_INFO_LOCK(&rcan_pcbinfo); 
 	error = can_pcballoc(so, &rcan_pcbinfo);
+	CANP_INFO_UNLOCK(&rcan_pcbinfo);
 out:	
 	return (error);
 }
@@ -156,7 +158,11 @@ rcan_detach(struct socket *so)
 	KASSERT((canp != NULL), 
 		("%s: canp == NULL", __func__));
 	
-	can_pcbdetach(canp);	
+	CANP_INFO_LOCK(&rcan_pcbinfo);
+	CANP_LOCK(canp);
+	can_pcbdetach(canp);
+	can_pcbfree(canp);
+	CANP_INFO_UNLOCK(&rcan_pcbinfo); 	
 }
 
 static int
@@ -185,8 +191,10 @@ rcan_bind(struct socket *so, struct sockaddr *nam, struct thread *td)
 	canp = sotocanpcb(so);
 	KASSERT((canp != NULL), 
 		("%s: canp == NULL", __func__));
-		
+	
+	CANP_LOCK(canp);	
 	error = can_pcbbind(canp, scan, td->td_ucred);
+	CANP_UNLOCK(canp);
 out:	
 	return (error);
 }
@@ -219,9 +227,11 @@ rcan_connect(struct socket *so, struct sockaddr *nam,
 	KASSERT((canp != NULL), 
 		("%s: canp == NULL", __func__));
 
+	CANP_LOCK(canp);
 	error = can_pcbconnect(canp, scan);
 	if (error != 0)
 		soisconnected(so);
+	CANP_UNLOCK(canp);
 out:
 	return (error);
 }
@@ -230,7 +240,7 @@ static int
 rcan_disconnect(struct socket *so)
 {
 	struct canpcb *canp;
-	int error;
+	int error = 0;
 
 	if (so->so_state & SS_ISCONNECTED) {
 		canp = sotocanpcb(so);
@@ -240,9 +250,9 @@ rcan_disconnect(struct socket *so)
 		SOCK_LOCK(so);
 		so->so_state &= ~SS_ISCONNECTED;
 		SOCK_UNLOCK(so);
-
+		CANP_LOCK(canp);
 		can_pcbdisconnect(canp);
-		error = 0;
+		CANP_UNLOCK(canp);
 	} else 
 		error = ENOTCONN;
 				
@@ -313,8 +323,11 @@ rcan_send(struct socket *so, int flags, struct mbuf *m,
 	if (nam != NULL) {
 		if ((so->so_state & SS_ISCONNECTED) != 0) 
 			error = EISCONN;
-		else 
+		else {
+			CANP_LOCK(canp);
 			error = can_pcbbind(canp, scan, td->td_ucred);
+			CANP_UNLOCK(canp);
+		}	
 	} else {
 		if ((so->so_state & SS_ISCONNECTED) == 0) 
 			error =  EDESTADDRREQ;
@@ -335,7 +348,9 @@ rcan_send(struct socket *so, int flags, struct mbuf *m,
 		lscan.scan_family = AF_CAN;
 		lscan.scan_len = sizeof(lscan);
 
+		CANP_LOCK(canp);
 		can_pcbbind(canp, &lscan, td->td_ucred);
+		CANP_UNLOCK(canp);
 	}
 out:
 	return (error);
@@ -412,9 +427,9 @@ rcan_setop(struct canpcb *canp, struct sockopt *sopt)
 				error = EINVAL;
 				break;
 			}
-			CANP_WLOCK(canp);
+			CANP_LOCK(canp);
 			error = can_pcbsetfilter(canp, sopt->sopt_val, nfilters);
-			CANP_WUNLOCK(canp);
+			CANP_UNLOCK(canp);
 		}
 		break;
 	default:

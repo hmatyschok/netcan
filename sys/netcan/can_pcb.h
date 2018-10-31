@@ -96,6 +96,7 @@ struct canpcb {
 #define	CANP_UNLOCK(canp) 	mtx_unlock(&(canp)->canp_lock)
 #define	CANP_LOCK_ASSERT(canp) \
 	mtx_assert(&(canp)->canp_lock, MA_OWNED)
+#define	CANP_LOCK_DESTROY(canp) 	mtx_destroy(&(canp)->canp_lock)
 	
 LIST_HEAD(canpcbhead, canpcb);
 TAILQ_HEAD(canpcbqueue, canpcb);
@@ -119,6 +120,7 @@ struct canpcbinfo {
 #define	CANP_INFO_UNLOCK(cani) 	mtx_unlock(&(cani)->cani_lock)
 #define	CANP_INFO_LOCK_ASSERT(cani) \
 	mtx_assert(&(cani)->cani_lock, MA_OWNED)
+#define	CANP_INFO_LOCK_DESTROY(cani) 	mtx_destroy(&(cani)->cani_lock)
 
 TAILQ_HEAD(canpcbinfo_head, canpcbinfo);
 	
@@ -142,6 +144,7 @@ int 	can_pcbbind(struct canpcb *, struct sockaddr_can *,
 int 	can_pcbconnect(struct canpcb *, struct sockaddr_can *);
 void 	can_pcbdetach(struct canpcb *);
 void 	can_pcbdisconnect(struct canpcb *);
+void 	can_pcbfree(struct canpcb *);
 void 	can_pcbinfo_init(struct canpcbinfo *, const char *, 
 	const char *, uma_init, uma_fini, int, int);
 int 	can_pcbnotify(struct canpcbinfo *, uint32_t, 

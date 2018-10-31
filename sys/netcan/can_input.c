@@ -187,31 +187,31 @@ can_nh_input(struct mbuf *m)
 		TAILQ_FOREACH(canp, &cani->cani_queue, canp_queue) {
 			struct mbuf *mc;
 		
-			CANP_RLOCK(canp);
+			CANP_LOCK(canp);
 		
 			/* skip if we're detached */
 			if (canp->canp_state == CANP_DETACHED) {
-				CANP_RUNLOCK(canp);
+				CANP_UNLOCK(canp);
 				continue;
 			}
 
 			/* don't loop back to sockets on other interfaces */
 			if (canp->canp_ifp != NULL &&
 				canp->canp_ifp->if_index != rcv_ifindex) {
-				CANP_RUNLOCK(canp);
+				CANP_UNLOCK(canp);
 				continue;
 			}
 		
 			/* don't loop back to myself if I don't want it */
 			if (canp == sender_canp && 
 				(canp->canp_flags & CANP_RECEIVE_OWN) == 0) {
-				CANP_RUNLOCK(canp);
+				CANP_UNLOCK(canp);
 				continue;
 			}
 
 			/* skip if the accept filter doesn't match this pkt */
 			if (can_pcbfilter(canp, m) == 0) {
-				CANP_RUNLOCK(canp);
+				CANP_UNLOCK(canp);
 				continue;
 			}
 
@@ -238,7 +238,7 @@ can_nh_input(struct mbuf *m)
 			} else
 				sorwakeup(canp->canp_so);
 		
-			CANP_RUNLOCK(canp);
+			CANP_UNLOCK(canp);
 		
 			if (m == NULL)
 				goto out2;
@@ -247,8 +247,11 @@ can_nh_input(struct mbuf *m)
 out2:	/* XXX */
 	rw_runlock(&can_pcbinfo_lock);
 out1:	
-	if (sender_canp != NULL) 
+	if (sender_canp != NULL) {
+		CANP_LOCK(sender_canp);
 		canp_unref(sender_canp);
+		CANP_UNLOCK(sender_canp);
+	}
 	
 	/* If it didn't go anywhere just delete it */
 out:
