@@ -148,8 +148,10 @@ can_pcballoc(struct socket *so, struct canpcbinfo *pcbinfo)
 	so->so_pcb = canp;
 	
 	TAILQ_INSERT_HEAD(&pcbinfo->cani_queue, canp, canp_queue);
-
+	
+	CANP_LOCK(canp);
 	can_pcbstate(canp, CANP_ATTACHED);
+	CANP_UNLOCK(canp);
 out:
 	return (error);
 }

@@ -400,20 +400,24 @@ rcan_setop(struct canpcb *canp, struct sockopt *sopt)
 		error = sooptcopyin(sopt, &optval, sizeof(optval), 
 			sizeof(optval));
 		if (error == 0) {
+			CANP_LOCK(canp);
 			if (optval != 0) 
 				canp->canp_flags &= ~CANP_NO_LOOPBACK;
 			else 
 				canp->canp_flags |= CANP_NO_LOOPBACK;
+			CANP_UNLOCK(canp);
 		}
 		break;
 	case CAN_RAW_RECV_OWN_MSGS: 
 		error = sooptcopyin(sopt, &optval, sizeof(optval), 
 			sizeof(optval));
 		if (error == 0) {
+			CANP_LOCK(canp);
 			if (optval != 0) 
 				canp->canp_flags |= CANP_RECEIVE_OWN;
 			else 
 				canp->canp_flags &= ~CANP_RECEIVE_OWN;
+			CANP_UNLOCK(canp);
 		}
 		break;
 	case CAN_RAW_FILTER:
