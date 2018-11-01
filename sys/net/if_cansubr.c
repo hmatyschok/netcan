@@ -245,6 +245,11 @@ can_ifoutput(struct ifnet *ifp, struct mbuf *m,
 		goto bad;
 	}
 
+#ifdef DIAGNOSTIC
+		if_printf(ifp, "%s: ", __func__);
+		m_print(m, m->m_pkthdr.len);
+#endif /* DIAGNOSTiC */
+
 	error = (*ifp->if_transmit)(ifp, m);
 out:
 	return (error);

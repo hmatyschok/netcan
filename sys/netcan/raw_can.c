@@ -197,43 +197,6 @@ out:
 }
 
 static int
-rcan_connect(struct socket *so, struct sockaddr *nam, 
-	struct thread *td)
-{
-	struct sockaddr_can *scan;
-	struct canpcb *canp;
-	int error;
-	
-	scan = (struct sockaddr_can *)nam;
-	
-	if (nam->sa_len != sizeof(*scan)) {
-		error = EINVAL;
-		goto out;
-	}
-		
-	if (TAILQ_EMPTY(&V_ifnet)) {
-		error = EADDRNOTAVAIL;
-		goto out;
-	}
-		
-	if (scan->scan_family != AF_CAN) {
-		error = EAFNOSUPPORT;
-		goto out;
-	}
-	canp = sotocanpcb(so);
-	KASSERT((canp != NULL), 
-		("%s: canp == NULL", __func__));
-
-	CANP_LOCK(canp);
-	error = can_pcbconnect(canp, scan);
-	if (error != 0)
-		soisconnected(so);
-	CANP_UNLOCK(canp);
-out:
-	return (error);
-}
-
-static int
 rcan_disconnect(struct socket *so)
 {
 	struct canpcb *canp;
@@ -470,7 +433,6 @@ struct pr_usrreqs rcan_usrreqs = {
 	.pru_attach = 		rcan_attach,
 	.pru_detach = 		rcan_detach,
 	.pru_bind = 		rcan_bind,
-	.pru_connect = 		rcan_connect,
 	.pru_control =		can_control,	
 	.pru_disconnect = 		rcan_disconnect,
 	.pru_shutdown = 		rcan_shutdown,

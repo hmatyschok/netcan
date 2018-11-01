@@ -179,11 +179,12 @@ can_nh_input(struct mbuf *m)
 #endif /* DIAGNOSTIC */
 	
 	rw_rlock(&can_pcbinfo_lock);
-
-	/* fetch PCB maps to interface by its index, if any */	
+	
+	/* XXX: Well, I'll refactor this, ...  */
 	TAILQ_FOREACH(cani, &can_pcbinfo_tbl, cani_next) {
 		struct canpcb   *canp;
-
+		
+		/* fetch PCB maps to interface by its index, if any */
 		TAILQ_FOREACH(canp, &cani->cani_queue, canp_queue) {
 			struct mbuf *mc;
 		
