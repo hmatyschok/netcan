@@ -110,3 +110,9 @@ static driver_t peak_driver = {
 static devclass_t peak_devclass;
 
 DRIVER_MODULE(peak, pci, peak_driver, peak_devclass, 0, 0);
+DRIVER_MODULE(sja, peak, sja_driver, sja_devclass, 0, 0);
+
+/*
+ * ...
+ */
+
