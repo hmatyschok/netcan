@@ -57,6 +57,8 @@
 #ifndef _NET_IF_CAN_H
 #define _NET_IF_CAN_H
 
+#define IFT_CAN 	IFT_PVC
+
 /*
  * CAN frame delimeter
  */
@@ -235,8 +237,6 @@ struct can_ifsoftc {
 	struct callout 	csc_timo; 	/* callout for error control */
 	struct mtx 	csc_mtx;
 };
-
-#define IFT_CAN 	IFT_PVC
 
 /* common subr. */
 int 	can_bin2hex(struct can_frame *, u_char *);

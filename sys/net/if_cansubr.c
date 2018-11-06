@@ -470,7 +470,7 @@ can_hex2id(u_char *buf, struct can_frame *cf)
 	
 	for (u = v = 0, i = 0; i < len; i++, v <<= 4) { /* XXX */
 		c = buf[i];
-
+		
 		if (isdigit(c))
 			c -= '0';
 		else if (isalpha(c)) 
