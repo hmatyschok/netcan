@@ -29,9 +29,9 @@
  */
  
 #define SJA_MOD 			0x00 		/* mode */ 
-#define SJA_CTL 			0x01 		/* control */
+#define SJA_CMR 			0x01 		/* control */
 #define SJA_SR 			0x02 		/* status */
-#define SJA_ISR 		0x03 		/* interrupt status */
+#define SJA_IR 		0x03 		/* interrupt status */
 #define SJA_IER 		0x04 		/* interrupt enable */
 	/* 0x05 reserved */
 #define SJA_BTR0 		0x06 		/* bus timing 0 */
