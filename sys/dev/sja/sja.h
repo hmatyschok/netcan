@@ -25,7 +25,7 @@
  */
 
 /*
- * SJA1000 PeliCAN mode register definitions.
+ * SJA1000, 6.4.1 PeliCAN Address Layout
  */
  
 #define SJA_MOD 			0x00 		/* mode */ 
@@ -138,14 +138,36 @@
 #define SJA_RAM79       0x6f    /* internal RAM addr 79 [free] */
 
 /* 
- * SJA mode register bits 
+ * SJA1000, 6.4.3 Mode Registers [MOD] 
  */
 #define SJA_MOD_RM 		0x00 	/* reset mode */
 #define SJA_MOD_LOM 	0x01 	/* listen only mode */
 #define SJA_MOD_STM 	0x02 	/* self test mode */
 #define SJA_MOD_AFM 	0x04 	/* acceptance filter mode */
-#define SJA_MOD_SM 		0x10  	/* sleep mode */
+#define SJA_MOD_SM 		0x08  	/* sleep mode */
 #define SJA_MOD_RSVD 	0xe0 	/* reserved */
+
+/* 
+ * SJA1000, 6.4.4 Command Registers [CMR] 
+ */
+#define SJA_CMR_TR 		0x01 	/* transmission request */
+#define SJA_CMR_AT 		0x02 	/* abort transmission */
+#define SJA_CMR_RRB 	0x04 	/* release receive buffer */
+#define SJA_CMR_CDO 	0x08 	/* clear data overrun */
+#define SJA_CMR_SRR 	0x10 	/* self reception test */
+#define SJA_CMR_RSVD 	0xe0 	/* reserved */
+
+/* 
+ * SJA1000, 6.4.5 Status Register [SR] 
+ */
+#define SJA_SR_RBS 		0x01 	/* receive buffer status */
+#define SJA_SR_DOS 		0x02 	/* data overrun status */
+#define SJA_SR_TBS 		0x04 	/* transmit buffer status */
+#define SJA_SR_TCS 		0x08 	/* transmission complete status */
+#define SJA_SR_RS 		0x10 	/* receive status */
+#define SJA_SR_TS 		0x20 	/* transmit status */
+#define SJA_SR_ES 		0x40 	/* error status */
+#define SJA_SR_BS 		0x80 	/* bus status */
 
 /*
  * XXX: work in progress..
