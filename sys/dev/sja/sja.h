@@ -136,6 +136,7 @@
 #define SJA_RAM77       0x6d    /* internal RAM addr 77 [free] */
 #define SJA_RAM78       0x6e    /* internal RAM addr 78 [free] */
 #define SJA_RAM79       0x6f    /* internal RAM addr 79 [free] */
+	/* 0x70 - 0xff reserved */
 
 /* 
  * SJA1000, 6.4.3 Mode Registers [MOD] 
@@ -169,6 +170,82 @@
 #define SJA_SR_ES 		0x40 	/* error status */
 #define SJA_SR_BS 		0x80 	/* bus status */
 
+/* 
+ * SJA1000, 6.4.6 Interrupt Register [IR] 
+ */
+#define SJA_IR_RI 		0x01 	/* receive interrupt */
+#define SJA_IR_TI 		0x02 	/* transmit interrupt */
+#define SJA_IR_EI 		0x04 	/* error warning interrupt */
+#define SJA_IR_DOI 		0x08 	/* data overrun interrupt */
+#define SJA_IR_WUI 		0x10 	/* wake-up interrupt */
+#define SJA_IR_EPI 		0x20 	/* error passive interrupt */ 
+#define SJA_IR_ALI 		0x40 	/* arbitration lost interrupt */
+#define SJA_IR_BEI 		0x80 	/* bus error interrupt */
+
+/* 
+ * SJA1000, 6.4.7 Interrupt Enable Register [IER] 
+ */
+#define SJA_IER_RI 		0x01 	/* receive interrupt */
+#define SJA_IER_TI 		0x02 	/* transmit interrupt */
+#define SJA_IER_EI 		0x04 	/* error warning interrupt */
+#define SJA_IER_DOI 		0x08 	/* data overrun interrupt */
+#define SJA_IER_WUI 		0x10 	/* wake-up interrupt */
+#define SJA_IER_EPI 		0x20 	/* error passive interrupt */ 
+#define SJA_IER_ALI 		0x40 	/* arbitration lost interrupt */
+#define SJA_IER_BEI 		0x80 	/* bus error interrupt */
+
+/* 
+ * SJA1000, 6.4.8 Arbitration Lost Capature Register [ALC] 
+ */
+#define SJA_ALC_BIT0 		0x01 	/* ALC in 2^0 + 1 bit of id */
+#define SJA_ALC_BIT1 		0x02 	/* ALC in 2^1 + 1 bit of id */
+#define SJA_ALC_BIT2 		0x04 	/* ALC in 2^2 + 1 bit of id */
+#define SJA_ALC_BIT3 		0x08 	/* ALC in 2^3 + 1 bit of id */
+#define SJA_ALC_BIT4 		0x10 	/* ALC in 2^4 + 1 bit of id */
+#define SJA_ALC_MSK 		0x1f
+#define SJA_ALC_RSVD 		0xe0 	/* reserved */ 
+
+/* 
+ * SJA1000, 6.4.9 Error Code Capature Register [ECC] 
+ */  
+#define SJA_ECC_SEG0 		0x01 	
+#define SJA_ECC_SEG1 		0x02 	
+#define SJA_ECC_SEG2 		0x04 	
+#define SJA_ECC_SEG3 		0x08 	
+#define SJA_ECC_SEG4 		0x10
+#define SJA_ECC_SEG 	0x1f 
+#define SJA_ECC_DIR 		0x20 	/* error occured during reception */
+#define SJA_ECC_ERR_C0 		0x40 	
+#define SJA_ECC_ERR_C1 		0x80
+#define SJA_ECC_ERR 	0xc0 
+
+#if 0
+#define SJA_ECC_BIT_ERR(reg) 	(((reg) & SJA_ECC_ERR) == 0x00) 	
+#define SJA_ECC_FORM_ERR(reg) 	(((reg) & SJA_ECC_ERR) == 0x40)
+#define SJA_ECC_STUFF_ERR(reg) 	(((reg) & SJA_ECC_ERR) == 0x80)
+#define SJA_ECC_OTHER_ERR(reg) 	(((reg) & SJA_ECC_ERR) == 0xc0)
+
+#define SJA_ECC_TX_ERR(reg) 	(((reg) & SJA_ECC_DIR) == 0x00) 	
+#define SJA_ECC_RX_ERR(reg) 	(((reg) & SJA_ECC_DIR) == 0x20)
+#endif
+
+#define SJA_ECC_SOF 		0x03 		/* start of frame */
+#define SJA_ECC_ID28TO21 		0x02 	/* id bits 28 ... 21 */ 
+#define SJA_ECC_ID20TO18 		0x06 	/* id bits 28 ... 21 */
+#define SJA_ECC_SRTR 		0x04 	/* bit SRTR */
+#define SJA_ECC_IDE 		0x07 	/* bit IDE */
+
+
 /*
  * XXX: work in progress..
  */
+
+struct sja_softc {
+	device_t 	sja_dev; 		/* generic device(9) glue */
+	TAILQ_ENTRY(sja_softc) sja_list; 	/* entry on parent's PHY list */
+	struct ifnet 	*sja_ifp; 		/* generic ifnet(9) glue */
+/*
+ * ...
+ */
+	
+};
