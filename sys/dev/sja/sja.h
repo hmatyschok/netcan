@@ -252,9 +252,9 @@ struct sja_softc {
  */	
 };
 
-#define CSR_WRITE_1(sc, reg, val)	bus_write_1(sja->sja_res, reg, val)
-#define CSR_READ_1(sc, reg)		bus_read_1(sja->sja_res, reg)
-#define SJA_SETBIT(sc, reg, x) \
+#define CSR_WRITE_1(sja, reg, val)	bus_write_1((sja)->sja_res, reg, val)
+#define CSR_READ_1(sja, reg)		bus_read_1((sja)->sja_res, reg)
+#define SJA_SETBIT(sja, reg, x) \
 	CSR_WRITE_1(sja, reg, CSR_READ_1(sja, reg) | (x))
 #define SJA_CLRBIT(sc, reg, x) \
 	CSR_WRITE_1(sja, reg, CSR_READ_1(sja, reg) & ~(x))
