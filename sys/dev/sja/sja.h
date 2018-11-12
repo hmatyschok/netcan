@@ -230,11 +230,18 @@
 #endif
 
 #define SJA_ECC_SOF 		0x03 		/* start of frame */
-#define SJA_ECC_ID28TO21 		0x02 	/* id bits 28 ... 21 */ 
-#define SJA_ECC_ID20TO18 		0x06 	/* id bits 28 ... 21 */
-#define SJA_ECC_SRTR 		0x04 	/* bit SRTR */
-#define SJA_ECC_IDE 		0x07 	/* bit IDE */
-
+#define SJA_ECC_ID28TO21 		0x02 		/* id bits 28 ... 21 */ 
+#define SJA_ECC_ID20TO18 		0x06 		/* id bits 28 ... 21 */
+#define SJA_ECC_SRTR 		0x04 		/* bit SRTR */
+#define SJA_ECC_IDE 		0x05 		/* bit IDE */
+#define SJA_ECC_ID17TO13 		0x07 		/* id bits 17 ... 13 */ 
+#define SJA_ECC_ID12TO05 		0x0f 		/* id bits 12 ... 5 */
+#define SJA_ECC_ID04TO00 		0x0e 		/* id bits 4 ... 0 */
+#define SJA_ECC_RTR 		0x0c 		/* bit RTR */
+#define SJA_ECC_RSVD1 		0x0d 		/* reserved bit 1 */
+#define SJA_ECC_RSVD0 		0x09 		/* reserved bit 0 */
+#define SJA_ECC_DLC 		0x0b 		/* data length code */
+#define SJA_ECC_DF 		0x0a 		/* data field */
 
 /*
  * XXX: work in progress..
