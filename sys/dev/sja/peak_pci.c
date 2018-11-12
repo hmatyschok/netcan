@@ -52,6 +52,24 @@
 #include <dev/pci/pcireg.h>
 #include <dev/pci/pcivar.h>
 
+
+struct peak_type {
+	uint16_t 	pk_vid;
+	uint16_t 	pk_did;
+	uint16_t 	pk_rid;
+	const char 	*pk_name;
+};
+
+struct peak_softc {
+	struct ifnet *pk_ifp;
+	device_t pk_dev;
+	device_t pk_sja;
+/*
+ * ...
+ */
+
+};
+
 /*
  * ...
  */
@@ -67,11 +85,11 @@ MODULE_DEPEND(peak, sja, 1, 1, 1);
 MODULE_DEPEND(peak, can, 1, 1, 1);
 
 /*
- * Device-table.
+ * device(9) table.
  */
-static const struct peak_type = {
-	{ /* ... */, 	/* ... */ 	},
-	{ /* ... */, 	/* ... */ 	},	
+static const struct peak_type pk_devs[] = {
+	{ /* ... */, 	/* ... */, 	/* ... */, /* ... */ 	 	},
+	{ /* ... */, 	/* ... */, 	/* ... */, /* ... */ 	 	},
  /*
   * ...
   */
@@ -111,6 +129,33 @@ static devclass_t peak_devclass;
 
 DRIVER_MODULE(peak, pci, peak_driver, peak_devclass, 0, 0);
 DRIVER_MODULE(sja, peak, sja_driver, sja_devclass, 0, 0);
+
+/*
+ * ...
+ */
+
+static int
+peak_probe(device_t dev)
+{
+	const struct peak_type	*t;
+	uint16_t 	devid, revid, vendor;
+	int	 		i, error;
+	
+	vendor = pci_get_vendor(dev);
+	devid = pci_get_device(dev);
+	revid = pci_get_revid(dev);
+	
+	error = ENXIO;
+	
+	for (t = pk_devs, i = 0; i < nitems(pk_devs); i++, t++) {
+		if (vendor == t->pk_vid && devid == t->pk_did) {
+			device_set_desc(dev, t->pk_name);
+			error = BUS_PROBE_DEFAULT;
+			break;
+		}
+	}
+	return (error);
+}
 
 /*
  * ...
