@@ -244,8 +244,18 @@ struct sja_softc {
 	device_t 	sja_dev; 		/* generic device(9) glue */
 	TAILQ_ENTRY(sja_softc) sja_list; 	/* entry on parent's PHY list */
 	struct ifnet 	*sja_ifp; 		/* generic ifnet(9) glue */
+	struct resource 	*sja_res;	/* register resource */
+	int		sja_res_rid;
+	int		sja_res_type;
 /*
  * ...
- */
-	
+ */	
 };
+
+#define CSR_WRITE_1(sc, reg, val)	bus_write_1(sja->sja_res, reg, val)
+#define CSR_READ_1(sc, reg)		bus_read_1(sja->sja_res, reg)
+#define SJA_SETBIT(sc, reg, x) \
+	CSR_WRITE_1(sja, reg, CSR_READ_1(sja, reg) | (x))
+#define SJA_CLRBIT(sc, reg, x) \
+	CSR_WRITE_1(sja, reg, CSR_READ_1(sja, reg) & ~(x))
+
