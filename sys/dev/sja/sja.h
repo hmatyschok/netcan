@@ -42,8 +42,8 @@
 #define SJA_ALC 		0x0b 		/* arbitration lost capature */
 #define SJA_ECC 		0x0c 		/* error code capature */
 #define SJA_EWL 		0x0d 		/* error warning limit */
-#define SJA_RX_EC 		0x0e 		/* rx error counter */ 
-#define SJA_TX_EC		0x0f 		/* tx error counter */
+#define SJA_RXERR 		0x0e 		/* rx error counter */ 
+#define SJA_TXERR		0x0f 		/* tx error counter */
 #define SJA_AC0 		0x10 		/* acceptance code 0 */
 #define SJA_AC1 		0x11 		/* acceptance code 1 */
 #define SJA_AC2 		0x12 		/* acceptance code 2 */
@@ -56,86 +56,86 @@
 #define SJA_RC_MC 		0x1d 		/* rx message counter */
 #define SJA_RXADDR 		0x1e 		/* rx ring start-addr */
 #define SJA_CLKDIV 		0x1f 		/* clock divider */
-#define SJA_RAM0        0x20    /* internal RAM addr 0 [FIFO] */
-#define SJA_RAM1        0x21    /* internal RAM addr 1 [FIFO] */
-#define SJA_RAM2        0x22    /* internal RAM addr 2 [FIFO] */
-#define SJA_RAM3        0x23    /* internal RAM addr 3 [FIFO] */
-#define SJA_RAM4        0x24    /* internal RAM addr 4 [FIFO] */
-#define SJA_RAM5        0x25    /* internal RAM addr 5 [FIFO] */
-#define SJA_RAM6        0x26    /* internal RAM addr 6 [FIFO] */
-#define SJA_RAM7        0x27    /* internal RAM addr 7 [FIFO] */
-#define SJA_RAM8        0x28    /* internal RAM addr 8 [FIFO] */
-#define SJA_RAM9        0x29    /* internal RAM addr 9 [FIFO] */
-#define SJA_RAM10       0x2a    /* internal RAM addr 10 [FIFO] */
-#define SJA_RAM11       0x2b    /* internal RAM addr 11 [FIFO] */
-#define SJA_RAM12       0x2c    /* internal RAM addr 12 [FIFO] */
-#define SJA_RAM13       0x2d    /* internal RAM addr 13 [FIFO] */
-#define SJA_RAM14       0x2e    /* internal RAM addr 14 [FIFO] */
-#define SJA_RAM15       0x2f    /* internal RAM addr 15 [FIFO] */
-#define SJA_RAM16       0x30    /* internal RAM addr 16 [FIFO] */
-#define SJA_RAM17       0x31    /* internal RAM addr 17 [FIFO] */
-#define SJA_RAM18       0x32    /* internal RAM addr 18 [FIFO] */
-#define SJA_RAM19       0x33    /* internal RAM addr 19 [FIFO] */
-#define SJA_RAM20       0x34    /* internal RAM addr 20 [FIFO] */
-#define SJA_RAM21       0x35    /* internal RAM addr 21 [FIFO] */
-#define SJA_RAM22       0x36    /* internal RAM addr 22 [FIFO] */
-#define SJA_RAM23       0x37    /* internal RAM addr 23 [FIFO] */
-#define SJA_RAM24       0x38    /* internal RAM addr 24 [FIFO] */
-#define SJA_RAM25       0x39    /* internal RAM addr 25 [FIFO] */
-#define SJA_RAM26       0x3a    /* internal RAM addr 26 [FIFO] */
-#define SJA_RAM27       0x3b    /* internal RAM addr 27 [FIFO] */
-#define SJA_RAM28       0x3c    /* internal RAM addr 28 [FIFO] */
-#define SJA_RAM29       0x3d    /* internal RAM addr 29 [FIFO] */
-#define SJA_RAM30       0x3e    /* internal RAM addr 30 [FIFO] */
-#define SJA_RAM31       0x3f    /* internal RAM addr 31 [FIFO] */
-#define SJA_RAM32       0x40    /* internal RAM addr 32 [FIFO] */
-#define SJA_RAM33       0x41    /* internal RAM addr 33 [FIFO] */
-#define SJA_RAM34       0x42    /* internal RAM addr 34 [FIFO] */
-#define SJA_RAM35       0x43    /* internal RAM addr 35 [FIFO] */
-#define SJA_RAM36       0x44    /* internal RAM addr 36 [FIFO] */
-#define SJA_RAM37       0x45    /* internal RAM addr 37 [FIFO] */
-#define SJA_RAM38       0x46    /* internal RAM addr 38 [FIFO] */
-#define SJA_RAM39       0x47    /* internal RAM addr 39 [FIFO] */
-#define SJA_RAM40       0x48    /* internal RAM addr 40 [FIFO] */
-#define SJA_RAM41       0x49    /* internal RAM addr 41 [FIFO] */
-#define SJA_RAM42       0x4a    /* internal RAM addr 42 [FIFO] */
-#define SJA_RAM43       0x4b    /* internal RAM addr 43 [FIFO] */
-#define SJA_RAM44       0x4c    /* internal RAM addr 44 [FIFO] */
-#define SJA_RAM45       0x4d    /* internal RAM addr 45 [FIFO] */
-#define SJA_RAM46       0x4e    /* internal RAM addr 46 [FIFO] */
-#define SJA_RAM47       0x4f    /* internal RAM addr 47 [FIFO] */
-#define SJA_RAM48       0x50    /* internal RAM addr 48 [FIFO] */
-#define SJA_RAM49       0x51    /* internal RAM addr 49 [FIFO] */
-#define SJA_RAM50       0x52    /* internal RAM addr 50 [FIFO] */
-#define SJA_RAM51       0x53    /* internal RAM addr 51 [FIFO] */
-#define SJA_RAM52       0x54    /* internal RAM addr 52 [FIFO] */
-#define SJA_RAM53       0x55    /* internal RAM addr 53 [FIFO] */
-#define SJA_RAM54       0x56    /* internal RAM addr 54 [FIFO] */
-#define SJA_RAM55       0x57    /* internal RAM addr 55 [FIFO] */
-#define SJA_RAM56       0x58    /* internal RAM addr 56 [FIFO] */
-#define SJA_RAM57       0x59    /* internal RAM addr 57 [FIFO] */
-#define SJA_RAM58       0x5a    /* internal RAM addr 58 [FIFO] */
-#define SJA_RAM59       0x5b    /* internal RAM addr 59 [FIFO] */
-#define SJA_RAM60       0x5c    /* internal RAM addr 60 [FIFO] */
-#define SJA_RAM61       0x5d    /* internal RAM addr 61 [FIFO] */
-#define SJA_RAM62       0x5e    /* internal RAM addr 62 [FIFO] */
-#define SJA_RAM63       0x5f    /* internal RAM addr 63 [FIFO] */
-#define SJA_RAM64       0x60    /* internal RAM addr 64 [TX buffer] */
-#define SJA_RAM65       0x61    /* internal RAM addr 65 [TX buffer] */
-#define SJA_RAM66       0x62    /* internal RAM addr 66 [TX buffer] */
-#define SJA_RAM67       0x63    /* internal RAM addr 67 [TX buffer] */
-#define SJA_RAM68       0x64    /* internal RAM addr 68 [TX buffer] */
-#define SJA_RAM69       0x65    /* internal RAM addr 69 [TX buffer] */
-#define SJA_RAM70       0x66    /* internal RAM addr 70 [TX buffer] */
-#define SJA_RAM71       0x67    /* internal RAM addr 71 [TX buffer] */
-#define SJA_RAM72       0x68    /* internal RAM addr 72 [TX buffer] */
-#define SJA_RAM73       0x69    /* internal RAM addr 73 [TX buffer] */
-#define SJA_RAM74       0x6a    /* internal RAM addr 74 [TX buffer] */
-#define SJA_RAM75       0x6b    /* internal RAM addr 75 [TX buffer] */
-#define SJA_RAM76       0x6c    /* internal RAM addr 76 [TX buffer] */
-#define SJA_RAM77       0x6d    /* internal RAM addr 77 [free] */
-#define SJA_RAM78       0x6e    /* internal RAM addr 78 [free] */
-#define SJA_RAM79       0x6f    /* internal RAM addr 79 [free] */
+#define SJA_RAM0 		0x20 		/* internal RAM addr 0 [FIFO] */
+#define SJA_RAM1 		0x21 		/* internal RAM addr 1 [FIFO] */
+#define SJA_RAM2 		0x22 		/* internal RAM addr 2 [FIFO] */
+#define SJA_RAM3 		0x23 		/* internal RAM addr 3 [FIFO] */
+#define SJA_RAM4 		0x24 		/* internal RAM addr 4 [FIFO] */
+#define SJA_RAM5 		0x25 		/* internal RAM addr 5 [FIFO] */
+#define SJA_RAM6 		0x26 		/* internal RAM addr 6 [FIFO] */
+#define SJA_RAM7 		0x27 		/* internal RAM addr 7 [FIFO] */
+#define SJA_RAM8 		0x28 		/* internal RAM addr 8 [FIFO] */
+#define SJA_RAM9 		0x29 		/* internal RAM addr 9 [FIFO] */
+#define SJA_RAM10       0x2a 		/* internal RAM addr 10 [FIFO] */
+#define SJA_RAM11       0x2b 		/* internal RAM addr 11 [FIFO] */
+#define SJA_RAM12       0x2c 		/* internal RAM addr 12 [FIFO] */
+#define SJA_RAM13       0x2d 		/* internal RAM addr 13 [FIFO] */
+#define SJA_RAM14       0x2e 		/* internal RAM addr 14 [FIFO] */
+#define SJA_RAM15       0x2f 		/* internal RAM addr 15 [FIFO] */
+#define SJA_RAM16       0x30 		/* internal RAM addr 16 [FIFO] */
+#define SJA_RAM17       0x31 		/* internal RAM addr 17 [FIFO] */
+#define SJA_RAM18       0x32 		/* internal RAM addr 18 [FIFO] */
+#define SJA_RAM19       0x33 		/* internal RAM addr 19 [FIFO] */
+#define SJA_RAM20       0x34 		/* internal RAM addr 20 [FIFO] */
+#define SJA_RAM21       0x35 		/* internal RAM addr 21 [FIFO] */
+#define SJA_RAM22       0x36 		/* internal RAM addr 22 [FIFO] */
+#define SJA_RAM23       0x37 		/* internal RAM addr 23 [FIFO] */
+#define SJA_RAM24       0x38 		/* internal RAM addr 24 [FIFO] */
+#define SJA_RAM25       0x39 		/* internal RAM addr 25 [FIFO] */
+#define SJA_RAM26       0x3a 		/* internal RAM addr 26 [FIFO] */
+#define SJA_RAM27       0x3b 		/* internal RAM addr 27 [FIFO] */
+#define SJA_RAM28       0x3c 		/* internal RAM addr 28 [FIFO] */
+#define SJA_RAM29       0x3d 		/* internal RAM addr 29 [FIFO] */
+#define SJA_RAM30       0x3e 		/* internal RAM addr 30 [FIFO] */
+#define SJA_RAM31       0x3f 		/* internal RAM addr 31 [FIFO] */
+#define SJA_RAM32       0x40 		/* internal RAM addr 32 [FIFO] */
+#define SJA_RAM33       0x41 		/* internal RAM addr 33 [FIFO] */
+#define SJA_RAM34       0x42 		/* internal RAM addr 34 [FIFO] */
+#define SJA_RAM35       0x43 		/* internal RAM addr 35 [FIFO] */
+#define SJA_RAM36       0x44 		/* internal RAM addr 36 [FIFO] */
+#define SJA_RAM37       0x45 		/* internal RAM addr 37 [FIFO] */
+#define SJA_RAM38       0x46 		/* internal RAM addr 38 [FIFO] */
+#define SJA_RAM39       0x47 		/* internal RAM addr 39 [FIFO] */
+#define SJA_RAM40       0x48 		/* internal RAM addr 40 [FIFO] */
+#define SJA_RAM41       0x49 		/* internal RAM addr 41 [FIFO] */
+#define SJA_RAM42       0x4a 		/* internal RAM addr 42 [FIFO] */
+#define SJA_RAM43       0x4b 		/* internal RAM addr 43 [FIFO] */
+#define SJA_RAM44       0x4c 		/* internal RAM addr 44 [FIFO] */
+#define SJA_RAM45       0x4d 		/* internal RAM addr 45 [FIFO] */
+#define SJA_RAM46       0x4e 		/* internal RAM addr 46 [FIFO] */
+#define SJA_RAM47       0x4f 		/* internal RAM addr 47 [FIFO] */
+#define SJA_RAM48       0x50 		/* internal RAM addr 48 [FIFO] */
+#define SJA_RAM49       0x51 		/* internal RAM addr 49 [FIFO] */
+#define SJA_RAM50       0x52 		/* internal RAM addr 50 [FIFO] */
+#define SJA_RAM51       0x53 		/* internal RAM addr 51 [FIFO] */
+#define SJA_RAM52       0x54 		/* internal RAM addr 52 [FIFO] */
+#define SJA_RAM53       0x55 		/* internal RAM addr 53 [FIFO] */
+#define SJA_RAM54       0x56 		/* internal RAM addr 54 [FIFO] */
+#define SJA_RAM55       0x57 		/* internal RAM addr 55 [FIFO] */
+#define SJA_RAM56       0x58 		/* internal RAM addr 56 [FIFO] */
+#define SJA_RAM57       0x59 		/* internal RAM addr 57 [FIFO] */
+#define SJA_RAM58       0x5a 		/* internal RAM addr 58 [FIFO] */
+#define SJA_RAM59       0x5b 		/* internal RAM addr 59 [FIFO] */
+#define SJA_RAM60       0x5c 		/* internal RAM addr 60 [FIFO] */
+#define SJA_RAM61       0x5d 		/* internal RAM addr 61 [FIFO] */
+#define SJA_RAM62       0x5e 		/* internal RAM addr 62 [FIFO] */
+#define SJA_RAM63       0x5f 		/* internal RAM addr 63 [FIFO] */
+#define SJA_RAM64       0x60 		/* internal RAM addr 64 [TX buf] */
+#define SJA_RAM65       0x61 		/* internal RAM addr 65 [TX buf] */
+#define SJA_RAM66       0x62 		/* internal RAM addr 66 [TX buf] */
+#define SJA_RAM67       0x63 		/* internal RAM addr 67 [TX buf] */
+#define SJA_RAM68       0x64 		/* internal RAM addr 68 [TX buf] */
+#define SJA_RAM69       0x65 		/* internal RAM addr 69 [TX buf] */
+#define SJA_RAM70       0x66 		/* internal RAM addr 70 [TX buf] */
+#define SJA_RAM71       0x67 		/* internal RAM addr 71 [TX buf] */
+#define SJA_RAM72       0x68 		/* internal RAM addr 72 [TX buf] */
+#define SJA_RAM73       0x69 		/* internal RAM addr 73 [TX buf] */
+#define SJA_RAM74       0x6a 		/* internal RAM addr 74 [TX buf] */
+#define SJA_RAM75       0x6b 		/* internal RAM addr 75 [TX buf] */
+#define SJA_RAM76       0x6c 		/* internal RAM addr 76 [TX buf] */
+#define SJA_RAM77       0x6d 		/* internal RAM addr 77 [free] */
+#define SJA_RAM78       0x6e 		/* internal RAM addr 78 [free] */
+#define SJA_RAM79       0x6f 		/* internal RAM addr 79 [free] */
 	/* 0x70 - 0xff reserved */
 
 /* 
@@ -207,12 +207,7 @@
 
 /* 
  * SJA1000, 6.4.9 Error Code Capature Register [ECC] 
- */  
-#define SJA_ECC_SEG0 		0x01 	
-#define SJA_ECC_SEG1 		0x02 	
-#define SJA_ECC_SEG2 		0x04 	
-#define SJA_ECC_SEG3 		0x08 	
-#define SJA_ECC_SEG4 		0x10
+ */ 
 #define SJA_ECC_SEG 	0x1f 
 #define SJA_ECC_DIR 		0x20 	/* error occured during reception */
 #define SJA_ECC_ERR_C0 		0x40 	
@@ -242,6 +237,47 @@
 #define SJA_ECC_RSVD0 		0x09 		/* reserved bit 0 */
 #define SJA_ECC_DLC 		0x0b 		/* data length code */
 #define SJA_ECC_DF 		0x0a 		/* data field */
+#define SJA_ECC_CRC_SEQ 		0x08 		/* CRC sequence */
+#define SJA_ECC_CRC_DEL 		0x18 		/* CRC delimeter */
+#define SJA_ECC_ACK_SLOT 		0x19 		/* ACK slot */
+#define SJA_ECC_EOF 		0x1a 		/* end of frame */
+#define SJA_ECC_INTERM 		0x12 		/* intermission */
+#define SJA_ECC_AEF 		0x11 		/* active error flag */
+#define SJA_ECC_PEF 		0x16 		/* passive error flag */
+#define SJA_ECC_TDB 		0x13 		/* tolerate dominant bits */
+#define SJA_ECC_ED 		0x17 		/* tolerate dominant bits */
+#define SJA_ECC_OF 		0x1c 		/* overload flag */
+
+/* 
+ * SJA1000, 6.4.10 Error Warning Limit Register [EWLR] 
+ */
+#define SJA_EWL_DFLT 		0x96
+
+/* 
+ * SJA1000, 6.4.11 RX Error Counter Register [RXERR] 
+ */
+#define SJA_RXERR_DFLT 		0x00
+
+/* 
+ * SJA1000, 6.4.12 TX Error Counter Register [TXERR] 
+ */
+#define SJA_TXERR_DFLT 		0x00
+
+/*
+ * SJA1000, 6.4.13 TX Buffer
+ */
+
+struct sja_txdesc {
+	uint8_t 	tx_info;
+/*
+ * ...
+ */	
+};
+#define SJA_TXINFO_DLC_MSK 		0x0f
+#define SJA_TXINFO_DC_MSK 		0x30
+#define SJA_TXINFO_RTR_MSK 		0x40
+#define SJA_TXINFO_FF_MSK 		0x80 
+
 
 /*
  * XXX: work in progress..
