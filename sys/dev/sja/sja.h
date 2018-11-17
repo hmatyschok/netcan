@@ -262,16 +262,21 @@
 #define SJA_TXERR_DFLT 		0x00
 
 /*
- * SJA1000, 6.4.13 TX Buffer
+ * SJA1000, 6.4.1{3,4} {T,R}X Buffer
  */
 
 struct sja_desc {
 	uint8_t 	sja_fi; 	/* frame information */
 	union {
-		uint8_t 	sff[2];
-		uint8_t 	eff[4];
-	} sja_id;
-	uint8_t 	sja_data[8];
+		struct {
+		uint8_t 	id[2];
+		uint8_t 	data[8];	
+		} type_sff;
+		struct {
+		uint8_t 	id[4];
+		uint8_t 	data[8];	
+		} type_eff;
+	} sja_frm;
 };
 #define SJA_FI_DLC_MSK 		0x0f 	/* data length code bits */
 #define SJA_FI_DC_MSK 		0x30 	/* don't care bits, loopback */
