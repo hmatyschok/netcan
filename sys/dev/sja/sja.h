@@ -142,21 +142,21 @@
  * SJA1000, 6.4.3 Mode Registers [MOD] 
  */
 #define SJA_MOD_RM 		0x00 	/* reset mode */
-#define SJA_MOD_LOM 	0x01 	/* listen only mode */
-#define SJA_MOD_STM 	0x02 	/* self test mode */
-#define SJA_MOD_AFM 	0x04 	/* acceptance filter mode */
+#define SJA_MOD_LOM 		0x01 	/* listen only mode */
+#define SJA_MOD_STM 		0x02 	/* self test mode */
+#define SJA_MOD_AFM 		0x04 	/* acceptance filter mode */
 #define SJA_MOD_SM 		0x08  	/* sleep mode */
-#define SJA_MOD_RSVD 	0xe0 	/* reserved */
+#define SJA_MOD_RSVD 		0xe0 	/* reserved */
 
 /* 
  * SJA1000, 6.4.4 Command Registers [CMR] 
  */
 #define SJA_CMR_TR 		0x01 	/* transmission request */
 #define SJA_CMR_AT 		0x02 	/* abort transmission */
-#define SJA_CMR_RRB 	0x04 	/* release receive buffer */
-#define SJA_CMR_CDO 	0x08 	/* clear data overrun */
-#define SJA_CMR_SRR 	0x10 	/* self reception test */
-#define SJA_CMR_RSVD 	0xe0 	/* reserved */
+#define SJA_CMR_RRB 		0x04 	/* release receive buffer */
+#define SJA_CMR_CDO 		0x08 	/* clear data overrun */
+#define SJA_CMR_SRR 		0x10 	/* self reception test */
+#define SJA_CMR_RSVD 		0xe0 	/* reserved */
 
 /* 
  * SJA1000, 6.4.5 Status Register [SR] 
@@ -208,17 +208,15 @@
 /* 
  * SJA1000, 6.4.9 Error Code Capature Register [ECC] 
  */ 
-#define SJA_ECC_SEG 	0x1f 
+#define SJA_ECC_SEG 		0x1f 
 #define SJA_ECC_DIR 		0x20 	/* error occured during reception */
-#define SJA_ECC_ERR_C0 		0x40 	
-#define SJA_ECC_ERR_C1 		0x80
-#define SJA_ECC_ERR 	0xc0 
+#define SJA_ECC_ERR_MSK 	0xc0 
 
 #if 0
-#define SJA_ECC_BIT_ERR(reg) 	(((reg) & SJA_ECC_ERR) == 0x00) 	
-#define SJA_ECC_FORM_ERR(reg) 	(((reg) & SJA_ECC_ERR) == 0x40)
-#define SJA_ECC_STUFF_ERR(reg) 	(((reg) & SJA_ECC_ERR) == 0x80)
-#define SJA_ECC_OTHER_ERR(reg) 	(((reg) & SJA_ECC_ERR) == 0xc0)
+#define SJA_ECC_BIT_ERR(reg) 	(((reg) & SJA_ECC_ERR_MSK) == 0x00) 	
+#define SJA_ECC_FORM_ERR(reg) 	(((reg) & SJA_ECC_ERR_MSK) == 0x40)
+#define SJA_ECC_STUFF_ERR(reg) 	(((reg) & SJA_ECC_ERR_MSK) == 0x80)
+#define SJA_ECC_OTHER_ERR(reg) 	(((reg) & SJA_ECC_ERR_MSK) == 0xc0)
 
 #define SJA_ECC_TX_ERR(reg) 	(((reg) & SJA_ECC_DIR) == 0x00) 	
 #define SJA_ECC_RX_ERR(reg) 	(((reg) & SJA_ECC_DIR) == 0x20)
@@ -267,17 +265,30 @@
  * SJA1000, 6.4.13 TX Buffer
  */
 
-struct sja_txdesc {
-	uint8_t 	tx_info;
-/*
- * ...
- */	
+struct sja_desc {
+	uint8_t 	sja_fi; 	/* frame information */
+	union {
+		uint8_t 	sff[2];
+		uint8_t 	eff[4];
+	} sja_id;
+	uint8_t 	sja_data[8];
 };
-#define SJA_TXINFO_DLC_MSK 		0x0f
-#define SJA_TXINFO_DC_MSK 		0x30
-#define SJA_TXINFO_RTR_MSK 		0x40
-#define SJA_TXINFO_FF_MSK 		0x80 
+#define SJA_FI_DLC_MSK 		0x0f 	/* data length code bits */
+#define SJA_FI_DC_MSK 		0x30 	/* don't care bits, loopback */
+#define SJA_FI_RTR_MSK 		0x40 	/* remote transmission request */
+#define SJA_FI_FF_MSK 		0x80 	/* frame format */
 
+
+/*
+ * SJA1000, 6.5.1 Bus Timing Register 0 [BTR0]
+ */
+#define SJA_BTR0_BRP_MSK 		0x3f 	/* baud rate prescaler */
+#define SJA_BTR0_SJW_MSK 		0xc0 	/* synchroniziation junp width */
+
+#if 0
+#define SJA_BTR0_BRP(reg) 	((reg) & SJA_BTR0_BRP_MSK)
+#define SJA_BTR0_SJW(reg) 	(((reg) & SJA_BTR0_BRP_MSK) >> 6)
+#endif
 
 /*
  * XXX: work in progress..
