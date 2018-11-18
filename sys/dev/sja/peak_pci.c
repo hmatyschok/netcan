@@ -107,10 +107,9 @@ static device_method_t peak_methods[] = {
 	DEVMETHOD(device_resume,	peak_resume),
 	DEVMETHOD(device_shutdown,	peak_shutdown),
 
-	/* sja1000(4) interface */
+	/* sja(4) interface */
 	DEVMETHOD(sja_readreg,	peak_sja_readreg),
 	DEVMETHOD(sja_writereg,	peak_sja_writereg),
-	DEVMETHOD(sja_statchg,	peak_sja_statchg),
 
 	DEVMETHOD_END
 };
