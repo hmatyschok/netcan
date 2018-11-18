@@ -268,16 +268,16 @@
 struct sja_desc {
 	uint8_t 	sja_fi; 	/* frame information */
 	union {
-		struct {
-		uint8_t 	id[2];
-		uint8_t 	data[8];	
-		} type_sff;
-		struct {
-		uint8_t 	id[4];
-		uint8_t 	data[8];	
-		} type_eff;
-	} sja_frm;
+		uint16_t 	sff;
+		uint32_t 	eff;
+	} sja_id;
+	uint8_t 	data[8];
 };
+#define SJA_FI 		0x16 		/* maps to CAN frame information */
+#define SJA_ID 		0x17 		/* maps to CAN id */
+#define SJA_DATA_SFF 		0x19 		/* maps to data region, SFF */
+#define SJA_DATA_EFF 		0x21 		/* maps to data region, EFF */
+
 #define SJA_FI_DLC_MSK 		0x0f 	/* data length code bits */
 #define SJA_FI_DC_MSK 		0x30 	/* don't care bits, loopback */
 #define SJA_FI_RTR_MSK 		0x40 	/* remote transmission request */
@@ -304,7 +304,7 @@ struct sja_softc {
 	TAILQ_ENTRY(sja_softc) sja_list; 	/* entry on parent's PHY list */
 	struct ifnet 	*sja_ifp; 		/* generic ifnet(9) glue */
 	struct resource 	*sja_res;	/* register resource */
-	int		sja_res_rid;
+	int		sja_res_id;
 	int		sja_res_type;
 /*
  * ...
@@ -318,3 +318,8 @@ struct sja_softc {
 #define SJA_CLRBIT(sc, reg, x) \
 	CSR_WRITE_1(sja, reg, CSR_READ_1(sja, reg) & ~(x))
 
+#define CSR_WRITE_2(sja, reg, val)	bus_write_2((sja)->sja_res, reg, val)
+#define CSR_READ_2(sja, reg)		bus_read_2((sja)->sja_res, reg)
+
+#define CSR_WRITE_4(sja, reg, val)	bus_write_4((sja)->sja_res, reg, val)
+#define CSR_READ_4(sja, reg)		bus_read_4((sja)->sja_res, reg)
