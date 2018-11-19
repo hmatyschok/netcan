@@ -96,7 +96,6 @@ sja_intr(void *arg)
 		error = FILTER_STRAY;
 		break;
 	default:	
-		/* Disable interrupts. */
 		CSR_WRITE_1(sja, SJA_IR, SJA_IR_OFF);
 		taskqueue_enqueue(taskqueue_fast, &sja->sja_int_task);
 		error = FILTER_HANDLED;
@@ -108,10 +107,13 @@ sja_intr(void *arg)
 static void
 sja_intr_task(void *arg)
 {
-	struct sja_softc *sja = arg;
+	struct sja_softc *sja;
 	struct ifnet *ifp = sja->sja_ifp;
 	uint8_t status;
 	int	count;
+
+	sja = arg;
+	ifp = sja->sja_ifp;
 
 	SJA_LOCK(sja);
 
