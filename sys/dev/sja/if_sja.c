@@ -81,23 +81,28 @@ static devclass_t sja_devclass;
 
 
 static int
-vr_intr(void *arg)
+sja_intr(void *arg)
 {
 	struct sja_softc *sja;
 	uint8_t status;
+	int error;
 	
 	sc = (struct sja_softc *)arg;
 
 	status = CSR_READ_1(sja, SJA_IR);
-	if (status == SJA_IR_OFF || status == SJA_IR_ALL)
-		return (FILTER_STRAY);
-		
-	/* Disable interrupts. */
-	CSR_WRITE_1(sja, SJA_IR, SJA_IR_OFF);
-
-	taskqueue_enqueue(taskqueue_fast, &sja->sja_int_task);
-	
-	return (FILTER_HANDLED);
+	switch (status) {
+	case SJA_IR_OFF:
+	case SJA_IR_ALL:
+		error = FILTER_STRAY;
+		break;
+	default:	
+		/* Disable interrupts. */
+		CSR_WRITE_1(sja, SJA_IR, SJA_IR_OFF);
+		taskqueue_enqueue(taskqueue_fast, &sja->sja_int_task);
+		error = FILTER_HANDLED;
+		break;
+	}
+	return (error);
 }
 
 static void
