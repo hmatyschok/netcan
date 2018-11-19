@@ -79,3 +79,44 @@ static devclass_t sja_devclass;
  * ...
  */
 
+
+static int
+vr_intr(void *arg)
+{
+	struct sja_softc *sja;
+	uint8_t status;
+	
+	sc = (struct sja_softc *)arg;
+
+	status = CSR_READ_1(sja, SJA_IR);
+	if (status == SJA_IR_OFF || status == SJA_IR_ALL)
+		return (FILTER_STRAY);
+		
+	/* Disable interrupts. */
+	CSR_WRITE_1(sja, SJA_IR, SJA_IR_OFF);
+
+	taskqueue_enqueue(taskqueue_fast, &sja->sja_int_task);
+	
+	return (FILTER_HANDLED);
+}
+
+static void
+sja_intr_task(void *arg)
+{
+	struct sja_softc *sja = arg;
+	struct ifnet *ifp = sja->sja_ifp;
+	uint8_t status;
+	int	count;
+
+	SJA_LOCK(sja);
+
+	if ((ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
+		goto done_locked;
+
+/*
+ * ...
+ */
+		
+done_locked:
+	SJA_UNLOCK(sja);
+}

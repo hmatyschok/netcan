@@ -60,10 +60,12 @@ struct peak_type {
 	const char 	*pk_name;
 };
 
+/*
+ * Parent device(9) accessing e. g. PCI-BUS, etc.
+ */
 struct peak_softc {
-	struct ifnet *pk_ifp;
-	device_t pk_dev;
-	device_t pk_sja;
+	device_t 	pk_dev;
+	device_t 	pk_sja;
 /*
  * ...
  */

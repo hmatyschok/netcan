@@ -173,26 +173,28 @@
 /* 
  * SJA1000, 6.4.6 Interrupt Register [IR] 
  */
-#define SJA_IR_RI 		0x01 	/* receive interrupt */
-#define SJA_IR_TI 		0x02 	/* transmit interrupt */
-#define SJA_IR_EI 		0x04 	/* error warning interrupt */
-#define SJA_IR_DOI 		0x08 	/* data overrun interrupt */
-#define SJA_IR_WUI 		0x10 	/* wake-up interrupt */
-#define SJA_IR_EPI 		0x20 	/* error passive interrupt */ 
-#define SJA_IR_ALI 		0x40 	/* arbitration lost interrupt */
-#define SJA_IR_BEI 		0x80 	/* bus error interrupt */
+#define SJA_IR_OFF 		0x00 
+#define SJA_IR_RX 		0x01 	/* receive interrupt */
+#define SJA_IR_TX 		0x02 	/* transmit interrupt */
+#define SJA_IR_EW 		0x04 	/* error warning interrupt */
+#define SJA_IR_DO 		0x08 	/* data overrun interrupt */
+#define SJA_IR_WU 		0x10 	/* wake-up interrupt */
+#define SJA_IR_EP 		0x20 	/* error passive interrupt */ 
+#define SJA_IR_AL 		0x40 	/* arbitration lost interrupt */
+#define SJA_IR_BE 		0x80 	/* bus error interrupt */
+#define SJA_IR_ALL 		0xff
 
 /* 
  * SJA1000, 6.4.7 Interrupt Enable Register [IER] 
  */
-#define SJA_IER_RI 		0x01 	/* receive interrupt */
-#define SJA_IER_TI 		0x02 	/* transmit interrupt */
-#define SJA_IER_EI 		0x04 	/* error warning interrupt */
-#define SJA_IER_DOI 		0x08 	/* data overrun interrupt */
-#define SJA_IER_WUI 		0x10 	/* wake-up interrupt */
-#define SJA_IER_EPI 		0x20 	/* error passive interrupt */ 
-#define SJA_IER_ALI 		0x40 	/* arbitration lost interrupt */
-#define SJA_IER_BEI 		0x80 	/* bus error interrupt */
+#define SJA_IER_RX 		0x01 	/* receive interrupt */
+#define SJA_IER_TX 		0x02 	/* transmit interrupt */
+#define SJA_IER_EE 		0x04 	/* error warning interrupt */
+#define SJA_IER_DO 		0x08 	/* data overrun interrupt */
+#define SJA_IER_WU 		0x10 	/* wake-up interrupt */
+#define SJA_IER_EP 		0x20 	/* error passive interrupt */ 
+#define SJA_IER_AL 		0x40 	/* arbitration lost interrupt */
+#define SJA_IER_BE 		0x80 	/* bus error interrupt */
 
 /* 
  * SJA1000, 6.4.8 Arbitration Lost Capature Register [ALC] 
@@ -204,6 +206,10 @@
 #define SJA_ALC_BIT4 		0x10 	/* ALC in 2^4 + 1 bit of id */
 #define SJA_ALC_MSK 		0x1f
 #define SJA_ALC_RSVD 		0xe0 	/* reserved */ 
+
+#if 0
+#define SJA_ALC_VAL(reg) 		((reg) & SJA_ALC_MSK)
+#endif
 
 /* 
  * SJA1000, 6.4.9 Error Code Capature Register [ECC] 
@@ -271,7 +277,7 @@ struct sja_desc {
 		uint16_t 	sff;
 		uint32_t 	eff;
 	} sja_id;
-	uint8_t 	data[8];
+	uint8_t 	sja_data[8];
 };
 #define SJA_FI 		0x16 		/* maps to CAN frame information */
 #define SJA_ID 		0x17 		/* maps to CAN id */
@@ -300,15 +306,16 @@ struct sja_desc {
  */
 
 struct sja_softc {
+	struct ifnet 	*sja_ifp; 		/* generic ifnet(9) glue */
 	device_t 	sja_dev; 		/* generic device(9) glue */
 	TAILQ_ENTRY(sja_softc) sja_list; 	/* entry on parent's PHY list */
-	struct ifnet 	*sja_ifp; 		/* generic ifnet(9) glue */
 	struct resource 	*sja_res;	/* register resource */
 	int		sja_res_id;
 	int		sja_res_type;
 /*
  * ...
  */	
+	struct task 	sja_int_task;
 };
 
 #define CSR_WRITE_1(sja, reg, val)	bus_write_1((sja)->sja_res, reg, val)
