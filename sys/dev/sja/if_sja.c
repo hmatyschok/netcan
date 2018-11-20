@@ -88,18 +88,15 @@ sja_intr(void *arg)
 	int error;
 	
 	sc = (struct sja_softc *)arg;
-
+	
 	status = CSR_READ_1(sja, SJA_IR);
-	switch (status) {
-	case SJA_IR_OFF:
-	case SJA_IR_ALL:
+	
+	if ((status & (SJA_IR_OFF|SJA_IR_ALL)) != 0)  
 		error = FILTER_STRAY;
-		break;
-	default:	
+	else {	
 		CSR_WRITE_1(sja, SJA_IR, SJA_IR_OFF);
-		taskqueue_enqueue(taskqueue_fast, &sja->sja_int_task);
+		taskqueue_enqueue(taskqueue_fast, &sja->sja_intr_task);
 		error = FILTER_HANDLED;
-		break;
 	}
 	return (error);
 }
