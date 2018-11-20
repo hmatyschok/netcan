@@ -79,7 +79,6 @@ static devclass_t sja_devclass;
  * ...
  */
 
-
 static int
 sja_intr(void *arg)
 {
@@ -91,10 +90,9 @@ sja_intr(void *arg)
 	
 	status = CSR_READ_1(sja, SJA_IR);
 	
-	if ((status & (SJA_IR_OFF|SJA_IR_ALL)) != 0)  
+	if (status & (SJA_IR_OFF|SJA_IR_ALL))  
 		error = FILTER_STRAY;
-	else {	
-		CSR_WRITE_1(sja, SJA_IR, SJA_IR_OFF);
+	else {
 		taskqueue_enqueue(taskqueue_fast, &sja->sja_intr_task);
 		error = FILTER_HANDLED;
 	}
@@ -116,6 +114,8 @@ sja_intr_task(void *arg)
 
 	if ((ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
 		goto done_locked;
+
+	
 
 /*
  * ...
