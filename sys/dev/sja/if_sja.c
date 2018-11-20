@@ -90,7 +90,7 @@ sja_intr(void *arg)
 	
 	status = CSR_READ_1(sja, SJA_IR);
 	
-	if (status & (SJA_IR_OFF|SJA_IR_ALL))  
+	if (status == SJA_IR_OFF)  
 		error = FILTER_STRAY;
 	else {
 		taskqueue_enqueue(taskqueue_fast, &sja->sja_intr_task);
@@ -114,7 +114,7 @@ sja_intr_task(void *arg)
 	if ((ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
 		goto done_locked;
 
-	status = CSR_READ_1(sja);
+	status = CSR_READ_1(sja, SJA_IR);
 
 	for (; status != SJA_IR_OFF;) {
 		
@@ -125,10 +125,9 @@ sja_intr_task(void *arg)
 		else
 			sja_error(sja);
 /*
- * ...
- */
-			
-		status = CSR_READ_1(sja);
+ * ,,,
+ */	
+		status = CSR_READ_1(sja, SJA_IR);
 	}	
 
 /*
