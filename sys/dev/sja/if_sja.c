@@ -105,35 +105,29 @@ sja_intr_task(void *arg)
 	struct sja_softc *sja;
 	struct ifnet *ifp;
 	uint8_t status;
+	int n;
 	
 	sja = arg;
-	ifp = sja->sja_ifp;
 
 	SJA_LOCK(sja);
 
-	if ((ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
-		goto done_locked;
+	ifp = sja->sja_ifp;
 
-	status = CSR_READ_1(sja, SJA_IR);
-
-	for (; status != SJA_IR_OFF;) {
-		
-		if (status & SJA_IR_RX)
-			sja_rxeof(sja);
-		else if (status & SJA_IR_TX)
-			sja_txeof(sja);
-		else
-			sja_error(sja);
-/*
- * ,,,
- */	
+	if (ifp->if_drv_flags & IFF_DRV_RUNNING) {
+	
 		status = CSR_READ_1(sja, SJA_IR);
-	}	
 
-/*
- * ...
- */
+		for (n = 0; status != SJA_IR_OFF && n < 6; n++) {
 		
-done_locked:
+			if (status & SJA_IR_RX)
+				sja_rxeof(sja);
+			else if (status & SJA_IR_TX)
+				sja_txeof(sja);
+			else
+				sja_error(sja);
+	
+			status = CSR_READ_1(sja, SJA_IR);
+		}	
+	}
 	SJA_UNLOCK(sja);
 }
