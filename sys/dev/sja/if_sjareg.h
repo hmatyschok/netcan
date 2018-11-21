@@ -316,7 +316,10 @@ struct sja_softc {
 /*
  * ...
  */	
+	struct resource 	*sja_irq; /* XXX */
+	void 	*sja_intr_hand;
 	struct task 	sja_intr_task;
+	struct mtx 		sja_mtx;
 };
 
 #define CSR_WRITE_1(sja, reg, val)	bus_write_1((sja)->sja_res, reg, val)

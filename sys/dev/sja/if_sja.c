@@ -75,6 +75,55 @@ static driver_t sja_driver = {
 
 static devclass_t sja_devclass;
 
+
+static int 
+sja_attach(device_t dev)
+{
+	struct sja_softc *sja;
+	struct ifnet *ifp;
+	int error, rid;
+	
+	sja = device_get_softc(dev);
+	sja->sja_dev = dev;
+	
+	mtx_init(&sja->sja_mtx, device_get_nameunit(dev), 
+		MTX_NETWORK_LOCK, MTX_DEF);
+	
+	error = 0;
+	
+/*
+ * ...
+ */	
+	rid = 0;
+	sja->sja_irq = bus_alloc_resource_any(dev, SYS_RES_IRQ, &rid,
+	    RF_SHAREABLE | RF_ACTIVE);
+
+	if (sja->sja_irq == NULL) {
+		device_printf(dev, "couldn't map interrupt\n");
+		error = ENXIO;
+		goto bad;
+	}
+/*
+ * ...
+ */	 
+ 
+	error = bus_setup_intr(dev, sja->sja_irq, 
+		INTR_TYPE_NET | INTR_MPSAFE, sja_intr, 
+			NULL, sja, &sja->sja_intr_hand);
+
+	if (error != 0) {
+		device_printf(dev, "couldn't set up irq\n");
+		can_ifdetach(ifp);
+		goto bad;
+	} 
+	
+out: 
+	return (error);
+bad:
+	sja_detach(dev);
+	goto out;
+}
+
 /*
  * ...
  */
