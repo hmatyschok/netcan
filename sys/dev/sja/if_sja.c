@@ -190,7 +190,7 @@ sja_rxeof(struct sja_softc *sja)
 	uint8_t status;
 	uint8_t addr;
 	uint8_t maddr;
-	int i;
+	uint8_t i;
 	
 	ifp = sja->sja_ifp;
 	
