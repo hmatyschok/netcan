@@ -199,12 +199,12 @@ sja_rxeof(struct sja_softc *sja)
 		addr = SJA_CMR; 
 		goto done;
 	}
-	addr = SJA_FI; 
 	 
 	(void)memset(mtod(m, caddr_t), 0, MHLEN);
 	cf = mtod(m, struct can_frame *);
 
 	/* fetch frame information */	
+	addr = SJA_FI; 
 	status = CSR_READ_1(sja, addr);
 
 	/* map id */
