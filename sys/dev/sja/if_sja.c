@@ -187,8 +187,8 @@ sja_rxeof(struct sja_softc *sja)
 	struct ifnet *ifp;
 	struct mbuf *m;
 	struct can_frame *cf;
-	uint8_t status;
 	uint8_t addr;
+	uint8_t status;
 	uint16_t maddr;
 	int i;
 	
@@ -199,17 +199,17 @@ sja_rxeof(struct sja_softc *sja)
 		addr = SJA_CMR; 
 		goto done;
 	}
+	addr = SJA_FI; 
 	 
 	(void)memset(mtod(m, caddr_t), 0, MHLEN);
 	cf = mtod(m, struct can_frame *);
 
 	/* fetch frame information */	
-	status = CSR_READ_1(sja, SJA_FI);
-
-	/* map addr */
-	addr = SJA_ID;
+	status = CSR_READ_1(sja, addr);
 
 	/* map id */
+	addr = SJA_ID;
+	
 	if (status & SJA_FI_FF) {
 		cf->can_id = CAN_EFF_FLAG;
 		cf->can_id |= CSR_READ_4(sja, addr) >> 3;
