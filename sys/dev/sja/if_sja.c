@@ -189,8 +189,8 @@ sja_rxeof(struct sja_softc *sja)
 	struct can_frame *cf;
 	uint8_t status;
 	uint8_t addr;
-	uint8_t maddr;
-	uint8_t i;
+	uint16_t maddr;
+	int i;
 	
 	ifp = sja->sja_ifp;
 	
