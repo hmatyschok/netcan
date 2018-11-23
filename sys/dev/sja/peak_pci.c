@@ -69,7 +69,7 @@ struct peak_softc {
 /*
  * ...
  */
-
+	struct mtx 	pk_mtx;
 };
 
 /*
@@ -135,12 +135,34 @@ DRIVER_MODULE(sja, peak, sja_driver, sja_devclass, 0, 0);
  * ...
  */
 
+
+static int
+peak_attach(device_t dev)
+{
+	struct peak_softc *sc;
+	int error;
+	
+	sc = device_get_softc(dev);
+	sc->pk_dev = dev;
+	
+	mtx_init(&sc->pk_mtx, device_get_nameunit(dev), 
+		MTX_NETWORK_LOCK, MTX_DEF);
+
+	/* map control / status registers */
+	pci_enable_busmaster(dev);
+	
+	
+	
+	
+	return (error);
+}
+
 static int
 peak_probe(device_t dev)
 {
 	const struct peak_type	*t;
-	uint16_t 	devid, revid, vendor;
-	int	 		i, error;
+	uint16_t devid, revid, vendor;
+	int	i, error;
 	
 	vendor = pci_get_vendor(dev);
 	devid = pci_get_device(dev);

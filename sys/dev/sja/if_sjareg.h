@@ -271,24 +271,16 @@
 /*
  * SJA1000, 6.4.1{3,4} {T,R}X Buffer
  */
-
-struct sja_desc {
-	uint8_t 	sja_fi; 	/* frame information */
-	union {
-		uint16_t 	sff;
-		uint32_t 	eff;
-	} sja_id;
-	uint8_t 	sja_data[8];
-};
+ 
 #define SJA_FI 		0x16 		/* maps to CAN frame information */
 #define SJA_ID 		0x17 		/* maps to CAN id */
 #define SJA_DATA_SFF 		0x19 		/* maps to data region, SFF */
 #define SJA_DATA_EFF 		0x21 		/* maps to data region, EFF */
 
-#define SJA_FI_DLC_MSK 		0x0f 	/* data length code bits */
-#define SJA_FI_DC_MSK 		0x30 	/* don't care bits, loopback */
-#define SJA_FI_RTR_MSK 		0x40 	/* remote transmission request */
-#define SJA_FI_FF_MSK 		0x80 	/* frame format */
+#define SJA_FI_DLC 		0x0f 	/* data length code bits */
+#define SJA_FI_DC 		0x30 	/* don't care bits, loopback */
+#define SJA_FI_RTR 		0x40 	/* remote transmission request */
+#define SJA_FI_FF 		0x80 	/* frame format */
 
 
 /*

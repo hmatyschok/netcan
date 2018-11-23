@@ -80,15 +80,15 @@
  * Declare netisr(4) handler for input queue.
  */ 
 static struct netisr_handler	can_nh = {
-	.nh_name = "can",
-	.nh_handler = can_nh_input,
-	.nh_proto = NETISR_CAN,
+	.nh_name = 	"can",
+	.nh_handler = 	can_nh_input,
+	.nh_proto = 	NETISR_CAN,
 #ifdef	RSS
-	.nh_m2cpuid = rss_soft_m2cpuid_v4,
-	.nh_policy = NETISR_POLICY_CPU,
-	.nh_dispatch = NETISR_DISPATCH_HYBRID,
+	.nh_m2cpuid =  	rss_soft_m2cpuid_v4,
+	.nh_policy = 	NETISR_POLICY_CPU,
+	.nh_dispatch = 	NETISR_DISPATCH_HYBRID,
 #else
-	.nh_policy = NETISR_POLICY_FLOW,
+	.nh_policy = 	NETISR_POLICY_FLOW,
 #endif
 };
 

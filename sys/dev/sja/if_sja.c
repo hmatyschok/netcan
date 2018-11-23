@@ -180,3 +180,68 @@ sja_intr_task(void *arg)
 	}
 	SJA_UNLOCK(sja);
 }
+
+static void 	
+sja_rxeof(struct sja_softc *sja)
+{
+	struct ifnet *ifp;
+	struct mbuf *m;
+	struct can_frame *cf;
+	uint8_t status;
+	uint8_t addr;
+	uint8_t maddr;
+	int i;
+	
+	ifp = sja->sja_ifp;
+	
+	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL)) {
+		if_inc_counter(ifp, IFCOUNTER_IQDROPS, 1);
+		addr = SJA_CMR; 
+		goto done;
+	}
+	 
+	(void)memset(mtod(m, caddr_t), 0, MHLEN);
+	cf = mtod(m, struct can_frame *);
+
+	/* fetch frame information */	
+	status = CSR_READ_1(sja, SJA_FI);
+
+	/* map addr */
+	addr = SJA_ID;
+
+	/* map id */
+	if (status & SJA_FI_FF) {
+		cf->can_id = CAN_EFF_FLAG;
+		cf->can_id |= CSR_READ_4(sja, addr) >> 3;
+		addr = SJA_DATA_EFF;
+	} else {
+		cf->can_id |= CSR_READ_2(sja, addr) >> 5;
+		addr = SJA_DATA_SFF;
+	}	
+
+	/* map dlc */
+	cf->can_dlc = status & SJA_FI_DLC;
+	
+	if (status & SJA_FI_RTR) {
+		cf->can_id |= CAN_RTR_FLAG;
+		maddr = 0;
+	} else
+		maddr = addr + cf->can_dlc;
+
+	/* map data region */
+	for (i = 0; addr < maddr; addr++, i++) 
+		cf->can_data[i] = CSR_READ_1(sja, addr);
+
+	m->m_len = m->m_pkthdr.len = sizeof(*cf);
+	m->m_pkthdr.rcvif = ifp;
+	
+	/* pass CAN frame to layer above */
+	SJA_UNLOCK(sja);
+ 	(*ifp->if_input)(ifp, m);
+	SJA_LOCK(sja);
+	
+	addr = SJA_CMR;
+done:
+	CSR_WRITE_1(s ja, addr, SJA_CMR_RRB);
+	status = CSR_READ_1(sja, addr);
+}
