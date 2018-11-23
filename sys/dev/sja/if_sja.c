@@ -221,14 +221,14 @@ sja_rxeof(struct sja_softc *sja)
 
 	/* map dlc */
 	cf->can_dlc = status & SJA_FI_DLC;
-	
+
+	/* map data region */
 	if (status & SJA_FI_RTR) {
 		cf->can_id |= CAN_RTR_FLAG;
 		maddr = 0;
 	} else
 		maddr = addr + cf->can_dlc;
-
-	/* map data region */
+	
 	for (i = 0; addr < maddr; addr++, i++) 
 		cf->can_data[i] = CSR_READ_1(sja, addr);
 
