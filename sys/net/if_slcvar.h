@@ -41,15 +41,15 @@
 
 #ifdef _KERNEL
 struct slc_softc {
-	struct ifnet 	*slc_ifp;
-	struct cdev 	*slc_dev;
-	struct tty 	*slc_tp;		/* pointer to tty structure */
-	struct mbuf 	*slc_inb;
+	struct ifnet	*slc_ifp;
+	struct cdev	*slc_dev;
+	struct tty	*slc_tp;		/* pointer to tty structure */
+	struct mbuf	*slc_inb;
 	struct ifqueue	slc_outq;		/* queue of outgoing data */
-	size_t		slc_outqlen;	/* number of bytes in outq */
-	u_int 	slc_flags;
+	size_t	slc_outqlen;	/* number of bytes in outq */
+	u_int	slc_flags;
 	TAILQ_ENTRY(slc_softc) slc_next;
-	struct mtx 	slc_mtx;
+	struct mtx	slc_mtx;
 };
 
 /* internal flags */ 	/* XXX */

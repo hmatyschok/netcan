@@ -71,8 +71,8 @@
  * bit2 29-31	: see below
  */
 
-typedef uint32_t canid_t;
-typedef uint32_t can_err_mask_t;
+typedef uint32_t	canid_t;
+typedef uint32_t	can_err_mask_t;
 
 /* canid_t bits 29-31 descriptions */
 #define CAN_EFF_FLAG 	0x80000000U	/* extended frame format */
@@ -91,11 +91,11 @@ typedef uint32_t can_err_mask_t;
 
 /* CAN header */
 struct can_hdr {
-	canid_t	ch_id; /* ID + EFF/RTR/ERR flags */
-	uint8_t	ch_dlc; /* frame SDU length in byte (0 .. CAN_MAX_DLEN) */
+	canid_t	ch_id;		/* ID + EFF/RTR/ERR flags */
+	uint8_t	ch_dlc; 	/* SDU length in byte (0 .. CAN_MAX_DLEN) */
 	uint8_t	__pad;
 	uint8_t	__res0;
-	uint8_t __res1;
+	uint8_t	__res1;
 };
 #define CAN_STD_FRM 	0x00000000U
 #define CAN_EXT_FRM 	CAN_EFF_FLAG
@@ -104,11 +104,11 @@ struct can_hdr {
 
 /* CAN frame */
 struct can_frame {
-	canid_t	can_id; /* ID + EFF/RTR/ERR flags */
-	uint8_t	can_dlc; /* frame SDU length in byte (0 .. CAN_MAX_DLEN) */
+	canid_t	can_id;		/* ID + EFF/RTR/ERR flags */
+	uint8_t	can_dlc;	/* SDU length in byte (0 .. CAN_MAX_DLEN) */
 	uint8_t	__pad;
 	uint8_t	__res0;
-	uint8_t __res1;
+	uint8_t	__res1;
 	uint8_t	can_data[CAN_MAX_DLEN] __aligned(8);
 };
 
@@ -118,11 +118,11 @@ struct can_frame {
 #define CANFD_MAX_DLEN 	64
 
 struct canfd_frame {
-	canid_t	can_id; /* ID + EFF/RTR/ERR flags */
-	uint8_t	can_dlc; /* frame SDU length in byte (0 .. CAN_MAX_DLEN) */
+	canid_t	can_id;		/* ID + EFF/RTR/ERR flags */
+	uint8_t	can_dlc;	/* SDU length in byte (0 .. CAN_MAX_DLEN) */
 	uint8_t	__pad;
 	uint8_t	__res0;
-	uint8_t __res1;
+	uint8_t	__res1;
 	uint8_t	can_data[CANFD_MAX_DLEN] __aligned(8);
 };
 
@@ -155,16 +155,16 @@ struct canfd_frame {
  *     CAN_ERR_FLAG: filter for error message frames
  */
 struct can_filter {
-	canid_t cf_id;
-	canid_t cf_mask;
+	canid_t	cf_id;
+	canid_t	cf_mask;
 };
 
 #define CAN_INV_FILTER 	0x20000000U
 
 /* transport protocol class address information (e.g. ISOTP) */
 struct can_tp { 
-	canid_t ct_rx_id; 
-	canid_t ct_tx_id; 
+	canid_t		ct_rx_id; 
+	canid_t		ct_tx_id; 
 };
 
 /*
@@ -173,28 +173,28 @@ struct can_tp {
 
 /* get timing capabilities from HW */
 struct can_link_timecaps {
-	uint32_t cltc_prop_min; /* prop seg, in tq */
-	uint32_t cltc_prop_max;
-	uint32_t cltc_ps1_min; /* phase1 seg, in tq */
-	uint32_t cltc_ps1_max;
-	uint32_t cltc_ps2_min; /* phase 2 seg, in tq */
-	uint32_t cltc_ps2_max;
-	uint32_t cltc_sjw_max;	/* Synchronisation Jump Width */
-	uint32_t cltc_brp_min;	/* bit-rate prescaler */
-	uint32_t cltc_brp_max;
-	uint32_t cltc_brp_inc;
-	uint32_t cltc_clock_freq; /* prescaler input clock, in hz */
-	uint32_t cltc_linkmode_caps; /* link mode, see below */
+	uint32_t	cltc_prop_min; /* prop seg, in tq */
+	uint32_t	cltc_prop_max;
+	uint32_t	cltc_ps1_min; /* phase1 seg, in tq */
+	uint32_t	cltc_ps1_max;
+	uint32_t	cltc_ps2_min; /* phase 2 seg, in tq */
+	uint32_t	cltc_ps2_max;
+	uint32_t	cltc_sjw_max;	/* Synchronisation Jump Width */
+	uint32_t	cltc_brp_min;	/* bit-rate prescaler */
+	uint32_t	cltc_brp_max;
+	uint32_t	cltc_brp_inc;
+	uint32_t	cltc_clock_freq; /* prescaler input clock, in hz */
+	uint32_t	cltc_linkmode_caps; /* link mode, see below */
 };
 #define CANGLINKTIMECAP	0 /* get struct can_link_timecaps */
 
 /* get/set timing parameters */
 struct can_link_timings {
-	uint32_t clt_brp;	/* prescaler value */
-	uint32_t clt_prop;	/* Propagation segment in tq */
-	uint32_t clt_ps1;	/* Phase segment 1 in tq */
-	uint32_t clt_ps2;	/* Phase segment 2 in tq */
-	uint32_t clt_sjw;	/* Synchronisation jump width in tq */
+	uint32_t	clt_brp;	/* prescaler value */
+	uint32_t	clt_prop;	/* Propagation segment in tq */
+	uint32_t	clt_ps1;	/* Phase segment 1 in tq */
+	uint32_t	clt_ps2;	/* Phase segment 2 in tq */
+	uint32_t	clt_sjw;	/* Synchronisation jump width in tq */
 };
 #define CANGLINKTIMINGS	1 /* get struct can_link_timings */
 #define CANSLINKTIMINGS	2 /* set struct can_link_timings */
@@ -230,12 +230,12 @@ struct can_link_timings {
  * XXX: in net/if.c for futher details.
  */
 struct can_ifsoftc {
-	struct ifnet 	*csc_ifp; 	/* our ifnet(9) interface */
-	struct can_link_timecaps 	csc_timecaps; /* timing capabilities */
-	struct can_link_timings 	csc_timings; /* operating timing values */
-	uint32_t 	csc_linkmodes;
-	struct callout 	csc_timo; 	/* callout for error control */
-	struct mtx 	csc_mtx;
+	struct ifnet	*csc_ifp; 	/* our ifnet(9) interface */
+	struct can_link_timecaps	csc_timecaps; /* timing capabilities */
+	struct can_link_timings	csc_timings; /* operating timing values */
+	uint32_t	csc_linkmodes;
+	struct callout	csc_timo; 	/* callout for error control */
+	struct mtx	csc_mtx;
 };
 
 /* common subr. */
