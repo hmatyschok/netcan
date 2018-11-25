@@ -196,7 +196,6 @@ sja_rxeof(struct sja_softc *sja)
 	
 	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL)) {
 		if_inc_counter(ifp, IFCOUNTER_IQDROPS, 1);
-		addr = SJA_CMR; 
 		goto done;
 	}
 	 
@@ -204,18 +203,15 @@ sja_rxeof(struct sja_softc *sja)
 	cf = mtod(m, struct can_frame *);
 
 	/* fetch frame information */	
-	addr = SJA_FI; 
-	status = CSR_READ_1(sja, addr);
+	status = CSR_READ_1(sja, SJA_FI);
 
 	/* map id */
-	addr = SJA_ID;
-	
 	if (status & SJA_FI_FF) {
 		cf->can_id = CAN_EFF_FLAG;
-		cf->can_id |= CSR_READ_4(sja, addr) >> 3;
+		cf->can_id |= CSR_READ_4(sja, SJA_ID) >> 3;
 		addr = SJA_DATA_EFF;
 	} else {
-		cf->can_id |= CSR_READ_2(sja, addr) >> 5;
+		cf->can_id |= CSR_READ_2(sja, SJA_ID) >> 5;
 		addr = SJA_DATA_SFF;
 	}	
 
@@ -240,8 +236,7 @@ sja_rxeof(struct sja_softc *sja)
  	(*ifp->if_input)(ifp, m);
 	SJA_LOCK(sja);
 	
-	addr = SJA_CMR;
-done:
-	CSR_WRITE_1(s ja, addr, SJA_CMR_RRB);
-	status = CSR_READ_1(sja, addr);
+done:	/* SJA1000, 6.4.4, note 4 */
+	CSR_WRITE_1(sja, SJA_CMR, SJA_CMR_RRB);
+	status = CSR_READ_1(sja, SJA_SR);
 }
