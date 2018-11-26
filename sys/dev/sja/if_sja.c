@@ -240,3 +240,46 @@ done:	/* SJA1000, 6.4.4, note 4 */
 	CSR_WRITE_1(sja, SJA_CMR, SJA_CMR_RRB);
 	status = CSR_READ_1(sja, SJA_SR);
 }
+
+/*
+ * ...
+ */
+
+static void
+sja_start(struct ifnet *ifp)
+{
+	struct sja_softc *sja;
+
+	sja = ifp->if_softc;
+	SJA_LOCK(sja);
+	sja_start_locked(ifp);
+	SJA_UNLOCK(sja);
+}
+
+static void
+sja_start(struct ifnet *ifp)
+{
+	struct sja_softc *sja;
+	struct mbuf *m;
+	
+	sja = ifp->if_softc;
+
+	SJA_LOCK_ASSERT(sja);
+		
+	if ((ifp->if_drv_flags & (IFF_DRV_RUNNING | IFF_DRV_OACTIVE)) !=
+	    IFF_DRV_RUNNING)
+		return;
+			
+	ifp->if_drv_flags |= IFF_DRV_OACTIVE;
+	for (;;) {
+		IFQ_DEQUEUE(&ifp->if_snd, m);
+		if (m == NULL) 
+			break;
+
+		/* IAP on bpf(4) */
+		can_bpf_mtap(ifp, m);
+
+		sja_encap(sja, m);
+	}								
+	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
+}
