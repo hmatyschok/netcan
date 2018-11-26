@@ -257,7 +257,7 @@ sja_start(struct ifnet *ifp)
 }
 
 static void
-sja_start(struct ifnet *ifp)
+sja_start_locked(struct ifnet *ifp)
 {
 	struct sja_softc *sja;
 	struct mbuf *m;
