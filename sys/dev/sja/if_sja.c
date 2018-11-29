@@ -260,26 +260,147 @@ static void
 sja_start_locked(struct ifnet *ifp)
 {
 	struct sja_softc *sja;
+	struct can_ifsoftc *csc;
 	struct mbuf *m;
+	uint8_t status;
 	
-	sja = ifp->if_softc;
-
+	sja = ifp->if_softc;	
 	SJA_LOCK_ASSERT(sja);
 		
+	csc = ifp->if_l2com;
+			
 	if ((ifp->if_drv_flags & (IFF_DRV_RUNNING | IFF_DRV_OACTIVE)) !=
 	    IFF_DRV_RUNNING)
 		return;
 			
-	ifp->if_drv_flags |= IFF_DRV_OACTIVE;
 	for (;;) {
 		IFQ_DEQUEUE(&ifp->if_snd, m);
 		if (m == NULL) 
 			break;
 
+		if (sja_encap(sja, &m) != 0) {
+			if (m == NULL)
+				break;
+			
+			IFQ_DRV_PREPEND(&ifp->if_snd, m);
+			ifp->if_drv_flags |= IFF_DRV_OACTIVE;
+			break;
+		}	
+		
 		/* IAP on bpf(4) */
-		can_bpf_mtap(ifp, m);
+		can_bpf_mtap(ifp, &m);		
+	
+		/* notify controller for transmission */
+		if (csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK)
+			status = SJA_CMR_AT;
+		else 
+			status = 0x00;
 
-		sja_encap(sja, m);
-	}								
-	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
+		if (csc->csc_linkmodes & CAN_LINKMODE_LOOPBACK)
+			status |= SJA_CMR_SRR;
+		else
+			ststus |= SJA_CMR_TR;
+
+		CSR_WRITE_1(sja, SJA_CMR, status);
+		status = CSR_READ_1(sja, SJA_SR);
+	}						
+}
+
+static void 
+sja_encap(struct sja_softc *sja, struct mbuf *mp)
+{
+	int error = 0;
+	struct mbuf *m;
+	struct can_frame *cf;
+	uint8_t status;
+	uint8_t addr;
+	uint16_t maddr;
+	int i;
+	
+	SJA_LOCK_ASSERT(sja);
+	
+	/* get a writable copy, if any */
+	if (M_WRITABLE(*mp) == 0) {
+		m = m_dup(*mp, M_NOWAIT);
+		if (m == NULL) {
+			*mp = NULL;
+			error = ENOBUFS;
+			goto out;
+		}
+		m_freem(*mp);
+	} else
+		m = *mp;
+		
+	cf = mtod(m, struct can_frame *);
+	
+	/* determine CAN frame type and map dlc */
+	if (cf->can_id & CAN_EFF_FLAG) { 
+		status = SJA_FI_FF;  
+	
+		if (cf->can_id & CAN_RTR_FLAG) 
+			status |= SJA_FI_RTR;		
+	} else 
+		status = 0x00;
+
+	status |= cf->can_dlc & SJA_FI_DLC;
+
+	CSR_WRITE_1(sja, SJA_FI, status);
+	
+	/* map id */
+	if (cf->can_id & CAN_EFF_FLAG) { 
+		cf->can_id &= CAN_EFF_MASK;
+		cf->can_id <<= 3;
+		
+		CSR_WRITE_4(sja, SJA_ID, cf->can_id);
+		
+		addr = SJA_DATA_EFF;
+	} else {
+		cf->can_id &= CAN_EFF_MASK;
+		cf->can_id <<= 5;
+		
+		CSR_WRITE_2(sja, SJA_ID, cf->can_id);
+		
+		addr = SJA_DATA_SFF;
+	}
+	
+	maddr = addr + cf->can_dlc;
+	
+	for (i = 0; addr < maddr; addr++, i++) 
+		CSR_WRITE_1(sja, addr, cf->can_data[i]);
+
+	m_freem(m); /* XXX */
+	*mp = NULL;
+out:	
+	return (error);
+}
+
+/*
+ * ...
+ */
+
+static void 
+sja_txeof(struct sja_softc *sja)
+{
+	struct ifnet *ifp;
+	struct can_ifsoftc *csc;
+	uint8_t status;
+	
+	SJA_LOCK_ASSERT(sja);
+
+	ifp = sja->sja_ifp;
+	csc = ifp->if_l2com;
+	
+	status = CSR_READ_1(sja, SJA_SR);
+		
+	if (csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK 
+		&& (status & SJA_SR_TCS) == 0) {
+		if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
+		(*ifp->if_start)(ifp);
+	} else 
+		if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
+
+/*
+ * ...
+ */
+
 }
