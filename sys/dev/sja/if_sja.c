@@ -166,13 +166,15 @@ sja_intr_task(void *arg)
 	
 		status = CSR_READ_1(sja, SJA_IR);
 
-		for (n = 0; status != SJA_IR_OFF && n < 6; n++) {
+		for (n = 0; status != SJA_IR_OFF && n < 6; n++) { 
 		
 			if (status & SJA_IR_RX)
 				sja_rxeof(sja);
-			else if (status & SJA_IR_TX)
+			
+			if (status & SJA_IR_TX)
 				sja_txeof(sja);
-			else
+			
+			if (status & SJA_IR_ERR)
 				sja_error(sja);
 	
 			status = CSR_READ_1(sja, SJA_IR);
@@ -194,6 +196,7 @@ sja_rxeof(struct sja_softc *sja)
 	
 	ifp = sja->sja_ifp;
 	
+again:	
 	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL)) {
 		if_inc_counter(ifp, IFCOUNTER_IQDROPS, 1);
 		goto done;
@@ -239,6 +242,9 @@ sja_rxeof(struct sja_softc *sja)
 done:	/* SJA1000, 6.4.4, note 4 */
 	CSR_WRITE_1(sja, SJA_CMR, SJA_CMR_RRB);
 	status = CSR_READ_1(sja, SJA_SR);
+	
+	if (status & SJA_SR_RBS)
+		goto again;
 }
 
 /*

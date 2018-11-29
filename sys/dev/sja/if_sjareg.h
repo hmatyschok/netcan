@@ -184,6 +184,9 @@
 #define SJA_IR_BE		0x80 	/* bus error interrupt */
 #define SJA_IR_ALL		0xff
 
+#define SJA_IR_ERR \
+	(SJA_IR_EW|SJA_IR_DO|SJA_IR_EP|SJA_IR_AL|SJA_IR_BE)
+	
 /* 
  * SJA1000, 6.4.7 Interrupt Enable Register [IER] 
  */
