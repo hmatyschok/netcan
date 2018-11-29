@@ -391,6 +391,8 @@ sja_txeof(struct sja_softc *sja)
 	csc = ifp->if_l2com;
 	
 	status = CSR_READ_1(sja, SJA_SR);
+	
+	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 		
 	if (csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK 
 		&& (status & SJA_SR_TCS) == 0) {
