@@ -124,7 +124,32 @@ typedef uint32_t	can_err_mask_t;
 #define CAN_MAX_DLC 	8
 #define CAN_MAX_DLEN 	8
 
-/* dlc for error message frames */
+/* CAN header */
+struct can_hdr {
+	canid_t	ch_id;		/* ID + EFF/RTR/ERR flags */
+	uint8_t	ch_dlc; 	/* SDU length in byte (0 .. CAN_MAX_DLEN) */
+	uint8_t	__pad;
+	uint8_t	__res0;
+	uint8_t	__res1;
+};
+#define CAN_STD_FRM 	0x00000000U
+#define CAN_EXT_FRM 	CAN_EFF_FLAG
+#define CAN_RTR_FRM 	CAN_RTR_FLAG
+#define CAN_ERR_FRM 	CAN_ERR_FLAG
+
+/* CAN frame */
+struct can_frame {
+	canid_t	can_id;		/* ID + EFF/RTR/ERR flags */
+	uint8_t	can_dlc;	/* SDU length in byte (0 .. CAN_MAX_DLEN) */
+	uint8_t	__pad;
+	uint8_t	__res0;
+	uint8_t	__res1;
+	uint8_t	can_data[CAN_MAX_DLEN] __aligned(8);
+};
+
+#define CAN_MTU		(sizeof(struct can_frame))
+
+/* DLC for error message frames */
 #define CAN_ERR_DLC		8 
 #define CAN_ERR_DLEN		8
 
@@ -139,7 +164,7 @@ typedef uint32_t	can_err_mask_t;
 #define CAN_ERR_BE		0x00000080U /* bus error */
 #define CAN_ERR_RESTARTED		0x00000100U /* controller restarted */
 
-/* arbitration lost in bit ... data[0] */
+/* arbitration lost in bit ... data[0] */ 
 #define CAN_ERR_AL_UNSPEC		0x00 /* unspecified */
 				      /* else bit number in bitstream */
 
@@ -188,7 +213,7 @@ typedef uint32_t	can_err_mask_t;
 #define CAN_ERR_PROTO_LOC_EOF		0x1A /* end of frame */
 #define CAN_ERR_PROTO_LOC_INTERM		0x12 /* intermission */
 
-/* error status of CAN-transceiver, data[4] */
+/* error status of CAN transceiver, data[4] */
 #define CAN_ERR_TRX_UNSPEC		0x00 /* 0000 0000 */
 #define CAN_ERR_TRX_CANH_NO_WIRE    	   0x04 /* 0000 0100 */
 #define CAN_ERR_TRX_CANH_SHORT_TO_BAT 		0x05 /* 0000 0101 */
@@ -200,30 +225,14 @@ typedef uint32_t	can_err_mask_t;
 #define CAN_ERR_TRX_CANL_SHORT_TO_GND		0x70 /* 0111 0000 */
 #define CAN_ERR_TRX_CANL_SHORT_TO_CANH		0x80 /* 1000 0000 */
 
-/* CAN header */
-struct can_hdr {
-	canid_t	ch_id;		/* ID + EFF/RTR/ERR flags */
-	uint8_t	ch_dlc; 	/* SDU length in byte (0 .. CAN_MAX_DLEN) */
-	uint8_t	__pad;
-	uint8_t	__res0;
-	uint8_t	__res1;
-};
-#define CAN_STD_FRM 	0x00000000U
-#define CAN_EXT_FRM 	CAN_EFF_FLAG
-#define CAN_RTR_FRM 	CAN_RTR_FLAG
-#define CAN_ERR_FRM 	CAN_ERR_FLAG
-
-/* CAN frame */
-struct can_frame {
-	canid_t	can_id;		/* ID + EFF/RTR/ERR flags */
-	uint8_t	can_dlc;	/* SDU length in byte (0 .. CAN_MAX_DLEN) */
-	uint8_t	__pad;
-	uint8_t	__res0;
-	uint8_t	__res1;
-	uint8_t	can_data[CAN_MAX_DLEN] __aligned(8);
-};
-
-#define CAN_MTU		(sizeof(struct can_frame))
+/* index for data field on error class */
+#define CAN_ERR_AL_DF		0
+#define CAN_ERR_DEV_DF		1
+#define CAN_ERR_PROTO_DF 	2
+#define CAN_ERR_PROTO_LOC_DF 	3	
+#define CAN_ERR_PROTO_TRX_DF 	4
+#define CAN_ERR_RX_DF		6
+#define CAN_ERR_TX_DF		7
 
 /* CAN-FD frame */
 #define CANFD_MAX_DLEN 	64

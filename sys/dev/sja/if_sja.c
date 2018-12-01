@@ -214,8 +214,8 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	status = CSR_READ_1(sja, SJA_SR);	
 	
 	/* map error count */
-	cf->can_data[CAN_DATA_RX_ERR] = CSR_READ_1(sja, SJA_RX_ERR);
-	cf->can_data[CAN_DATA_TX_ERR] = CSR_READ_1(sja, SJA_TX_ERR);
+	cf->can_data[CAN_ERR_RX_DF] = CSR_READ_1(sja, SJA_RX_ERR);
+	cf->can_data[CAN_ERR_TX_DF] = CSR_READ_1(sja, SJA_TX_ERR);
 	
 	
 	if (intr & SJA_IR_DO) {
