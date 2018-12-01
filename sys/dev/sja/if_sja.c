@@ -137,9 +137,9 @@ sja_intr(void *arg)
 	
 	sc = (struct sja_softc *)arg;
 	
-	status = CSR_READ_1(sja, SJA_IR);
+	intr = CSR_READ_1(sja, SJA_IR);
 	
-	if (status == SJA_IR_OFF)  
+	if (intr == SJA_IR_OFF)  
 		error = FILTER_STRAY;
 	else {
 		taskqueue_enqueue(taskqueue_fast, &sja->sja_intr_task);
@@ -153,7 +153,7 @@ sja_intr_task(void *arg)
 {
 	struct sja_softc *sja;
 	struct ifnet *ifp;
-	uint8_t status;
+	uint8_t intr;
 	int n;
 	
 	sja = arg;
@@ -162,25 +162,84 @@ sja_intr_task(void *arg)
 
 	ifp = sja->sja_ifp;
 
-	if (ifp->if_drv_flags & IFF_DRV_RUNNING) {
+	if (ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
+		goto done;
 	
-		status = CSR_READ_1(sja, SJA_IR);
+	intr = CSR_READ_1(sja, SJA_IR);
 
-		for (n = 0; status != SJA_IR_OFF && n < 6; n++) { 
+	for (n = 0; intr != SJA_IR_OFF && n < 6; n++) { 
 		
-			if (status & SJA_IR_RX)
-				sja_rxeof(sja);
+		if (intr & SJA_IR_RX)
+			sja_rxeof(sja);
 			
-			if (status & SJA_IR_TX)
-				sja_txeof(sja);
+		if (intr & SJA_IR_TX)
+			sja_txeof(sja);
 			
-			if (status & SJA_IR_ERR)
-				sja_error(sja);
-	
-			status = CSR_READ_1(sja, SJA_IR);
-		}	
+		if (intr & SJA_IR_ERR) {
+			if (sja_error(sja, intr) != 0)
+				break;
+		}
+		intr = CSR_READ_1(sja, SJA_IR);	
 	}
+done:	
 	SJA_UNLOCK(sja);
+}
+
+static int 
+sja_error(struct sja_softc *sja, uint8_t intr)
+{
+	int error = 0;
+	struct ifnet *ifp;
+	struct can_ifsoftc *csc;
+ 	struct mbuf *m;
+ 	struct can_frame *cf;
+	uint8_t status;
+/*
+ * ...
+ */	
+	
+	SJA_LOCK_ASSERT(sja);
+	ifp = sja->sja_ifp;
+	csc = ifp->if_l2com;
+	
+	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL)) {
+		error = ENOBUFS;
+		goto done;
+	}
+	 
+	(void)memset(mtod(m, caddr_t), 0, MHLEN);
+	cf = mtod(m, struct can_frame *);
+
+	/* fetch status information */	
+	status = CSR_READ_1(sja, SJA_SR);	
+	
+	/* map error count */
+	cf->can_data[CAN_DATA_RX_ERR] = CSR_READ_1(sja, SJA_RX_ERR);
+	cf->can_data[CAN_DATA_TX_ERR] = CSR_READ_1(sja, SJA_TX_ERR);
+	
+	
+	if (intr & SJA_IR_DO) {
+	
+		
+	}
+	
+	if (intr & SJA_IR_EW) {
+		
+		
+	}
+	
+	if (intr & SJA_IR_BE) {
+		
+	}
+	
+	if (intr & SJA)
+	
+/*
+ * ...
+ */
+
+done:
+	return (error);
 }
 
 static void 	
@@ -194,6 +253,7 @@ sja_rxeof(struct sja_softc *sja)
 	uint16_t maddr;
 	int i;
 	
+	SJA_LOCK_ASSERT(sja);
 	ifp = sja->sja_ifp;
 	
 again:	
@@ -329,7 +389,6 @@ sja_encap(struct sja_softc *sja, struct mbuf *mp)
 	if (M_WRITABLE(*mp) == 0) {
 		m = m_dup(*mp, M_NOWAIT);
 		if (m == NULL) {
-			*mp = NULL;
 			error = ENOBUFS;
 			goto out;
 		}

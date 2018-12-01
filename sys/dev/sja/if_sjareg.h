@@ -42,8 +42,8 @@
 #define SJA_ALC		0x0b		/* arbitration lost capature */
 #define SJA_ECC		0x0c		/* error code capature */
 #define SJA_EWL		0x0d		/* error warning limit */
-#define SJA_RXERR		0x0e		/* rx error counter */ 
-#define SJA_TXERR		0x0f		/* tx error counter */
+#define SJA_RX_ERR		0x0e		/* rx error counter */ 
+#define SJA_TX_ERR		0x0f		/* tx error counter */
 #define SJA_AC0		0x10		/* acceptance code 0 */
 #define SJA_AC1		0x11		/* acceptance code 1 */
 #define SJA_AC2		0x12		/* acceptance code 2 */
@@ -54,7 +54,7 @@
 #define SJA_AM3		0x17		/* acceptance mask 3 */
 	/* 0x18 - 0x1c reserved */
 #define SJA_RC_MC		0x1d		/* rx message counter */
-#define SJA_RXADDR		0x1e		/* rx ring start-addr */
+#define SJA_RX_ADDR		0x1e		/* rx ring start-addr */
 #define SJA_CLKDIV		0x1f		/* clock divider */
 #define SJA_RAM0		0x20		/* internal RAM addr 0 [FIFO] */
 #define SJA_RAM1		0x21		/* internal RAM addr 1 [FIFO] */
