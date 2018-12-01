@@ -128,8 +128,8 @@ typedef uint32_t	can_err_mask_t;
 #define CAN_ERR_DLC		8 
 #define CAN_ERR_DLEN		8
 
-/* error class (mask) in canid_t */
-#define CAN_ERR_TX_TIMO		0x00000001U /* TX timeout */
+/* error class on canid_t */
+#define CAN_ERR_TX_TIMO		0x00000001U /* TX error control */
 #define CAN_ERR_AL		0x00000002U /* lost arbitration, data[0]    */
 #define CAN_ERR_DEV		0x00000004U /* controller problems, data[1]    */
 #define CAN_ERR_PROTO		0x00000008U /* protocol violations, data[2..3] */
@@ -143,19 +143,19 @@ typedef uint32_t	can_err_mask_t;
 #define CAN_ERR_AL_UNSPEC		0x00 /* unspecified */
 				      /* else bit number in bitstream */
 
-/* error status of CAN-controller / data[1] */
+/* error status of CAN-controller, data[1] */
 #define CAN_ERR_DEV_UNSPEC		0x00 /* unspecified */
 #define CAN_ERR_DEV_RX_OVF		0x01 /* RX buffer overflow */
 #define CAN_ERR_DEV_TX_OVF		0x02 /* TX buffer overflow */
-#define CAN_ERR_DEV_RX_WARNING		0x04 /* reached warning level for RX errors */
-#define CAN_ERR_DEV_TX_WARNING		0x08 /* reached warning level for TX errors */
-#define CAN_ERR_DEV_RX_PASSIVE		0x10 /* reached error passive status RX */
-#define CAN_ERR_DEV_TX_PASSIVE		0x20 /* reached error passive status TX */
+#define CAN_ERR_DEV_RX_WARN		0x04 /* reached warning level for RX errors */
+#define CAN_ERR_DEV_TX_WARN		0x08 /* reached warning level for TX errors */
+#define CAN_ERR_DEV_RX_PSV		0x10 /* reached error passive status RX */
+#define CAN_ERR_DEV_TX_PSV		0x20 /* reached error passive status TX */
 				      /* (at least one error counter exceeds */
 				      /* the protocol-defined level of 127)  */
 #define CAN_ERR_DEV_ACTIVE		0x40 /* recovered to error active state */
 
-/* error in CAN protocol (type) / data[2] */
+/* error in CAN protocol (type), data[2] */
 #define CAN_ERR_PROTO_UNSPEC		0x00 /* unspecified */
 #define CAN_ERR_PROTO_BIT		0x01 /* single bit error */
 #define CAN_ERR_PROTO_FORM		0x02 /* frame format error */
@@ -188,7 +188,7 @@ typedef uint32_t	can_err_mask_t;
 #define CAN_ERR_PROTO_LOC_EOF		0x1A /* end of frame */
 #define CAN_ERR_PROTO_LOC_INTERM		0x12 /* intermission */
 
-/* error status of CAN-transceiver / data[4] */
+/* error status of CAN-transceiver, data[4] */
 #define CAN_ERR_TRX_UNSPEC		0x00 /* 0000 0000 */
 #define CAN_ERR_TRX_CANH_NO_WIRE    	   0x04 /* 0000 0100 */
 #define CAN_ERR_TRX_CANH_SHORT_TO_BAT 		0x05 /* 0000 0101 */
