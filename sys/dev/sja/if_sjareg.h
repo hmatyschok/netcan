@@ -208,11 +208,11 @@
 #define SJA_ALC_BIT2		0x04 	/* ALC in 2^2 + 1 bit of id */
 #define SJA_ALC_BIT3		0x08 	/* ALC in 2^3 + 1 bit of id */
 #define SJA_ALC_BIT4		0x10 	/* ALC in 2^4 + 1 bit of id */
-#define SJA_ALC_MSK		0x1f
+#define SJA_ALC_MASK		0x1f
 #define SJA_ALC_RSVD		0xe0 	/* reserved */ 
 
 #if 0
-#define SJA_ALC_VAL(reg)		((reg) & SJA_ALC_MSK)
+#define SJA_ALC_VAL(reg)		((reg) & SJA_ALC_MASK)
 #endif
 
 /* 
@@ -220,19 +220,21 @@
  */ 
 #define SJA_ECC_SEG		0x1f 
 #define SJA_ECC_DIR		0x20 	/* error occured during reception */
-#define SJA_ECC_ERR_MSK 	0xc0 
+#define SJA_ECC_ERR_MASK 	0xc0 
 
 #if 0
-#define SJA_ECC_BIT_ERR(reg) 	(((reg) & SJA_ECC_ERR_MSK) == 0x00) 	
-#define SJA_ECC_FORM_ERR(reg) 	(((reg) & SJA_ECC_ERR_MSK) == 0x40)
-#define SJA_ECC_STUFF_ERR(reg) 	(((reg) & SJA_ECC_ERR_MSK) == 0x80)
-#define SJA_ECC_OTHER_ERR(reg) 	(((reg) & SJA_ECC_ERR_MSK) == 0xc0)
+#define SJA_ECC_BIT_ERR(reg) 	(((reg) & SJA_ECC_ERR_MASK) == 0x00) 	
+#define SJA_ECC_FORM_ERR(reg) 	(((reg) & SJA_ECC_ERR_MASK) == 0x40)
+#define SJA_ECC_STUFF_ERR(reg) 	(((reg) & SJA_ECC_ERR_MASK) == 0x80)
+#define SJA_ECC_OTHER_ERR(reg) 	(((reg) & SJA_ECC_ERR_MASK) == 0xc0)
 
 #define SJA_ECC_TX_ERR(reg) 	(((reg) & SJA_ECC_DIR) == 0x00) 	
 #define SJA_ECC_RX_ERR(reg) 	(((reg) & SJA_ECC_DIR) == 0x20)
 #endif
 
+#define SJA_ECC_BE		0x00		/* bit error */
 #define SJA_ECC_SOF		0x03		/* start of frame */
+#define SJA_ECC_FMT		0x04		/* format error */
 #define SJA_ECC_ID28TO21		0x02		/* id bits 28 ... 21 */ 
 #define SJA_ECC_ID20TO18		0x06		/* id bits 28 ... 21 */
 #define SJA_ECC_SRTR		0x04		/* bit SRTR */
@@ -255,6 +257,7 @@
 #define SJA_ECC_TDB		0x13		/* tolerate dominant bits */
 #define SJA_ECC_ED		0x17		/* tolerate dominant bits */
 #define SJA_ECC_OF		0x1c		/* overload flag */
+#define SJA_ECC_SEG 	0x1f		/* segment flag */
 
 /* 
  * SJA1000, 6.4.10 Error Warning Limit Register [EWLR] 
@@ -289,12 +292,12 @@
 /*
  * SJA1000, 6.5.1 Bus Timing Register 0 [BTR0]
  */
-#define SJA_BTR0_BRP_MSK		0x3f 	/* baud rate prescaler */
-#define SJA_BTR0_SJW_MSK		0xc0 	/* synchroniziation junp width */
+#define SJA_BTR0_BRP_MASK		0x3f 	/* baud rate prescaler */
+#define SJA_BTR0_SJW_MASK		0xc0 	/* synchroniziation junp width */
 
 #if 0
-#define SJA_BTR0_BRP(reg) 	((reg) & SJA_BTR0_BRP_MSK)
-#define SJA_BTR0_SJW(reg) 	(((reg) & SJA_BTR0_BRP_MSK) >> 6)
+#define SJA_BTR0_BRP(reg) 	((reg) & SJA_BTR0_BRP_MASK)
+#define SJA_BTR0_SJW(reg) 	(((reg) & SJA_BTR0_BRP_MASK) >> 6)
 #endif
 
 /*

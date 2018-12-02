@@ -193,7 +193,10 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	struct can_ifsoftc *csc;
  	struct mbuf *m;
  	struct can_frame *cf;
+	uint32_t can_state;
 	uint8_t status;
+	uint8_t flags;
+	
 /*
  * ...
  */	
@@ -210,34 +213,85 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	(void)memset(mtod(m, caddr_t), 0, MHLEN);
 	cf = mtod(m, struct can_frame *);
 
+	/* fetch link-state information */
+	can_state = csc->csc_state;
+
 	/* fetch status information */	
 	status = CSR_READ_1(sja, SJA_SR);	
+		
+	if (intr & SJA_IR_DO) {
+		cf->can_id |= CAN_ERR_DEV;
+		cf->can_data[CAN_ERR_DEV_DF] |= CAN_ERR_DEV_RX_OVF; 
+	
+		CSR_WRITE_1(sja, SJA_CMR, SJA_CMR_CDO);
+		status = CSR_READ_1(sja, SJA_SR);
+/*
+ * ...
+ */	
+	}
+	
+	if (intr & SJA_IR_EW) {	
+		if (status & SJA_SR_BS)
+			can_state = CAN_STATE_BUS_OFF;
+		else if (status & SJA_SR_ES)
+			can_state = CAN_STATE_ERR_WARN;
+		else 
+			can_state = CAN_STATE_ERR_ACTIVE;
+	}
+	
+	if (intr & SJA_IR_BE) {
+		flags = CSR_READ_1(sja, SJA_ECC);
+
+		cf->can_id |= (CAN_ERR_PROTO|CAN_ERR_BE);
+
+		/* map error condition, if any */
+		if ((flags & SJA_ECC_ERR_MASK) == SJA_ECC_BE)
+			cf->data[CAN_ERR_PROTO_DF] |= CAN_ERR_PROTO_BIT;
+		else if ((flags & SJA_ECC_ERR_MASK) == SJA_ECC_FMT)
+			cf->data[CAN_ERR_PROTO_DF] |= CAN_ERR_PROT_FORM;
+		else if ((flags & SJA_ECC_ERR_MASK) == ECC_STUFF)
+			cf->data[CAN_ERR_PROTO_DF] |= CAN_ERR_PROT_STUFF;
+			
+		/* map tx error condition, if any */ 
+		if ((flags & ECC_DIR) == 0)
+			cf->data[CAN_ERR_PROTO_DF] |= CAN_ERR_PROT_TX;	
+	
+		/* map error location */
+		cf->data[CAN_ERR_PROTO_LOC_DF] |= flags & SJA_ECC_SEG;
+/*
+ * ...
+ */	
+	}
+	
+	if (intr & SJA_IR_EP) {
+/*
+ * ...
+ */			
+	}
+	
+	if (intr & SJA_IR_AL) {
+		flags = CSR_READ_1(sja, SJA_ALC);
+
+		cf->can_id |= CAN_ERR_AL;
+		cf->can_data[CAN_ERR_AL_DF] |= flags;
+/*
+ * ...
+ */			
+	}
 	
 	/* map error count */
 	cf->can_data[CAN_ERR_RX_DF] = CSR_READ_1(sja, SJA_RX_ERR);
 	cf->can_data[CAN_ERR_TX_DF] = CSR_READ_1(sja, SJA_TX_ERR);
-	
-	
-	if (intr & SJA_IR_DO) {
-	
-		
-	}
-	
-	if (intr & SJA_IR_EW) {
-		
-		
-	}
-	
-	if (intr & SJA_IR_BE) {
-		
-	}
-	
-	if (intr & SJA)
-	
 /*
  * ...
  */
+	m->m_len = m->m_pkthdr.len = sizeof(*cf);
+	m->m_pkthdr.rcvif = ifp;
 
+	/* pass CAN frame to upper layer */
+	SJA_UNLOCK(sja);
+	(*ifp->if_input)(ifp, m);
+	SJA_LOCK(sja)
 done:
 	return (error);
 }
