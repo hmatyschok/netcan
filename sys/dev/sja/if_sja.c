@@ -193,13 +193,8 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	struct can_ifsoftc *csc;
  	struct mbuf *m;
  	struct can_frame *cf;
-	uint32_t can_state;
 	uint8_t status;
 	uint8_t flags;
-	
-/*
- * ...
- */	
 	
 	SJA_LOCK_ASSERT(sja);
 	ifp = sja->sja_ifp;
@@ -213,11 +208,32 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	(void)memset(mtod(m, caddr_t), 0, MHLEN);
 	cf = mtod(m, struct can_frame *);
 
-	/* fetch link-state information */
-	can_state = csc->csc_state;
-
 	/* fetch status information */	
 	status = CSR_READ_1(sja, SJA_SR);	
+	
+	if (intr & (SJA_IR_EP|SJA_IR_EW)) {	
+	
+		if (status & SJA_SR_BS)
+			flags = CAN_STATE_BUS_OFF;
+		else if (status & SJA_SR_ES)
+			flags = CAN_STATE_ERROR_WARNING;
+		else
+			flags = CAN_STATE_ERROR_ACTIVE;
+		
+		if (flags != csc->can_state) {
+			csc->can_state = flags;
+		
+			if (csc->can_state == CAN_STATE_BUS_OFF) {
+				ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
+				sja_init_locked(sc);
+			}
+	
+			cf->can_id |= CAN_ERR_DEV;
+/*
+ * ...
+ */		
+		}	
+	}
 		
 	if (intr & SJA_IR_DO) {
 		cf->can_id |= CAN_ERR_DEV;
@@ -228,15 +244,6 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 /*
  * ...
  */	
-	}
-	
-	if (intr & SJA_IR_EW) {	
-		if (status & SJA_SR_BS)
-			can_state = CAN_STATE_BUS_OFF;
-		else if (status & SJA_SR_ES)
-			can_state = CAN_STATE_ERR_WARN;
-		else 
-			can_state = CAN_STATE_ERR_ACTIVE;
 	}
 	
 	if (intr & SJA_IR_BE) {
@@ -263,28 +270,17 @@ sja_error(struct sja_softc *sja, uint8_t intr)
  */	
 	}
 	
-	if (intr & SJA_IR_EP) {
-/*
- * ...
- */			
-	}
-	
 	if (intr & SJA_IR_AL) {
 		flags = CSR_READ_1(sja, SJA_ALC);
 
 		cf->can_id |= CAN_ERR_AL;
-		cf->can_data[CAN_ERR_AL_DF] |= flags;
-/*
- * ...
- */			
-	}
+		cf->can_data[CAN_ERR_AL_DF] |= flags & SJA_ALC_MASK;
+	} 
 	
 	/* map error count */
 	cf->can_data[CAN_ERR_RX_DF] = CSR_READ_1(sja, SJA_RX_ERR);
 	cf->can_data[CAN_ERR_TX_DF] = CSR_READ_1(sja, SJA_TX_ERR);
-/*
- * ...
- */
+
 	m->m_len = m->m_pkthdr.len = sizeof(*cf);
 	m->m_pkthdr.rcvif = ifp;
 
@@ -525,3 +521,38 @@ sja_txeof(struct sja_softc *sja)
  */
 
 }
+
+/*
+ * ...
+ */
+
+static void 
+sja_init(void *xsc)
+{
+	struct sja_softc *sja;
+	
+	sja = xsc;
+	
+	SJA_LOCK(sja);
+	sja_init_locked(sja);
+	SJA_UNLOCK(sja);
+}
+
+static void 
+sja_init_locked(struct sja_softc *sja)
+{
+	struct ifnet *ifp;
+	struct can_ifsoftc *csc;
+	
+	SJA_LOCK_ASSERT(sja);
+	ifp = sja->sja_ifp;
+	csc = ifp->if_l2com;
+/*
+ * ...
+ */ 	
+	
+}
+
+/*
+ * ...
+ */
