@@ -220,10 +220,10 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 		else
 			flags = CAN_STATE_ERROR_ACTIVE;
 		
-		if (flags != csc->can_state) {
-			csc->can_state = flags;
+		if (flags != csc->can_flags) {
+			csc->can_flags = flags;
 		
-			if (csc->can_state == CAN_STATE_BUS_OFF) {
+			if (csc->can_flags == CAN_STATE_BUS_OFF) {
 				ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
 				sja_init_locked(sc);
 			}
@@ -253,18 +253,18 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 
 		/* map error condition, if any */
 		if ((flags & SJA_ECC_ERR_MASK) == SJA_ECC_BE)
-			cf->data[CAN_ERR_PROTO_DF] |= CAN_ERR_PROTO_BIT;
+			cf->can_data[CAN_ERR_PROTO_DF] |= CAN_ERR_PROTO_BIT;
 		else if ((flags & SJA_ECC_ERR_MASK) == SJA_ECC_FMT)
-			cf->data[CAN_ERR_PROTO_DF] |= CAN_ERR_PROT_FORM;
+			cf->can_data[CAN_ERR_PROTO_DF] |= CAN_ERR_PROT_FORM;
 		else if ((flags & SJA_ECC_ERR_MASK) == ECC_STUFF)
-			cf->data[CAN_ERR_PROTO_DF] |= CAN_ERR_PROT_STUFF;
+			cf->can_data[CAN_ERR_PROTO_DF] |= CAN_ERR_PROT_STUFF;
 			
 		/* map tx error condition, if any */ 
 		if ((flags & ECC_DIR) == 0)
-			cf->data[CAN_ERR_PROTO_DF] |= CAN_ERR_PROT_TX;	
+			cf->can_data[CAN_ERR_PROTO_DF] |= CAN_ERR_PROT_TX;	
 	
 		/* map error location */
-		cf->data[CAN_ERR_PROTO_LOC_DF] |= flags & SJA_ECC_SEG;
+		cf->can_data[CAN_ERR_PROTO_LOC_DF] |= flags & SJA_ECC_SEG;
 /*
  * ...
  */	
@@ -278,8 +278,8 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	} 
 	
 	/* map error count */
-	cf->can_data[CAN_ERR_RX_DF] = CSR_READ_1(sja, SJA_RX_ERR);
-	cf->can_data[CAN_ERR_TX_DF] = CSR_READ_1(sja, SJA_TX_ERR);
+	cf->can_data[CAN_ERR_RX_DF] = CSR_READ_1(sja, SJA_REC);
+	cf->can_data[CAN_ERR_TX_DF] = CSR_READ_1(sja, SJA_TEC);
 
 	m->m_len = m->m_pkthdr.len = sizeof(*cf);
 	m->m_pkthdr.rcvif = ifp;
@@ -550,9 +550,47 @@ sja_init_locked(struct sja_softc *sja)
 /*
  * ...
  */ 	
+
+}
+
+/*
+ * ...
+ */ 	
+
+static void 
+sja_reset_mode(struct sja_softc *sja)
+{
+
+/*
+ * ...
+ */ 		
+	/* set clock divider */
+	sja->sja_cdr |= SJA_CDR_PELICAN;
+	CSR_WRITE_1(sja, SJA_CDR, sja->sja_cdr);
+
+	/* set acceptance filter (accept all) */
+	CSR_WRITE_1(sja, SJA_AC0, 0x00);
+	CSR_WRITE_1(sja, SJA_AC1, 0x00);
+	CSR_WRITE_1(sja, SJA_AC2, 0x00);
+	CSR_WRITE_1(sja, SJA_AC3, 0x00);
+
+	CSR_WRITE_1(sja, SJA_AM0, 0xff);
+	CSR_WRITE_1(sja, SJA_AM1, 0xff);
+	CSR_WRITE_1(sja, SJA_AM2, 0xff);
+	CSR_WRITE_1(sja, SJA_AM3, 0xff);
+
+	/* set output control register */
+	sja->sja_ocr |= SJA_OCR_MODE_NORMAL;
+	CSR_WRITE_1(sja, SJA1000_OCR, sja->sja_ocr);
 	
+/*
+ * ...
+ */ 		
+		
 }
 
 /*
  * ...
  */
+
+

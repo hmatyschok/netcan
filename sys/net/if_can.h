@@ -361,7 +361,7 @@ struct can_ifsoftc {
 	struct can_link_timecaps	csc_timecaps; /* timing capabilities */
 	struct can_link_timings	csc_timings; /* operating timing values */
 	uint32_t	csc_linkmodes;
-	uint32_t	csc_state;
+	uint32_t	csc_flags;
 	struct callout	csc_timo; 	/* callout for error control */
 	struct mtx	csc_mtx;
 };
