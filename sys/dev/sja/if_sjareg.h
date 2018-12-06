@@ -190,7 +190,7 @@
 /* 
  * SJA1000, 6.4.7 Interrupt Enable Register [IER] 
  */
-
+#define SJA_IER_OFF		0x00 
 #define SJA_IER_RX		0x01 	/* receive interrupt */
 #define SJA_IER_TX		0x02 	/* transmit interrupt */
 #define SJA_IER_EE		0x04 	/* error warning interrupt */

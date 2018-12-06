@@ -543,51 +543,45 @@ sja_init_locked(struct sja_softc *sja)
 {
 	struct ifnet *ifp;
 	struct can_ifsoftc *csc;
+	uint8_t addr;
 	
 	SJA_LOCK_ASSERT(sja);
 	ifp = sja->sja_ifp;
 	csc = ifp->if_l2com;
-/*
- * ...
- */ 	
 
-}
-
-/*
- * ...
- */ 	
-
-static void 
-sja_reset_mode(struct sja_softc *sja)
-{
+	/* disable interrupt, if any */
+	CSR_WRITE_1(sja, SJA_IER, SJA_IER_OFF);
+	
+	/* abort pending transmission, if any */
+	CSR_WRITE_1(sja, SJA_CMR, SJA_CMR_AT);
 
 /*
  * ...
  */ 		
 	/* set clock divider */
+	addr = SJA_CDR;
 	sja->sja_cdr |= SJA_CDR_PELICAN;
-	CSR_WRITE_1(sja, SJA_CDR, sja->sja_cdr);
+	CSR_WRITE_1(sja, addr, sja->sja_cdr);
 
 	/* set acceptance filter (accept all) */
-	CSR_WRITE_1(sja, SJA_AC0, 0x00);
-	CSR_WRITE_1(sja, SJA_AC1, 0x00);
-	CSR_WRITE_1(sja, SJA_AC2, 0x00);
-	CSR_WRITE_1(sja, SJA_AC3, 0x00);
+	for (addr = SJA_AC0; addr < SJA_AM0; addr++)
+		CSR_WRITE_1(sja, addr, 0x00);
 
-	CSR_WRITE_1(sja, SJA_AM0, 0xff);
-	CSR_WRITE_1(sja, SJA_AM1, 0xff);
-	CSR_WRITE_1(sja, SJA_AM2, 0xff);
-	CSR_WRITE_1(sja, SJA_AM3, 0xff);
+	for (; addr <  0x18; addr++)
+		CSR_WRITE_1(sja, addr, 0xff);
 
 	/* set output control register */
+	addr = SJA_ODR;
 	sja->sja_ocr |= SJA_OCR_MODE_NORMAL;
-	CSR_WRITE_1(sja, SJA1000_OCR, sja->sja_ocr);
-	
+	CSR_WRITE_1(sja, addr, sja->sja_ocr);
+
 /*
  * ...
  */ 		
-		
+
 }
+
+
 
 /*
  * ...
