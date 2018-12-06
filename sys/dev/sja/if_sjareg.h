@@ -325,6 +325,7 @@ struct sja_softc {
 #define	SJA_UNLOCK(sja)		mtx_unlock(&(sja)->sja_mtx)
 #define	SJA_LOCK_ASSERT(sja)	mtx_assert(&(sja)->sja_mtx, MA_OWNED)
 
+/* accessor-macros */
 #define CSR_WRITE_1(sja, reg, val)	bus_write_1((sja)->sja_res, reg, val)
 #define CSR_READ_1(sja, reg)		bus_read_1((sja)->sja_res, reg)
 #define SJA_SETBIT(sja, reg, x) \
@@ -337,3 +338,8 @@ struct sja_softc {
 
 #define CSR_WRITE_4(sja, reg, val)	bus_write_4((sja)->sja_res, reg, val)
 #define CSR_READ_4(sja, reg)		bus_read_4((sja)->sja_res, reg)
+
+/* utility-macros */
+#define	sja_timercmp(tvp, uvp, val)	\
+	(((uvp)->tv_sec - (tvp)->tv_sec) < (val))
+

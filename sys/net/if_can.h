@@ -342,6 +342,7 @@ struct can_link_timings {
 #include <sys/ctype.h>
 #include <sys/callout.h>
 #include <sys/queue.h>
+#include <sys/time.h>
 
 /*
  * Common structure for CAN interface drivers maps to if_l2com.

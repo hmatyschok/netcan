@@ -581,7 +581,103 @@ sja_init_locked(struct sja_softc *sja)
 
 }
 
+/*
+ * ...
+ */
 
+static int 
+sja_reset_mode(struct sja_softc *sja)
+{
+	struct ifnet *ifp;
+	struct can_ifsoftc *csc;
+	struct timeval tv0, tv;
+	uint8_t status;
+	int error;
+
+	SJA_LOCK_ASSERT(sja);
+	ifp = sja->sja_ifp;
+	csc = ifp->if_l2com;
+
+	getmicrotime(&tv0);
+	getmicrotime(&tv);
+
+	/* disable interrupts, if any */
+	CSR_WRITE_1(sja, SJA_IER, SJA_IER_OFF);
+
+	/* fetch contents of status register */
+	status = CSR_READ_1(sja, SJA_MOD);
+	
+	/* set reset mode, until break-condition takes place */
+	for (error = EIO; sja_timercmp(&tv0, &tv, 100); ) {
+
+		if (status & SJA_MOD_RM) {
+			csc->csc_flags = CAN_STATE_SUSPENDED;
+			error = 0;
+			break;
+		}
+
+		CSR_WRITE_1(sja, SJA_MOD, SJA_MOD_RM);
+		UDLAY(10);
+		
+		status = CSR_READ_1(sja, SJA_MOD);
+		getmicrotime(&tv);
+	}
+	
+	return (error);
+}
+
+static int 
+sja_normal_mode(struct sja_softc *sja)
+{
+	struct ifnet *ifp;
+	struct can_ifsoftc *csc;
+	struct timeval tv0, tv;
+	uint8_t status;
+	int error;
+
+	SJA_LOCK_ASSERT(sja);
+	ifp = sja->sja_ifp;
+	csc = ifp->if_l2com;
+
+	getmicrotime(&tv0);
+	getmicrotime(&tv);
+	
+	/* fetch contents of status register */
+	status = CSR_READ_1(sja, SJA_MOD);
+	
+	/* set normal mode and enable interrupts, if any */
+	for (error = EIO; sja_timercmp(&tv0, &tv, 100); ) {
+
+		if ((status & SJA_MOD_RM) == 0) {
+			status = SJA_IRE_ALL & ~SJA_IER_BE;
+#if 0
+			if ((csc->csc_linkmodes & 0x10) == 0)
+				status &= ~SJA_IER_BE;
+#endif			
+			CSR_WRITE_1(sja, SJA_IER, status);
+			
+			csc->csc_flags = CAN_STATE_ERROR_ACTIVE;
+			error = 0;
+			break;
+		}
+
+		status = SJA_MOD_RM;
+	
+		if (csc->csc_linkmodes & CAN_LINKMODE_LISTENONLY)
+			status |= SJA_MOD_LOM;
+			
+		if (csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK)
+			status |= SJA_MOD_STM;
+		
+		CSR_WRITE_1(sja, SJA_MOD, status);
+		UDLAY(10);
+		
+		status = CSR_READ_1(sja, SJA_MOD);
+		getmicrotime(&tv);
+	}
+	
+	return (error);
+}
 
 /*
  * ...
