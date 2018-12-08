@@ -631,6 +631,9 @@ out:
 		CSR_WRITE_1(sja, SJA_IER, status);
 			
 		csc->csc_flags = CAN_STATE_ERROR_ACTIVE;
+	
+		ifp->if_drv_flags |= IFF_DRV_RUNNING;
+		ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 	}
 }
 
