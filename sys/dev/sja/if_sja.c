@@ -543,50 +543,118 @@ sja_init_locked(struct sja_softc *sja)
 {
 	struct ifnet *ifp;
 	struct can_ifsoftc *csc;
+	struct timeval tv0, tv;
+	uint8_t status;
 	uint8_t addr;
 	
 	SJA_LOCK_ASSERT(sja);
 	ifp = sja->sja_ifp;
 	csc = ifp->if_l2com;
 
-	/* disable interrupt, if any */
-	CSR_WRITE_1(sja, SJA_IER, SJA_IER_OFF);
-	
-	/* abort pending transmission, if any */
-	CSR_WRITE_1(sja, SJA_CMR, SJA_CMR_AT);
+	if (ifp->if_drv_flags & IFF_DRV_RUNNING)
+		return;
 
-/*
- * ...
- */ 		
+	/* force controller into reset mode */
+	sja_stop(sja);
+
+	getmicrotime(&tv0);
+	getmicrotime(&tv);
+	
+	status = CSR_READ_1(sja, SJA_MOD);
+		
+	for (; sja_timercmp(&tv0, &tv, 100);) {
+
+		CSR_WRITE_1(sja, SJA_MOD, SJA_MOD_RM);
+		DELAY(10);
+		
+		status = CSR_READ_1(sja, SJA_MOD);
+		getmicrotime(&tv);
+	}
+	
+	if ((status & SJA_MOD_RM) == 0) 
+		goto out;
+	
+	csc->csc_flags = CAN_STATE_SUSPENDED;
+	
 	/* set clock divider */
-	addr = SJA_CDR;
 	sja->sja_cdr |= SJA_CDR_PELICAN;
-	CSR_WRITE_1(sja, addr, sja->sja_cdr);
+	CSR_WRITE_1(sja, SJA_CDR, sja->sja_cdr);
 
 	/* set acceptance filter (accept all) */
 	for (addr = SJA_AC0; addr < SJA_AM0; addr++)
 		CSR_WRITE_1(sja, addr, 0x00);
 
-	for (; addr <  0x18; addr++)
+	for (addr = SJA_AM0; addr > SJA_AM3; addr++)
 		CSR_WRITE_1(sja, addr, 0xff);
 
 	/* set output control register */
-	addr = SJA_ODR;
 	sja->sja_ocr |= SJA_OCR_MODE_NORMAL;
-	CSR_WRITE_1(sja, addr, sja->sja_ocr);
+	CSR_WRITE_1(sja, SJA_OCR, sja->sja_ocr);
 
-/*
- * ...
- */ 		
+	/* flush error counters and error code capture */
+	CSR_WRITE_1(sja, SJA_TEC, 0x00);
+	CSR_WRITE_1(sja, SJA_REC, 0x00);
+	
+	status = CSR_READ_1(sja, SJA_ECC);
+	
+	/* leave reset mode */
+	getmicrotime(&tv0);
+	getmicrotime(&tv);
 
+	status = CSR_READ_1(sja, SJA_MOD);
+	
+	/* force controller into normal mode */ 
+	for (; sja_timercmp(&tv0, &tv, 100);) {
+		status = SJA_MOD_RM;
+	
+		if (csc->csc_linkmodes & CAN_LINKMODE_LISTENONLY)
+			status |= SJA_MOD_LOM;
+			
+		if (csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK)
+			status |= SJA_MOD_STM;
+		
+		CSR_WRITE_1(sja, SJA_MOD, status);
+		DELAY(10);
+		
+		status = CSR_READ_1(sja, SJA_MOD);
+		getmicrotime(&tv);
+	}
+	
+	/* enable interrupts, if any */
+	if ((status & SJA_MOD_RM) == 0) {
+out:
+		status = SJA_IRE_ALL & ~SJA_IER_BE;
+#if 0
+		if ((csc->csc_linkmodes & 0x10) == 0)
+			status &= ~SJA_IER_BE;
+#endif			
+		CSR_WRITE_1(sja, SJA_IER, status);
+			
+		csc->csc_flags = CAN_STATE_ERROR_ACTIVE;
+	}
 }
 
 /*
- * ...
+ * Disable interrupts and abort pending transmission, if any.
  */
+static void 
+sja_stop(struct sja_softc *sja)
+{
+	struct ifnet *ifp;
+	
+	ifp = sja->sja_ifp;
 
+	ifp->if_drv_flags |= ~(IFF_DRV_RUNNNING | IFF_DRV_OACTIVE);
+
+	CSR_WRITE_1(sja, SJA_IER, SJA_IER_OFF);
+	CSR_WRITE_1(sja, SJA_CMR, SJA_CMR_AT);
+}
+
+/*
+ * Force controller into reset mode.
+ */
 static int 
-sja_reset_mode(struct sja_softc *sja)
+sja_reset(struct sja_softc *sja)
 {
 	struct ifnet *ifp;
 	struct can_ifsoftc *csc;
@@ -617,7 +685,7 @@ sja_reset_mode(struct sja_softc *sja)
 		}
 
 		CSR_WRITE_1(sja, SJA_MOD, SJA_MOD_RM);
-		UDLAY(10);
+		DELAY(10);
 		
 		status = CSR_READ_1(sja, SJA_MOD);
 		getmicrotime(&tv);
@@ -626,6 +694,9 @@ sja_reset_mode(struct sja_softc *sja)
 	return (error);
 }
 
+/*
+ * XXX: namespace resolution..
+ */
 static int 
 sja_normal_mode(struct sja_softc *sja)
 {
@@ -670,7 +741,7 @@ sja_normal_mode(struct sja_softc *sja)
 			status |= SJA_MOD_STM;
 		
 		CSR_WRITE_1(sja, SJA_MOD, status);
-		UDLAY(10);
+		DELAY(10);
 		
 		status = CSR_READ_1(sja, SJA_MOD);
 		getmicrotime(&tv);
