@@ -571,58 +571,56 @@ sja_init_locked(struct sja_softc *sja)
 		getmicrotime(&tv);
 	}
 	
-	if ((status & SJA_MOD_RM) == 0) 
-		goto out;
+	if (status & SJA_MOD_RM) {
+		csc->csc_flags = CAN_STATE_SUSPENDED;
 	
-	csc->csc_flags = CAN_STATE_SUSPENDED;
-	
-	/* set clock divider */
-	sja->sja_cdr |= SJA_CDR_PELICAN;
-	CSR_WRITE_1(sja, SJA_CDR, sja->sja_cdr);
+		/* set clock divider */
+		sja->sja_cdr |= SJA_CDR_PELICAN;
+		CSR_WRITE_1(sja, SJA_CDR, sja->sja_cdr);
 
-	/* set acceptance filter (accept all) */
-	for (addr = SJA_AC0; addr < SJA_AM0; addr++)
-		CSR_WRITE_1(sja, addr, 0x00);
+		/* set acceptance filter (accept all) */
+		for (addr = SJA_AC0; addr < SJA_AM0; addr++)
+			CSR_WRITE_1(sja, addr, 0x00);
 
-	for (addr = SJA_AM0; addr > SJA_AM3; addr++)
-		CSR_WRITE_1(sja, addr, 0xff);
+		for (addr = SJA_AM0; addr > SJA_AM3; addr++)
+			CSR_WRITE_1(sja, addr, 0xff);
 
-	/* set output control register */
-	sja->sja_ocr |= SJA_OCR_MODE_NORMAL;
-	CSR_WRITE_1(sja, SJA_OCR, sja->sja_ocr);
+		/* set output control register */
+		sja->sja_ocr |= SJA_OCR_MODE_NORMAL;
+		CSR_WRITE_1(sja, SJA_OCR, sja->sja_ocr);
 
-	/* flush error counters and error code capture */
-	CSR_WRITE_1(sja, SJA_TEC, 0x00);
-	CSR_WRITE_1(sja, SJA_REC, 0x00);
+		/* flush error counters and error code capture */
+		CSR_WRITE_1(sja, SJA_TEC, 0x00);
+		CSR_WRITE_1(sja, SJA_REC, 0x00);
 	
-	status = CSR_READ_1(sja, SJA_ECC);
+		status = CSR_READ_1(sja, SJA_ECC);
 	
-	/* leave reset mode */
-	getmicrotime(&tv0);
-	getmicrotime(&tv);
-
-	status = CSR_READ_1(sja, SJA_MOD);
-	
-	/* force controller into normal mode */ 
-	for (; sja_timercmp(&tv0, &tv, 100);) {
-		status = SJA_MOD_RM;
-	
-		if (csc->csc_linkmodes & CAN_LINKMODE_LISTENONLY)
-			status |= SJA_MOD_LOM;
-			
-		if (csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK)
-			status |= SJA_MOD_STM;
-		
-		CSR_WRITE_1(sja, SJA_MOD, status);
-		DELAY(10);
-		
-		status = CSR_READ_1(sja, SJA_MOD);
+		/* leave reset mode */
+		getmicrotime(&tv0);
 		getmicrotime(&tv);
+
+		status = CSR_READ_1(sja, SJA_MOD);
+	
+		/* force controller into normal mode */ 
+		for (; sja_timercmp(&tv0, &tv, 100);) {
+			status = SJA_MOD_RM;
+	
+			if (csc->csc_linkmodes & CAN_LINKMODE_LISTENONLY)
+				status |= SJA_MOD_LOM;
+			
+			if (csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK)
+				status |= SJA_MOD_STM;
+		
+			CSR_WRITE_1(sja, SJA_MOD, status);
+			DELAY(10);
+		
+			status = CSR_READ_1(sja, SJA_MOD);
+			getmicrotime(&tv);
+		}
 	}
 	
 	/* enable interrupts, if any */
 	if ((status & SJA_MOD_RM) == 0) {
-out:
 		status = SJA_IRE_ALL & ~SJA_IER_BE;
 #if 0
 		if ((csc->csc_linkmodes & 0x10) == 0)
