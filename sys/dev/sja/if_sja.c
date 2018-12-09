@@ -211,6 +211,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	/* fetch status information */	
 	status = CSR_READ_1(sja, SJA_SR);	
 	
+	/*  error passive / warning condition */
 	if (intr & (SJA_IR_EP|SJA_IR_EW)) {	
 	
 		if (status & SJA_SR_BS)
@@ -234,7 +235,8 @@ sja_error(struct sja_softc *sja, uint8_t intr)
  */		
 		}	
 	}
-		
+	
+	/* data overrun condition */ 	
 	if (intr & SJA_IR_DO) {
 		cf->can_id |= CAN_ERR_DEV;
 		cf->can_data[CAN_ERR_DEV_DF] |= CAN_ERR_DEV_RX_OVF; 
@@ -246,6 +248,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
  */	
 	}
 	
+	/* bus error condition */
 	if (intr & SJA_IR_BE) {
 		flags = CSR_READ_1(sja, SJA_ECC);
 
@@ -270,6 +273,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
  */	
 	}
 	
+	/* arbitriation lost condition */
 	if (intr & SJA_IR_AL) {
 		flags = CSR_READ_1(sja, SJA_ALC);
 
@@ -292,6 +296,9 @@ done:
 	return (error);
 }
 
+/*
+ * Copy CAN frame from RX buffer into mbuf(9).
+ */
 static void 	
 sja_rxeof(struct sja_softc *sja)
 {
@@ -358,9 +365,9 @@ done:	/* SJA1000, 6.4.4, note 4 */
 }
 
 /*
- * ...
+ * Transmit CAN frame, called by if_transmit(9)
+ * indirectly during runtime of can_output(9).
  */
-
 static void
 sja_start(struct ifnet *ifp)
 {
@@ -422,6 +429,9 @@ sja_start_locked(struct ifnet *ifp)
 	}						
 }
 
+/*
+ * Copy CAN frame into TX buffer.
+ */
 static void 
 sja_encap(struct sja_softc *sja, struct mbuf *mp)
 {
@@ -490,9 +500,8 @@ out:
 }
 
 /*
- * ...
+ * TX buffer released or TX complete.
  */
-
 static void 
 sja_txeof(struct sja_softc *sja)
 {
@@ -513,19 +522,17 @@ sja_txeof(struct sja_softc *sja)
 		&& (status & SJA_SR_TCS) == 0) {
 		if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
 		(*ifp->if_start)(ifp);
-	} else 
+	} else {
+		status = CSR_READ_1(sja, SJA_FI) & 0x0f; 
+		if_inc_counter(ifp, IFCOUNTER_OBYTES, status);
 		if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
-
-/*
- * ...
- */
-
+	}
 }
 
 /*
- * ...
- */
-
+ * ... 
+ */ 
+ 
 static void 
 sja_init(void *xsc)
 {
@@ -594,7 +601,10 @@ sja_init_locked(struct sja_softc *sja)
 		CSR_WRITE_1(sja, SJA_REC, 0x00);
 	
 		status = CSR_READ_1(sja, SJA_ECC);
-	
+		
+		/* clear interrupt flags */
+		status = CSR_READ_1(sja, SJA_IR);
+
 		/* leave reset mode */
 		getmicrotime(&tv0);
 		getmicrotime(&tv);
@@ -621,7 +631,8 @@ sja_init_locked(struct sja_softc *sja)
 	
 	/* enable interrupts, if any */
 	if ((status & SJA_MOD_RM) == 0) {
-		status = SJA_IRE_ALL & ~SJA_IER_BE;
+		status = SJA_IRE_ALL;
+		status &= ~SJA_IER_BE;
 #if 0
 		if ((csc->csc_linkmodes & 0x10) == 0)
 			status &= ~SJA_IER_BE;
@@ -721,7 +732,8 @@ sja_normal_mode(struct sja_softc *sja)
 	for (error = EIO; sja_timercmp(&tv0, &tv, 100); ) {
 
 		if ((status & SJA_MOD_RM) == 0) {
-			status = SJA_IRE_ALL & ~SJA_IER_BE;
+			status = SJA_IRE_ALL;
+			status &= ~SJA_IER_BE;
 #if 0
 			if ((csc->csc_linkmodes & 0x10) == 0)
 				status &= ~SJA_IER_BE;
