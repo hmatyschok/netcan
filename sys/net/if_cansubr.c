@@ -305,6 +305,40 @@ can_ifinit_timings(struct can_ifsoftc *csc)
 }
 
 /*
+ * Restart for bus-off recovery.
+ */
+int 
+can_restart(struct ifnet *ifp)
+{
+	int error = 0;
+	struct mbuf *m;
+	struct can_frame *cf;
+	
+	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL)) {
+		error = ENOBUFS;
+		goto done;
+	}
+	 
+	(void)memset(mtod(m, caddr_t), 0, MHLEN);
+	cf = mtod(m, struct can_frame *);
+
+	cf->can_id |= (CAN_ERR_FLAG | CAN_ERR_RESTARTED);
+
+	m->m_len = m->m_pkthdr.len = sizeof(*cf);
+	m->m_pkthdr.rcvif = ifp;
+	
+	/* pass CAN frame to layer above */
+ 	(*ifp->if_input)(ifp, m);
+ 	
+done:
+	if_printf(ifp, "restarted\n");
+
+	(*ifp->if_init)(ifp->if_softc);
+	
+	return (error);
+}
+
+/*
  * Capture a CAN frame.
  */
 void

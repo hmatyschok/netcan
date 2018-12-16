@@ -322,7 +322,12 @@ struct can_link_timings {
 #define CAN_LINKMODE_LOOPBACK		0x01    /* Loopback mode */
 #define CAN_LINKMODE_LISTENONLY		0x02    /* Listen-only mode */
 #define CAN_LINKMODE_3SAMPLES		0x04    /* Triple sampling mode */
-#define CAN_LINKMODE_PRESUME_ACK	0x08    /* Ignore missing CAN ACKs */
+#define CAN_LINKMODE_ONE_SHOT	0x08    /* One-shot mode */
+#define CAN_LINKMODE_BUS_ERR_REP	0x10	/* Bus-error reporting */
+#define CAN_LINKMODE_FD		0x20	/* CAN FD mode */
+#define CAN_LINKMODE_PRESUME_ACK	0x40    /* Ignore missing CAN ACKs */
+#define CAN_LINKMODE_FD_NON_ISO		0x80	/* CAN FD, non-ISO mode */
+
 #define CAN_IFFBITS \
     "\020\1LOOPBACK\2LISTENONLY\3TRIPLESAMPLE\4PRESUMEACK"
 
@@ -373,6 +378,7 @@ int 	can_hex2bin(u_char *, struct can_frame *);
 int 	can_id2hex(struct can_frame *, u_char *);
 int 	can_hex2id(u_char *, struct can_frame *);
 void 	can_mbuf_tag_clean(struct mbuf *);
+int 	can_restart(struct ifnet *);	/* XXX */
 
 /* interface-layer */
 void 	can_ifattach(struct ifnet *);

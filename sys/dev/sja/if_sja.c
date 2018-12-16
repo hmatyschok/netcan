@@ -47,6 +47,20 @@ MODULE_VERSION(sja, 1);
 #include "sja_if.h"
 
 /*
+ * CAN link timing capabilities 
+ */
+struct can_link_timecaps sja_timecaps = {
+	.cltc_ps1_min =		1,
+	.cltc_ps1_max =		16,
+	.cltc_ps2_min =		1,
+	.cltc_ps2_max =		8,
+	.cltc_sjw_max =		4,
+	.cltc_brp_min =		1,
+	.cltc_brp_max =		64,
+	.cltc_brp_inc =		1,
+};
+
+/*
  * kobj(9) method-table
  */
 static device_method_t sja_methods[] = {
@@ -75,6 +89,9 @@ static driver_t sja_driver = {
 
 static devclass_t sja_devclass;
 
+/*
+ * ...
+ */
 
 static int 
 sja_attach(device_t dev)
@@ -106,7 +123,33 @@ sja_attach(device_t dev)
 /*
  * ...
  */	 
- 
+	if ((ifp = sja->sja_ifp = if_alloc(IFT_CAN)) == NULL) {
+		device_printf(dev, "couldn't if_alloc(9)\n");
+		error = ENOSPC;
+		goto bad;
+	}
+	ifp->if_softc = sja;
+	
+	if_initname(ifp, device_get_name(dev), device_get_unit(dev));
+	
+	ifp->if_flags = (IFF_BROADCAST | IFF_SIMPLEX | IFF_MULTICAST);
+	ifp->if_init = sja_init;
+	ifp->if_start = sja_start;
+	ifp->if_ioctl = sja_ioctl;
+	
+	can_ifattach(ifp);
+
+	ifp->if_mtu = CAN_MTU;
+	
+	IFQ_SET_MAXLEN(&ifp->if_snd, SJA_IFQ_MAXLEN);
+	ifp->if_snd.ifq_drv_maxlen = SJA_IFQ_MAXLEN;
+	IFQ_SET_READY(&ifp->if_snd);
+
+	TASK_INIT(&sja->sja_intr_task, 0, sja_intr_task, sja);
+
+ /*
+  * ...
+  */
 	error = bus_setup_intr(dev, sja->sja_irq, 
 		INTR_TYPE_NET | INTR_MPSAFE, sja_intr, 
 			NULL, sja, &sja->sja_intr_hand);
@@ -207,6 +250,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	 
 	(void)memset(mtod(m, caddr_t), 0, MHLEN);
 	cf = mtod(m, struct can_frame *);
+	cf->can_id |= CAN_ERR_FLAG;
 
 	/* fetch status information */	
 	status = CSR_READ_1(sja, SJA_SR);	
@@ -414,7 +458,7 @@ sja_start_locked(struct ifnet *ifp)
 		can_bpf_mtap(ifp, &m);		
 	
 		/* notify controller for transmission */
-		if (csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK)
+		if (csc->csc_linkmodes & CAN_LINKMODE_ONE_SHOT)
 			status = SJA_CMR_AT;
 		else 
 			status = 0x00;
@@ -767,4 +811,34 @@ sja_normal_mode(struct sja_softc *sja)
  * ...
  */
 
+static int
+sja_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
+{
+	struct sja_softc *sja;
+	struct can_ifsoftc *csc;
+	struct ifreq *ifr;
+	int error, mask;
 
+	sja = ifp->if_softc;
+	csc = ifp->if_l2com;
+	ifr = (struct ifreq *)data;
+	error = 0;
+
+	switch (cmd) {
+	case SIOCSIFFLAGS:
+		SJA_LOCK(sja);
+		if (ifp->if_flags & IFF_UP) 
+			sja_init_locked(sja);
+		else {
+			if (ifp->if_drv_flags & IFF_DRV_RUNNING)
+				sja_stop(sja);
+		}
+		SJA_UNLOCK(sja);
+		break;
+	default:
+		error = can_ioctl(ifp, cmd, data);
+		break;
+	}
+
+	return (error);
+}
