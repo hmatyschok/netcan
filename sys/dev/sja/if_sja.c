@@ -137,7 +137,7 @@ sja_attach(device_t dev)
 	ifp->if_start = sja_start;
 	ifp->if_ioctl = sja_ioctl;
 	
-	can_ifattach(ifp);
+	can_ifattach(ifp, sja_set_link_timings);
 
 	ifp->if_mtu = CAN_MTU;
 	
@@ -815,12 +815,10 @@ static int
 sja_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
 	struct sja_softc *sja;
-	struct can_ifsoftc *csc;
 	struct ifreq *ifr;
 	int error, mask;
 
 	sja = ifp->if_softc;
-	csc = ifp->if_l2com;
 	ifr = (struct ifreq *)data;
 	error = 0;
 
@@ -841,4 +839,35 @@ sja_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 	}
 
 	return (error);
+}
+
+/*
+ * Maps to generic software-context, called by can_set_netlink(9).
+ */
+static int 
+sja_set_link_timings(struct can_ifsoftc *csc)
+{
+	struct sja_softc *sja;
+	struct can_link_timings *clt;
+	uint8_t btr0, btr1;
+	
+	sja = csc->csc_ifp->if_softc;
+	clt = &csc->csc_timings;
+	
+	/* baud rate prescalar and  synchroniziation jump */
+	btr0 = ((clt->clt_brp - 1) & SJA_BTR0_BRP_MASK);
+	btr0 |= (((clt->clt_sjw - 1) & SJA_BTR0_CLT_MASK) << 6);
+	
+	CSR_WRITE_1(sja, SJA_BTR0, btr0);
+	
+	/* time segments and sampling, if any */
+	btr1 = ((clt->clt_prop + clt->clt_ps1 - 1) & 0x0f);
+	btr1 |= (((clt->clt_sg2 - 1) & 0x7) << 4);
+
+	if (csc->csc_linkmodes & CAN_CTRLMODE_3_SAMPLES)
+		btr1 |= SJA_BTR1_SAM;
+	
+	CSR_WRITE_1(sja, SJA_BTR1, btr1);
+
+	return (0);
 }

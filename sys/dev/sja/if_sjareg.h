@@ -288,12 +288,16 @@
 #define SJA_FI_RTR		0x40 	/* remote transmission request */
 #define SJA_FI_FF		0x80 	/* frame format */
 
-
 /*
  * SJA1000, 6.5.1 Bus Timing Register 0 [BTR0]
  */
 #define SJA_BTR0_BRP_MASK		0x3f 	/* baud rate prescaler */
 #define SJA_BTR0_SJW_MASK		0xc0 	/* synchroniziation junp width */
+
+/*
+ * SJA1000, 6.5.2 Bus Timing Register 0 [BTR1]
+ */
+#define SJA_BTR1_SAM		0x80 	/* sampling */
 
 #if 0
 #define SJA_BTR0_BRP(reg) 	((reg) & SJA_BTR0_BRP_MASK)

@@ -349,6 +349,10 @@ struct can_link_timings {
 #include <sys/queue.h>
 #include <sys/time.h>
 
+struct can_ifsoftc;
+
+typedef int (*can_set_timings_t)(struct can_ifsoftc *csc);
+
 /*
  * Common structure for CAN interface drivers maps to if_l2com.
  * 
@@ -370,6 +374,7 @@ struct can_ifsoftc {
 	uint32_t	csc_flags;
 	struct callout	csc_timo; 	/* callout for error control */
 	struct mtx	csc_mtx;
+	can_set_timings_t	csc_set_timings;
 };
 
 /* common subr. */
@@ -381,7 +386,7 @@ void 	can_mbuf_tag_clean(struct mbuf *);
 int 	can_restart(struct ifnet *);	/* XXX */
 
 /* interface-layer */
-void 	can_ifattach(struct ifnet *);
+void 	can_ifattach(struct ifnet *, can_set_timings_t);
 void 	can_ifdetach(struct ifnet *);
 void 	can_bpf_mtap(struct ifnet *, struct mbuf *);
 void 	can_ifinit_timings(struct can_ifsoftc *);

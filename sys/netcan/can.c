@@ -218,6 +218,8 @@ can_set_netlink(struct ifnet *ifp, struct ifdrv *ifd)
 		else 
 			error = copyin(ifd->ifd_data, 
 				&csc->csc_timings, ifd->ifd_len);
+		
+		error = (*csc->csc_set_link_timings)(csc);
 		break;
 	case CANSLINKMODE:
 	case CANCLINKMODE: 	/* FALLTHROUGH */
@@ -234,13 +236,13 @@ can_set_netlink(struct ifnet *ifp, struct ifdrv *ifd)
 			error = EINVAL;
 			break;	
 		}
-		/* XXX locking */
+		
+		/* XXX: locking */
 		if (ifd->ifd_cmd == CANSLINKMODE)
 			csc->csc_linkmodes |= mode;
 		else
 			csc->csc_linkmodes &= ~mode;
-		
-		error = 0;
+
 		break;
 	default:
 		error = EOPNOTSUPP;

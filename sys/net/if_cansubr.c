@@ -123,9 +123,20 @@
 
 static MALLOC_DEFINE(M_IFCAN, "IFCAN", "CAN interface internals");
 
+static int 	can_set_timings(struct can_ifsoftc *);
 static void 	can_ifinput(struct ifnet *, struct mbuf *);
 static int 	can_ifoutput(struct ifnet *, struct mbuf *, 
 	const struct sockaddr *, struct route *);
+
+/*
+ * Maps to can_ifsoftc{}, if any.
+ */
+static int 	
+can_set_timings(struct can_ifsoftc *csc)
+{
+
+	return (EOPNOTSUPP);
+}
 
 /*
  * Process a received CAN frame, the packet is 
@@ -259,7 +270,7 @@ bad:
 }
 
 void
-can_ifattach(struct ifnet *ifp)
+can_ifattach(struct ifnet *ifp, can_set_timings_t cst)
 {
 	struct can_ifsoftc *csc;
 		
@@ -275,6 +286,7 @@ can_ifattach(struct ifnet *ifp)
 	    ("%s: ifp->if_l2com == NULL", __func__));
 	csc = ifp->if_l2com; 
 	mtx_init(&csc->csc_mtx, "csc_mtx", NULL, MTX_DEF);
+	csc->csc_set_timings = (cst == NULL) ? can_set_timings : cst;
 	
 	if_printf(ifp, "Index: %d\n", ifp->if_index);
 }
@@ -320,8 +332,8 @@ can_restart(struct ifnet *ifp)
 	}
 	 
 	(void)memset(mtod(m, caddr_t), 0, MHLEN);
+	
 	cf = mtod(m, struct can_frame *);
-
 	cf->can_id |= (CAN_ERR_FLAG | CAN_ERR_RESTARTED);
 
 	m->m_len = m->m_pkthdr.len = sizeof(*cf);
