@@ -328,7 +328,7 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 
 	ifr = (struct ifreq *)data;
 	error = 0;
-
+	
 	switch (cmd) {
 	case SIOCGDRVSPEC:
 	case SIOCSDRVSPEC:
@@ -366,7 +366,7 @@ can_restart(struct ifnet *ifp)
 	int error = 0;
 	struct mbuf *m;
 	struct can_frame *cf;
-	
+		
 	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL)) {
 		error = ENOBUFS;
 		goto done;

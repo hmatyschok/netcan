@@ -375,7 +375,6 @@ struct can_ifsoftc {
 	struct callout	csc_timo; 	/* callout for error control */
 	struct mtx	csc_mtx;
 	can_set_timings_t	csc_set_timings;
-	uint32_t	csc_shift;
 };
 
 /* common subr. */
