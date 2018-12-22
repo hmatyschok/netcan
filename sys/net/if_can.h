@@ -375,6 +375,7 @@ struct can_ifsoftc {
 	struct callout	csc_timo; 	/* callout for error control */
 	struct mtx	csc_mtx;
 	can_set_timings_t	csc_set_timings;
+	uint32_t	csc_shift;
 };
 
 /* common subr. */
@@ -390,5 +391,6 @@ void 	can_ifattach(struct ifnet *, can_set_timings_t);
 void 	can_ifdetach(struct ifnet *);
 void 	can_bpf_mtap(struct ifnet *, struct mbuf *);
 void 	can_ifinit_timings(struct can_ifsoftc *);
+int 	can_ioctl(struct ifnet *, u_long, caddr_t);
 #endif /* _KERNEL */
 #endif /* _NET_IF_CAN_H */

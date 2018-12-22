@@ -212,8 +212,7 @@ slc_ifstart(struct ifnet *ifp)
 static int
 slc_ifioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
-	struct ifreq *ifr = (struct ifreq *)data;
-	struct ifdrv *ifd = (struct ifdrv *)data;
+	struct ifdrv *ifd;
 	struct slc_softc *slc;
 	int error;
 
@@ -221,6 +220,7 @@ slc_ifioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 		error = EINVAL;
 		goto out;
 	} 
+	ifd = (struct ifdrv *)data;
 	error = 0;
 
 	switch (cmd) {
@@ -237,17 +237,11 @@ slc_ifioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 			break;
 		}
 		break;
-	case SIOCSIFMTU:
-		if (ifr->ifr_mtu == CAN_MTU) /* XXX */
-			ifp->if_mtu = ifr->ifr_mtu;
-		else
-			error = EINVAL;
-		break;
 	case SIOCSIFFLAGS:
 		slc_ifinit(slc);
 		break;
 	default:
-		error = EINVAL;
+		error = can_ioctl(ifp, cmd, data);
 		break;
 	}
 out:	

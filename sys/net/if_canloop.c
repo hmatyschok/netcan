@@ -135,16 +135,13 @@ canlo_start(struct ifnet *ifp)
 static int
 canlo_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
-	struct ifreq *ifr = (struct ifreq *)data;
-	int error = 0;
+	struct ifreq *ifr;
+	int error;
+
+	ifr = (struct ifreq *)data;
+	error = 0;
 
 	switch (cmd) {
-	case SIOCSIFMTU:
-		if (ifr->ifr_mtu == CAN_MTU)
-			ifp->if_mtu = ifr->ifr_mtu;
-		else
-			error = EINVAL;
-		break;
 	case SIOCSIFFLAGS:
 	
 		if (ifp->if_flags & IFF_UP)
@@ -153,7 +150,7 @@ canlo_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 			ifp->if_drv_flags &= ~IFF_DRV_RUNNING;	
 		break;
 	default:
-		error = EINVAL;
+		error = can_ioctl(ifp, cmd, data);
 		break;
 	}
 	return (error);

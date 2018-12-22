@@ -89,8 +89,10 @@ int
 can_control(struct socket *so, u_long cmd, caddr_t data, 
 	struct ifnet *ifp, struct thread *td)
 {
-	struct ifdrv *ifd = (struct ifdrv *)data;
+	struct ifdrv *ifd;
 	int error;
+
+	ifd = (struct ifdrv *)data;
 
 	if (ifp == NULL) {
 		error = EADDRNOTAVAIL;
@@ -104,21 +106,14 @@ can_control(struct socket *so, u_long cmd, caddr_t data,
 	
 	switch (cmd) {
 	case SIOCGDRVSPEC:
+	case SIOCSDRVSPEC:
 	
 		switch (ifd->ifd_cmd) {
 		case CANGLINKTIMECAP:
 		case CANGLINKTIMINGS:
-		case CANGLINKMODE:
+		case CANGLINKMODE:		/* FALLTHROUGH */
 			error = can_get_netlink(ifp, ifd);
 			break;
-		default:
-			error = (*ifp->if_ioctl)(ifp, cmd, data);
-			break;
-		}
-		break;
-	case SIOCSDRVSPEC:
-		
-		switch (ifd->ifd_cmd) {
 		case CANSLINKTIMINGS:
 		case CANSLINKMODE:
 		case CANCLINKMODE: 	/* FALLTHROUGH */

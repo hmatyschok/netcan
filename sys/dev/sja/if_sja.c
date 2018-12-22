@@ -816,7 +816,7 @@ sja_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
 	struct sja_softc *sja;
 	struct ifreq *ifr;
-	int error, mask;
+	int error;
 
 	sja = ifp->if_softc;
 	ifr = (struct ifreq *)data;
@@ -854,7 +854,7 @@ sja_set_link_timings(struct can_ifsoftc *csc)
 	sja = csc->csc_ifp->if_softc;
 	clt = &csc->csc_timings;
 	
-	/* baud rate prescalar and  synchroniziation jump */
+	/* baud rate prescalar and synchroniziation jump */
 	btr0 = ((clt->clt_brp - 1) & SJA_BTR0_BRP_MASK);
 	btr0 |= (((clt->clt_sjw - 1) & SJA_BTR0_CLT_MASK) << 6);
 	
@@ -862,7 +862,7 @@ sja_set_link_timings(struct can_ifsoftc *csc)
 	
 	/* time segments and sampling, if any */
 	btr1 = ((clt->clt_prop + clt->clt_ps1 - 1) & 0x0f);
-	btr1 |= (((clt->clt_sg2 - 1) & 0x7) << 4);
+	btr1 |= (((clt->clt_sg2 - 1) & 0x07) << 4);
 
 	if (csc->csc_linkmodes & CAN_CTRLMODE_3_SAMPLES)
 		btr1 |= SJA_BTR1_SAM;

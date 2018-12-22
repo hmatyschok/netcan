@@ -317,6 +317,47 @@ can_ifinit_timings(struct can_ifsoftc *csc)
 }
 
 /*
+ * Generic ioctl(2)s.
+ */
+/* ARGSUSED */
+int
+can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
+{
+	struct ifreq *ifr
+	int error;
+
+	ifr = (struct ifreq *)data;
+	error = 0;
+
+	switch (cmd) {
+	case SIOCGDRVSPEC:
+	case SIOCSDRVSPEC:
+	
+		switch (ifd->ifd_cmd) {
+		case CANSLINKTIMINGS:
+			
+			break;
+		default:
+			error = EINVAL;
+			break;
+		}
+		break;
+	case SIOCSIFMTU:
+		
+		if (ifr->ifr_mtu == CAN_MTU) 
+			ifp->if_mtu = ifr->ifr_mtu;
+		else
+			error = EINVAL;
+			
+		break;
+	default:
+		error = EINVAL;
+		break;
+	}
+	return (error);
+}
+
+/*
  * Restart for bus-off recovery.
  */
 int 
@@ -349,6 +390,8 @@ done:
 	
 	return (error);
 }
+
+
 
 /*
  * Capture a CAN frame.
