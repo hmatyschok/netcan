@@ -492,7 +492,6 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 			error = EINVAL;
 			
 		break;	
-	switch (cmd) {
 	case SIOCGDRVSPEC:
 		error = can_get_netlink(ifp, ifd);
 		break;
