@@ -477,10 +477,12 @@ out:
 int
 can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
-	struct ifreq *ifr
+	struct ifreq *ifr;
+	struct ifdrv *ifd;
 	int error;
 
 	ifr = (struct ifreq *)data;
+	ifd = (struct ifdrv *)data;
 	error = 0;
 	
 	switch (cmd) {
