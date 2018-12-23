@@ -123,7 +123,11 @@
 
 static MALLOC_DEFINE(M_IFCAN, "IFCAN", "CAN interface internals");
 
+static int 	can_restart(struct ifnet *);
+static int 	can_get_netlink(struct ifnet *, struct ifdrv *);
+static int 	can_set_netlink(struct ifnet *, struct ifdrv *);
 static int 	can_set_timings(struct can_ifsoftc *);
+
 static void 	can_ifinput(struct ifnet *, struct mbuf *);
 static int 	can_ifoutput(struct ifnet *, struct mbuf *, 
 	const struct sockaddr *, struct route *);
@@ -317,47 +321,6 @@ can_ifinit_timings(struct can_ifsoftc *csc)
 }
 
 /*
- * Generic ioctl(2)s.
- */
-/* ARGSUSED */
-int
-can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
-{
-	struct ifreq *ifr
-	int error;
-
-	ifr = (struct ifreq *)data;
-	error = 0;
-	
-	switch (cmd) {
-	case SIOCGDRVSPEC:
-	case SIOCSDRVSPEC:
-	
-		switch (ifd->ifd_cmd) {
-		case CANSLINKTIMINGS:
-			
-			break;
-		default:
-			error = EINVAL;
-			break;
-		}
-		break;
-	case SIOCSIFMTU:
-		
-		if (ifr->ifr_mtu == CAN_MTU) 
-			ifp->if_mtu = ifr->ifr_mtu;
-		else
-			error = EINVAL;
-			
-		break;
-	default:
-		error = EINVAL;
-		break;
-	}
-	return (error);
-}
-
-/*
  * Restart for bus-off recovery.
  */
 int 
@@ -391,7 +354,157 @@ done:
 	return (error);
 }
 
+static int
+can_get_netlink(struct ifnet *ifp, struct ifdrv *ifd)
+{
+	struct can_ifsoftc *csc;
+	int error;
 
+	/* XXX */
+	
+	if (ifp->if_type == IFT_CAN) {
+		if ((csc = ifp->if_l2com) == NULL)
+			error = EOPNOTSUPP;
+		else
+			error = 0;
+	} else
+		error = EOPNOTSUPP;
+
+	if (error != 0)
+		goto out;
+
+	switch (ifd->ifd_cmd) {
+	case CANGLINKTIMECAP:
+		if (ifd->ifd_len != sizeof(struct can_link_timecaps)) 
+			error = EINVAL;
+		else
+			error = copyout(&csc->csc_timecaps, 
+				ifd->ifd_data, ifd->ifd_len);
+		break;
+	case CANGLINKTIMINGS:
+		if (ifd->ifd_len != sizeof(struct can_link_timings)) 
+			error = EINVAL;
+		else	
+			error = copyout(&csc->csc_timings, 
+				ifd->ifd_data, ifd->ifd_len);
+		break;
+	case CANGLINKMODE:
+		if (ifd->ifd_len != sizeof(uint32_t))
+			error = EINVAL;
+		else 
+			error = copyout(&csc->csc_linkmodes, 
+				ifd->ifd_data, ifd->ifd_len);
+		break;
+	default:
+		error = EOPNOTSUPP;
+		break;
+	}
+out:	
+	return (error);
+}
+
+static int
+can_set_netlink(struct ifnet *ifp, struct ifdrv *ifd)
+{
+	struct can_ifsoftc *csc;
+	uint32_t mode;
+	int error;
+
+	if ((ifp->if_flags & IFF_UP) != 0) {
+		error = ENETDOWN;
+		goto out;
+	}
+
+	/* XXX */	
+	
+	if (ifp->if_type == IFT_CAN) {
+		if ((csc = ifp->if_l2com) == NULL)
+			error = EOPNOTSUPP;
+		else
+			error = 0;
+	} else
+		error = EOPNOTSUPP;
+
+	if (error != 0)
+		goto out;
+		
+	switch (ifd->ifd_cmd) {
+	case CANSLINKTIMINGS:
+		if (ifd->ifd_len != sizeof(struct can_link_timings))
+			error = EINVAL;
+		else 
+			error = copyin(ifd->ifd_data, 
+				&csc->csc_timings, ifd->ifd_len);
+		
+		error = (*csc->csc_set_link_timings)(csc);
+		break;
+	case CANSLINKMODE:
+	case CANCLINKMODE: 	/* FALLTHROUGH */
+	
+		if (ifd->ifd_len != sizeof(uint32_t))
+			error = EINVAL;
+		else 	
+			error = copyin(ifd->ifd_data, &mode, ifd->ifd_len);
+		
+		if (error != 0)
+			break;
+			
+		if ((mode & csc->csc_timecaps.cltc_linkmode_caps) != mode) {
+			error = EINVAL;
+			break;	
+		}
+		
+		/* XXX: locking */
+		if (ifd->ifd_cmd == CANSLINKMODE)
+			csc->csc_linkmodes |= mode;
+		else
+			csc->csc_linkmodes &= ~mode;
+
+		break;
+	case CANSRESTART:
+		error = can_restart(ifp);
+		break;
+	default:
+		error = EOPNOTSUPP;
+		break;
+	}
+	
+out:	
+	return (error);
+}
+
+/* ARGSUSED */
+int
+can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
+{
+	struct ifreq *ifr
+	int error;
+
+	ifr = (struct ifreq *)data;
+	error = 0;
+	
+	switch (cmd) {
+	case SIOCSIFMTU:
+	
+		if (ifr->ifr_mtu == CAN_MTU) 
+			ifp->if_mtu = ifr->ifr_mtu;
+		else
+			error = EINVAL;
+			
+		break;	
+	switch (cmd) {
+	case SIOCGDRVSPEC:
+		error = can_get_netlink(ifp, ifd);
+		break;
+	case SIOCSDRVSPEC:
+		error = can_set_netlink(ifp, ifd);
+		break;
+	default:
+		error = EINVAL;
+		break;
+	}
+	return (error);
+}
 
 /*
  * Capture a CAN frame.

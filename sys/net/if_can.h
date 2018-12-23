@@ -335,6 +335,9 @@ struct can_link_timings {
 #define CANSLINKMODE	4 /* (uint32_t) set bits */
 #define CANCLINKMODE	5 /* (uint32_t) clear bits */
 
+/* restart device(9) */
+#define CANSRESTART		6
+
 /* link-level states */
 #define CAN_STATE_ERR_ACTIVE	0x00	/* RX/TX error count < 96 */
 #define CAN_STATE_ERR_WARN		0x01	/* RX/TX error count < 128 */
@@ -383,7 +386,6 @@ int 	can_hex2bin(u_char *, struct can_frame *);
 int 	can_id2hex(struct can_frame *, u_char *);
 int 	can_hex2id(u_char *, struct can_frame *);
 void 	can_mbuf_tag_clean(struct mbuf *);
-int 	can_restart(struct ifnet *);	/* XXX */
 
 /* interface-layer */
 void 	can_ifattach(struct ifnet *, can_set_timings_t);
