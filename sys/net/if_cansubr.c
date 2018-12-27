@@ -492,7 +492,7 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 			ifp->if_mtu = ifr->ifr_mtu;
 		else
 			error = EINVAL;
-			
+				
 		break;	
 	case SIOCGDRVSPEC:
 		error = can_get_netlink(ifp, ifd);

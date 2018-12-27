@@ -379,6 +379,9 @@ struct can_ifsoftc {
 	struct mtx	csc_mtx;
 	can_set_timings_t	csc_set_timings;
 };
+#define CSC_LOCK(csc)		mtx_lock(&(csc)->csc_mtx)
+#define	CSC_UNLOCK(csc)		mtx_unlock(&(csc)->csc_mtx)
+#define	CSC_LOCK_ASSERT(csc)	mtx_assert(&(csc)->csc_mtx, MA_OWNED)
 
 /* common subr. */
 int 	can_bin2hex(struct can_frame *, u_char *);
