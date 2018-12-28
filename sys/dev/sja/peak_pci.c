@@ -90,9 +90,10 @@
 #define PEAK_GPIO_ICR		0x18	/* GPIO interface control register */
 #define PEAK_MISC		0x1C		/* miscellaneous register */
 
-
 #define PEAK_CSID		0x2e	
 
+#define PEAK_CFG_SIZE		0x1000	/* Size of the config PCI bar */
+#define PEAK_CHAN_SIZE		0x0400	/* Size used by the channel */
 
 static const struct peak_type {
 	uint16_t 	pk_vid;
@@ -127,9 +128,13 @@ static const struct peak_type {
 struct peak_softc {
 	device_t 	pk_dev;
 	device_t 	pk_sja;
-	struct resource		*pk_res;
-	int			pk_res_id;
-	int			pk_res_type;
+	struct resource		*pk_cfg_res;
+	int			pk_cfg_res_id;
+	int			pk_cfg_res_type;
+	
+	struct resource		*pk_reg_res;
+	int			pk_reg_res_id;
+	int			pk_reg_res_type;
 	uint8_t			pk_revid;	/* revision control */
 /*
  * ...
@@ -175,7 +180,6 @@ DRIVER_MODULE(sja, peak, sja_driver, sja_devclass, 0, 0);
  * ...
  */
 
-
 static int
 peak_attach(device_t dev)
 {
@@ -199,19 +203,33 @@ peak_attach(device_t dev)
 		chan = PEAK_TRIPLE_CHAN;
 	else 
 		chan = PEAK_QUAD_CHAN;
+	
+	chan *= PEAK_CHAN_SIZE;	
 		
 	pci_write_config(dev, PCIR_COMMAND, 4, 2);
 	pci_write_config(dev, PCIR_PCCARDIF_2, 4, 0);	
 
-	/* map control / status registers */
+	/* map control registers and ports */
 	sc->pk_revid = pci_get_revid(dev); 
 	device_printf(dev, "Revision: 0x%x\n", sc->pk_revid);
 
-	sc->pk_res_id = PCIR_BAR(0);
-	sc->pk_res_type = SYS_RES_IOPORT;
-	sc->pk_res = bus_alloc_resource_any(dev, sc->pk_res_type,
-	    &sc->pk_res_id, RF_ACTIVE);
-	if (sc->pk_res == NULL) {
+	sc->pk_cfg_res_id = PCIR_BAR(0); 
+	sc->pk_cfg_res_type = SYS_RES_IOPORT;
+	sc->pk_cfg_res = bus_alloc_resource_anywhere(dev, 
+		sc->pk_cfg_res_type, &sc->pk_cfg_res_id, 
+			PEAK_CFG_SIZE, RF_ACTIVE);
+	if (sc->pk_cfg_res == NULL) {
+		device_printf(dev, "couldn't map CMR\n");
+		error = ENXIO;
+		goto fail;
+	}
+	
+	sc->pk_reg_res_id = PCIR_BAR(1);
+	sc->pk_reg_res_type = SYS_RES_IOPORT;
+	sc->pk_reg_res = bus_alloc_resource_anywhere(dev, 
+		sc->pk_reg_res_type, &sc->pk_reg_res_id, 
+			chan, RF_ACTIVE);
+	if (sc->pk_reg_res == NULL) {
 		device_printf(dev, "couldn't map ports\n");
 		error = ENXIO;
 		goto fail;
