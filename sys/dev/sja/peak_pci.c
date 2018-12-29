@@ -87,8 +87,12 @@
  */ 
 
 #define PEAK_ICR		0x00		/* interrupt control register */
+#define PEAK_ICR_CTL		0x03
 #define PEAK_GPIO_ICR		0x18	/* GPIO interface control register */
-#define PEAK_MISC		0x1C		/* miscellaneous register */
+#define PEAK_GPIO_ICR_CTL		0x20
+
+#define PEAK_MISC		0x1c		/* miscellaneous register */
+#define PEAK_MISC_CTL		0x1f
 
 #define PEAK_CSID		0x2e	
 
@@ -122,25 +126,53 @@ static const struct peak_type {
 		"PCAN-PCI Express 34 card (one channel)" },	
 };
 
+
+struct sja_resource {
+	device_t	sja_dev;
+	struct resource		*sja_res;
+};
+
+struct peak_channel {
+	device_t	pkc_sja;	
+};
+
 /*
  * Parent device(9) accessing e. g. PCI-BUS, etc.
  */
 struct peak_softc {
 	device_t 	pk_dev;
-	device_t 	pk_sja;
+
+	/* CSR mapping */
 	struct resource		*pk_cfg_res;
 	int			pk_cfg_res_id;
 	int			pk_cfg_res_type;
 	
+	/* channel mapping */
 	struct resource		*pk_reg_res;
 	int			pk_reg_res_id;
 	int			pk_reg_res_type;
-	uint8_t			pk_revid;	/* revision control */
-/*
- * ...
- */
+	
+	uint32_t	pk_chan_cnt;
+	
+	struct peak_channel		pk_chan[PEAK_QUAD_CHAN]; 
+	
 	struct mtx 	pk_mtx;
 };
+
+#define CSR_WRITE_1(sc, reg, val) \
+	bus_write_1((sc)->pk_cfg_res, reg, val)
+#define CSR_READ_1(sja, reg) \
+	bus_read_1((sc)->pk_cfg_res, reg, val)
+
+#define CSR_WRITE_2(sc, reg, val) \
+	bus_write_2((sc)->pk_cfg_res, reg, val)
+#define CSR_READ_2(sja, reg) \
+	bus_read_2((sc)->pk_cfg_res, reg, val)
+
+#define CSR_WRITE_4(sc, reg, val) \
+	bus_write_4((sc)->pk_cfg_res, reg, val)
+#define CSR_READ_4(sja, reg) \
+	bus_read_4((sc)->pk_cfg_res, reg, val)
 
 /*
  * ...
@@ -150,14 +182,21 @@ MODULE_DEPEND(peak, pci, 1, 1, 1);
 MODULE_DEPEND(peak, sja, 1, 1, 1); 
 MODULE_DEPEND(peak, can, 1, 1, 1);
 
+/* 
+ * Hooks for the operating system.
+ */
+static int	peak_pci_probe(device_t dev);
+static int	peak_pci_detach(device_t dev);
+static int	peak_pci_attach(device_t dev);
+
 /*
- * kobj(9) metod-table
+ * kobj(9) method-table
  */
 static device_method_t peak_methods[] = {
 	/* Device interface */
-	DEVMETHOD(device_probe, 	peak_probe),
-	DEVMETHOD(device_attach,	peak_attach),
-	DEVMETHOD(device_detach,	peak_detach),
+	DEVMETHOD(device_probe, 	peak_pci_probe),
+	DEVMETHOD(device_attach,	peak_pci_attach),
+	DEVMETHOD(device_detach,	peak_pci_detach),
 	DEVMETHOD_END
 };
 
@@ -174,37 +213,40 @@ static driver_t peak_driver = {
 static devclass_t peak_devclass;
 
 DRIVER_MODULE(peak, pci, peak_driver, peak_devclass, 0, 0);
-DRIVER_MODULE(sja, peak, sja_driver, sja_devclass, 0, 0);
 
 /*
  * ...
  */
 
 static int
-peak_attach(device_t dev)
+peak_pci_attach(device_t dev)
 {
 	struct peak_softc *sc;
-	uint32_t csid, chan;
-	int error;
+	uint32_t csid, cnt;
+	uint16_t icr;
+	int error, i;
 	
 	sc = device_get_softc(dev);
 	sc->pk_dev = dev;
-		
+
+	mtx_init(&sc->pk_mtx, device_get_nameunit(dev), 
+		MTX_NETWORK_LOCK, MTX_DEF);
+				
 	pci_enable_busmaster(dev);
 	
 	/* determine cardinality of given channels */
 	csid = pci_read_config(dev, PCIR_SUBDEV_0, 4);
 
 	if (csid < PEAK_SUBDEV_DUAL_CHAN)	 /* 0x0004 */
-		chan = PEAK_UNI_CHAN;
+		pk->pk_chan_cnt = PEAK_UNI_CHAN;
 	else if (csid < PEAK_SUBDEV_TRIPLE_CHAN) 	/* 0x0010 */
-		chan = PEAK_DUAL_CHAN;
+		pk->pk_chan_cnt = PEAK_DUAL_CHAN;
 	else if (csid < PEAK_SUBDEV_QUAD_CHAN) 	/* 0x0012 */
-		chan = PEAK_TRIPLE_CHAN;
+		pk->pk_chan_cnt = PEAK_TRIPLE_CHAN;
 	else 
-		chan = PEAK_QUAD_CHAN;
+		pk->pk_chan_cnt = PEAK_QUAD_CHAN;
 	
-	chan *= PEAK_CHAN_SIZE;	
+	cnt = pk->pk_chan_cnt * PEAK_CHAN_SIZE;	
 		
 	pci_write_config(dev, PCIR_COMMAND, 4, 2);
 	pci_write_config(dev, PCIR_PCCARDIF_2, 4, 0);	
@@ -228,29 +270,61 @@ peak_attach(device_t dev)
 	sc->pk_reg_res_type = SYS_RES_IOPORT;
 	sc->pk_reg_res = bus_alloc_resource_anywhere(dev, 
 		sc->pk_reg_res_type, &sc->pk_reg_res_id, 
-			chan, RF_ACTIVE);
+			cnt, RF_ACTIVE);
 	if (sc->pk_reg_res == NULL) {
 		device_printf(dev, "couldn't map ports\n");
 		error = ENXIO;
-		goto fail;
+		goto fail1;
 	}
+
+	/* set-up GPIO control register, if any */
+	CSR_WRITE_2(sc, PEAK_GPIO_ICR_CTL, 0x0005); /* XXX: namespace???? */
+	
+	/* enable all channels, if any */
+	CSR_WRITE_1(sc, PEAK_GPIO_ICR, 0x00);
+	
+	/* toggle reset */
+	CSR_WRITE_1(sc, PEAK_MISC_CTL, 0x05);
+	DELAY(60);
+	
+	/* leave parport mux mode */
+	CSR_WRITE_1(sc, PEAK_MISC_CTL, 0x04);
+	icr = CSR_READ_2(sc, PEAK_ICR_CTL);
+
+	/* attach set of SJA1000 controller as its children */		
+	for (i = 0; i < pk->pk_chan_cnt; i++) { 
+		pk->pk_chan[i].pkc_sja = device_add_child(dev, "sja", -1); 
+		if (pk->pk_chan[i].pkc_sja == NULL) {
+			device_printf(dev, "couldn't map channels");
+			error = ENXIO;
+			goto fail3;
+		}
 /*
  * ...
- */
-	mtx_init(&sc->pk_mtx, device_get_nameunit(dev), 
-		MTX_NETWORK_LOCK, MTX_DEF);
-
+ */		
+		
+	}
+	
+	/* enable interrupts */
+	CSR_WRITE_2(sc, PEAK_ICR_CTL, icr);
 out:	
 	return (error);
+fail3: /* XXX: redundant code */	
+	for (cnt = i; i = 0; i < cnt; i++) {
+		device_delete_child(dev, sc->pk_chan[i].pkc_sja);
+		sc->pk_chan[i].pkc_sja = NULL;
+	}
+fail2:
+	bus_release_resources(dev, sc->pk_reg_res_type, sc->pk_reg_res);
+fail1:	
+	bus_release_resources(dev, sc->pk_cfg_res_type, sc->pk_cfg_res);
 fail:
-/*
- * ...
- */ 
+	mtx_destroy(&sc->pk_mtx);
 	goto out;
 }
 
 static int
-peak_probe(device_t dev)
+peak_pci_probe(device_t dev)
 {
 	const struct peak_type	*t;
 	uint16_t devid, vendor;
@@ -275,3 +349,31 @@ peak_probe(device_t dev)
  * ...
  */
 
+static int
+peak_pci_detach(device_t dev)
+{
+	struct peak_softc *sc;
+	int i;
+ 
+	sc = device_get_softc(dev);
+ 
+	/* disable interrupts */
+	CSR_WRITE_2(sc, PEAK_ICR_CTL, 0x0000);
+ 
+	/* detach any channel */
+	for (i = 0; i < sc->pk_chan_cnt; i++) {
+		if (sc->pk_chan[i].pkc_sja != NULL) {
+			device_delete_child(dev, sc->pk_chan[i].pkc_sja);
+			sc->pk_chan[i].pkc_sja = NULL;
+		}
+	}
+	bus_generic_detach(dev);
+	
+	/* release bound resources */
+	bus_release_resources(dev, sc->pk_reg_res_type, sc->pk_reg_res);	
+	bus_release_resources(dev, sc->pk_cfg_res_type, sc->pk_cfg_res);
+	
+	mtx_destroy(&sc->pk_mtx);
+
+	return (0);
+}
