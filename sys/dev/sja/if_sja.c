@@ -75,10 +75,6 @@ static driver_t sja_driver = {
 
 static devclass_t sja_devclass;
 
-/*
- * ...
- */
-
 static int 
 sja_attach(device_t dev)
 {
@@ -88,12 +84,20 @@ sja_attach(device_t dev)
 	int error, rid;
 	
 	sja = device_get_softc(dev);
+	sja->sja_dev = dev; 
+	
 	sc = device_get_ivar(dev);
+	sja->sja_csr = sc->sja_csr;
+	sja->sja_res = sc->sja_res;
+	sja->sja_base = sc->sja_base;
+	
+	mtx_init(&sja->sja_mtx, device_get_nameunit(dev), 
+		MTX_NETWORK_LOCK, MTX_DEF);	
 	
 	if ((ifp = sja->sja_ifp = if_alloc(IFT_CAN)) == NULL) {
 		device_printf(dev, "couldn't if_alloc(9)\n");
 		error = ENOSPC;
-		goto bad;
+		goto fail;
 	}
 	ifp->if_softc = sja;
 	
@@ -113,12 +117,6 @@ sja_attach(device_t dev)
 	ifp->if_snd.ifq_drv_maxlen = SJA_IFQ_MAXLEN;
 	IFQ_SET_READY(&ifp->if_snd);
 
-	sja->sja_dev = dev; 
-	
-	sja->sja_csr = sc->sja_csr;
-	sja->sja_res = sc->sja_res;
-	sja->sja_base = sc->sja_base;
-
 	TASK_INIT(&sja->sja_intr_task, 0, sja_intr_task, sja);
 
 	error = bus_setup_intr(dev, sja->sja_res, 
@@ -128,14 +126,11 @@ sja_attach(device_t dev)
 	if (error != 0) {
 		device_printf(dev, "couldn't set up irq\n");
 		can_ifdetach(ifp);
-		goto bad;
+		goto fail;
 	}
-	
-	mtx_init(&sja->sja_mtx, device_get_nameunit(dev), 
-		MTX_NETWORK_LOCK, MTX_DEF);	
 out: 
 	return (error);
-bad:
+fail:
 	sja_detach(dev);
 	goto out;
 }
