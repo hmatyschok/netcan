@@ -42,8 +42,6 @@
 
 #include <dev/sja/if_sjareg.h>
 
-MODULE_VERSION(sja, 1);
-
 /*
  * can(4) link timing capabilities 
  */
@@ -876,3 +874,5 @@ sja_set_link_timings(struct can_ifsoftc *csc)
 
 	return (0);
 }
+
+MODULE_VERSION(sja, 1);
