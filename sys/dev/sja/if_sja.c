@@ -68,18 +68,9 @@ static device_method_t sja_methods[] = {
 	DEVMETHOD(device_probe, 	sja_probe),
 	DEVMETHOD(device_attach,	sja_attach),
 	DEVMETHOD(device_detach,	sja_detach),
-	DEVMETHOD(device_shutdown,	bus_generic_shutdown),
-
-	/* sja(4) interface */
-	DEVMETHOD(sja_readreg,	sja_readreg),
-	DEVMETHOD(sja_writereg,	sja_writereg),
-
 	DEVMETHOD_END
 };
 
-/*
- * ...
- */
 
 static driver_t sja_driver = {
 	"sja",
@@ -97,32 +88,13 @@ static int
 sja_attach(device_t dev)
 {
 	struct sja_softc *sja;
+	struct sja_chan *sc;
 	struct ifnet *ifp;
 	int error, rid;
 	
 	sja = device_get_softc(dev);
-	sja->sja_dev = dev;
+	sc = device_get_ivar(dev);
 	
-	mtx_init(&sja->sja_mtx, device_get_nameunit(dev), 
-		MTX_NETWORK_LOCK, MTX_DEF);
-	
-	error = 0;
-	
-/*
- * ...
- */	
-	rid = 0;
-	sja->sja_irq = bus_alloc_resource_any(dev, SYS_RES_IRQ, &rid,
-	    RF_SHAREABLE | RF_ACTIVE);
-
-	if (sja->sja_irq == NULL) {
-		device_printf(dev, "couldn't map interrupt\n");
-		error = ENXIO;
-		goto bad;
-	}
-/*
- * ...
- */	 
 	if ((ifp = sja->sja_ifp = if_alloc(IFT_CAN)) == NULL) {
 		device_printf(dev, "couldn't if_alloc(9)\n");
 		error = ENOSPC;
@@ -133,6 +105,7 @@ sja_attach(device_t dev)
 	if_initname(ifp, device_get_name(dev), device_get_unit(dev));
 	
 	ifp->if_flags = (IFF_BROADCAST | IFF_SIMPLEX | IFF_MULTICAST);
+	
 	ifp->if_init = sja_init;
 	ifp->if_start = sja_start;
 	ifp->if_ioctl = sja_ioctl;
@@ -145,12 +118,15 @@ sja_attach(device_t dev)
 	ifp->if_snd.ifq_drv_maxlen = SJA_IFQ_MAXLEN;
 	IFQ_SET_READY(&ifp->if_snd);
 
+	sja->sja_dev = dev; 
+	
+	sja->sja_csr = sc->sja_csr;
+	sja->sja_res = sc->sja_res;
+	sja->sja_base = sc->sja_base;
+
 	TASK_INIT(&sja->sja_intr_task, 0, sja_intr_task, sja);
 
- /*
-  * ...
-  */
-	error = bus_setup_intr(dev, sja->sja_irq, 
+	error = bus_setup_intr(dev, sja->sja_res, 
 		INTR_TYPE_NET | INTR_MPSAFE, sja_intr, 
 			NULL, sja, &sja->sja_intr_hand);
 
@@ -158,13 +134,44 @@ sja_attach(device_t dev)
 		device_printf(dev, "couldn't set up irq\n");
 		can_ifdetach(ifp);
 		goto bad;
-	} 
+	}
 	
+	mtx_init(&sja->sja_mtx, device_get_nameunit(dev), 
+		MTX_NETWORK_LOCK, MTX_DEF);	
 out: 
 	return (error);
 bad:
 	sja_detach(dev);
 	goto out;
+}
+
+static int
+sja_detach(device_t dev)
+{
+	struct sja_softc *sja;
+	struct ifnet *ifp;
+
+	sja = device_get_softc(dev);
+	ifp = sja->sja_ifp;
+
+	if (device_is_attached(dev) != 0) {
+		SJA_LOCK(sja);
+		sja_stop(sja);
+		SJA_UNLOCK(sja);
+		mtx_destroy(&sja->sja_mtx);
+		taskqueue_drain(taskqueue_fast, &sja->sja_intr_task);
+		can_ifdetach(ifp);
+	}
+	
+	if (sja->sja_intr_hand != NULL) {
+		bus_teardown_intr(dev, sja->sja_res, sja->sja_intr_hand);
+		sja->sja_intr_hand = NULL;
+	}
+	
+	if (ifp != NULL)
+		if_free(ifp);
+	
+	return (0);
 }
 
 /*
@@ -698,6 +705,7 @@ sja_stop(struct sja_softc *sja)
 {
 	struct ifnet *ifp;
 	
+	SJA_LOCK_ASSERT(sja);
 	ifp = sja->sja_ifp;
 
 	ifp->if_drv_flags |= ~(IFF_DRV_RUNNNING | IFF_DRV_OACTIVE);
