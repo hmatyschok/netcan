@@ -131,7 +131,7 @@ sja_attach(device_t dev)
 out: 
 	return (error);
 fail:
-	sja_detach(dev);
+	(void)sja_detach(dev);
 	goto out;
 }
 

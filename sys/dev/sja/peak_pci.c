@@ -300,7 +300,7 @@ peak_pci_attach(device_t dev)
 out:	
 	return (error);
 fail:
-	peak_pci_detach(dev);
+	(void)peak_pci_detach(dev);
 	goto out;
 }
 
