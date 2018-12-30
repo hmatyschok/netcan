@@ -44,8 +44,6 @@
 
 MODULE_VERSION(sja, 1);
 
-#include "sja_if.h"
-
 /*
  * can(4) link timing capabilities 
  */
