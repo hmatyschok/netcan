@@ -47,9 +47,9 @@ MODULE_VERSION(sja, 1);
 #include "sja_if.h"
 
 /*
- * CAN link timing capabilities 
+ * can(4) link timing capabilities 
  */
-struct can_link_timecaps sja_timecaps = {
+static const struct can_link_timecaps sja_timecaps = {
 	.cltc_ps1_min =		1,
 	.cltc_ps1_max =		16,
 	.cltc_ps2_min =		1,
@@ -70,7 +70,6 @@ static device_method_t sja_methods[] = {
 	DEVMETHOD(device_detach,	sja_detach),
 	DEVMETHOD_END
 };
-
 
 static driver_t sja_driver = {
 	"sja",
@@ -263,7 +262,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	status = CSR_READ_1(sja, SJA_SR);	
 	
 	/*  error passive / warning condition */
-	if (intr & (SJA_IR_EP|SJA_IR_EW)) {	
+	if (intr & (SJA_IR_EP | SJA_IR_EW)) {	
 	
 		if (status & SJA_SR_BS)
 			flags = CAN_STATE_BUS_OFF;
@@ -303,7 +302,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	if (intr & SJA_IR_BE) {
 		flags = CSR_READ_1(sja, SJA_ECC);
 
-		cf->can_id |= (CAN_ERR_PROTO|CAN_ERR_BE);
+		cf->can_id |= (CAN_ERR_PROTO | CAN_ERR_BE);
 
 		/* map error condition, if any */
 		if ((flags & SJA_ECC_ERR_MASK) == SJA_ECC_BE)
