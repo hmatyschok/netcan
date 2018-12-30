@@ -307,21 +307,23 @@
 /*
  * XXX: work in progress..
  */
+ 
+
+struct sja_chan {
+	device_t	sja_dev;
+	struct resource		*sja_csr;
+	struct resource		*sja_res;
+	int			sja_res_id;
+	int			sja_res_type;
+	uint8_t		sja_base;
+};
 
 struct sja_softc {
 	struct ifnet	*sja_ifp;		/* generic ifnet(9) glue */
-	device_t	sja_dev;		/* generic device(9) glue */
-	TAILQ_ENTRY(sja_softc) sja_list; 	/* entry on parent's PHY list */
-	struct resource	*sja_res;	/* register resource */
-	int		sja_res_id;
-	int		sja_res_type;
-	uint8_t		sja_cdr;		/* clock divider reqister */
-	uint8_t		sja_ocr;		/* output control register */
+	device_t	sja_dev;
+	struct resource		*sja_csr;
+	struct resource		*sja_res;
 	uint8_t		sja_base;
-/*
- * ...
- */	
-	struct resource	*sja_irq; /* XXX */
 	void	*sja_intr_hand;
 	struct task	sja_intr_task;
 	struct mtx	sja_mtx;
