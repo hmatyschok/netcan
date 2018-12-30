@@ -174,10 +174,6 @@ static device_method_t peak_pci_methods[] = {
 	DEVMETHOD_END
 };
 
-/*
- * ...
- */
-
 static driver_t peak_pci_driver = {
 	"peak_pci",
 	peak_pci_methods,
@@ -186,7 +182,7 @@ static driver_t peak_pci_driver = {
 
 static devclass_t peak_pci_devclass;
 
-DRIVER_MODULE(peak, pci, peak_pci_driver, peak_pci_devclass, 0, 0);
+DRIVER_MODULE(peak_pci, pci, peak_pci_driver, peak_pci_devclass, 0, 0);
 
 static int
 peak_pci_probe(device_t dev)
@@ -251,7 +247,7 @@ peak_pci_attach(device_t dev)
 	if (sc->pk_res == NULL) {
 		device_printf(dev, "couldn't map CMR\n");
 		error = ENXIO;
-		goto bad;
+		goto fail;
 	}
 	
 	for (i = 0; i < pk->pk_chan_cnt; i++) { 
@@ -268,7 +264,7 @@ peak_pci_attach(device_t dev)
 		if (sja->sja_res == NULL) {
 			device_printf(dev, "couldn't map port\n");
 			error = ENXIO;
-			goto bad1;
+			goto fail;
 		}
 	}	
 	
@@ -294,7 +290,7 @@ peak_pci_attach(device_t dev)
 		if (sja->sja_dev == NULL) {
 			device_printf(dev, "couldn't map channels");
 			error = ENXIO;
-			goto bad3;
+			goto fail;
 		}
 		device_set_ivars(sja->sja_dev, sja);
 	}
@@ -303,22 +299,8 @@ peak_pci_attach(device_t dev)
 	CSR_WRITE_2(sc, PEAK_ICR + 2, icr);
 out:	
 	return (error);
-bad3:	
-	for (i = 0; i < sc->pk_chan_cnt; i++) {
-		sja = &sc->pk_chan[i];
-		
-		if (sja->sja_dev != NULL)
-			device_delete_child(dev, sja->sja_dev);
-	}
-bad2:
-	for (i = 0; i < sc->pk_chan_cnt; i++) {
-		sja = &sc->pk_chan[i];
-		bus_release_resources(dev, sja->sja_res_type, sja->sja_res);
-	}
-bad1:	
-	bus_release_resources(dev, sc->pk_res_type, sc->pk_res);
-bad:
-	free(sc->pk_chan, M_DEVBUF);
+fail:
+	peak_pci_detach(dev);
 	goto out;
 }
 
@@ -334,19 +316,29 @@ peak_pci_detach(device_t dev)
 	/* disable interrupts */
 	CSR_WRITE_2(sc, PEAK_ICR_CTL, 0x0000);
  
-	/* detach any channel */
+	/* detach each channel, if any */
 	for (i = 0; i < sc->pk_chan_cnt; i++) {
 		sja = &sc->pk_chan[i];
-		device_delete_child(dev, sja->sja_dev);
+		
+		if (sja->sja_dev != NULL)
+			device_delete_child(dev, sja->sja_dev);
 	}
 	bus_generic_detach(dev);
 	
 	/* release bound resources */
 	for (i = 0; i < sc->pk_chan_cnt; i++) {
 		sja = &sc->pk_chan[i];
-		bus_release_resources(dev, sja->sja_res_type, sja->sja_res);
-	}	
-	bus_release_resources(dev, sc->pk_res_type, sc->pk_res);
+			
+		if (sja->sja_res != NULL) {
+			bus_release_resources(dev, sja->sja_res_type, 
+				sja->sja_res);
+		}
+	}
+	
+	if (sc->pk_res != NULL)
+		bus_release_resources(dev, sc->pk_res_type, sc->pk_res);
+	
+	free(sc->pk_chan, M_DEVBUF);
 	
 	return (0);
 }
