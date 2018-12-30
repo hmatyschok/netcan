@@ -187,9 +187,9 @@ sja_intr(void *arg)
 	
 	sc = (struct sja_softc *)arg;
 	
-	intr = CSR_READ_1(sja, SJA_IR);
+	status = CSR_READ_1(sja, SJA_IR);
 	
-	if (intr == SJA_IR_OFF)  
+	if (status == SJA_IR_OFF)  
 		error = FILTER_STRAY;
 	else {
 		taskqueue_enqueue(taskqueue_fast, &sja->sja_intr_task);
@@ -203,7 +203,7 @@ sja_intr_task(void *arg)
 {
 	struct sja_softc *sja;
 	struct ifnet *ifp;
-	uint8_t intr;
+	uint8_t status;
 	int n;
 	
 	sja = arg;
@@ -215,18 +215,18 @@ sja_intr_task(void *arg)
 	if (ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
 		goto done;
 	
-	intr = CSR_READ_1(sja, SJA_IR);
+	status = CSR_READ_1(sja, SJA_IR);
 
-	for (n = 0; intr != SJA_IR_OFF && n < 6; n++) { 
+	for (n = 0; status != SJA_IR_OFF && n < 6; n++) { 
 		
-		if (intr & SJA_IR_RX)
+		if (status & SJA_IR_RX)
 			sja_rxeof(sja);
 			
-		if (intr & SJA_IR_TX)
+		if (status & SJA_IR_TX)
 			sja_txeof(sja);
 			
-		if (intr & SJA_IR_ERR) {
-			if (sja_error(sja, intr) != 0)
+		if (status & SJA_IR_ERR) {
+			if (sja_error(sja, status) != 0)
 				break;
 		}
 		intr = CSR_READ_1(sja, SJA_IR);	
