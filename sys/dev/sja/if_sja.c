@@ -173,12 +173,14 @@ sja_detach(device_t dev)
 		sja_stop(sja);
 		SJA_UNLOCK(sja);
 		mtx_destroy(&sja->sja_mtx);
-		taskqueue_drain(taskqueue_fast, &sja->sja_intr_task);
+		taskqueue_drain(taskqueue_fast, 
+			&sja->sja_intr_task);
 		can_ifdetach(ifp);
 	}
 	
 	if (sja->sja_intr_hand != NULL) {
-		bus_teardown_intr(dev, sja->sja_res, sja->sja_intr_hand);
+		(void)bus_teardown_intr(dev, sja->sja_res, 
+			sja->sja_intr_hand);
 		sja->sja_intr_hand = NULL;
 	}
 	

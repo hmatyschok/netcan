@@ -166,7 +166,7 @@ peak_pci_attach(device_t dev)
 	sc = device_get_softc(dev);
 	sc->pk_dev = dev;
 	
-	pci_enable_busmaster(dev);
+	(void)pci_enable_busmaster(dev);
 	
 	/* determine cardinality of given channels */
 	csid = pci_read_config(dev, PCIR_SUBDEV_0, 4);
@@ -269,22 +269,22 @@ peak_pci_detach(device_t dev)
 		sja = &sc->pk_chan[i];
 		
 		if (sja->sja_dev != NULL)
-			device_delete_child(dev, sja->sja_dev);
+			(void)device_delete_child(dev, sja->sja_dev);
 	}
-	bus_generic_detach(dev);
+	(void)bus_generic_detach(dev);
 	
 	/* release bound resources */
 	for (i = 0; i < sc->pk_chan_cnt; i++) {
 		sja = &sc->pk_chan[i];
 			
 		if (sja->sja_res != NULL) {
-			bus_release_resources(dev, sja->sja_res_type, 
+			(void)bus_release_resource(dev, sja->sja_res_type, 
 				sja->sja_res);
 		}
 	}
 	
 	if (sc->pk_res != NULL)
-		bus_release_resources(dev, sc->pk_res_type, sc->pk_res);
+		(void)bus_release_resource(dev, sc->pk_res_type, sc->pk_res);
 	
 	free(sc->pk_chan, M_DEVBUF);
 	
