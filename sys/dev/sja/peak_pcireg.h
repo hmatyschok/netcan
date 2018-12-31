@@ -63,8 +63,23 @@
 #define PEAK_MISC		0x1c		/* miscellaneous register */
 #define PEAK_CSID		0x2e	
 
+/*
+ * ...
+ */
+
 #define PEAK_CFG_SIZE		0x1000	/* Size of the config PCI bar */
 #define PEAK_CHAN_SIZE		0x0400	/* Size used by the channel */
+
+/*
+ * ...
+ */
+
+#define PEAK_GPIO_ICR_INIT		0x0005
+#define PEAK_GPIO_ICR_START		0x00
+
+#define PEAK_MISC_TOG_RST		0x05
+
+#define PEAK_MISC_PMUX_STOP		0x04
 
 /*
  * Parent device(9) accessing e. g. PCI-BUS, etc.
