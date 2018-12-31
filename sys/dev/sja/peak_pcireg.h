@@ -80,16 +80,13 @@
  * ...
  */
 
-#define PEAK_GPIO_IC_CR_INIT		0x0005
-#define PEAK_GPIO_IC_CR_START		0x00
+#define PEAK_GPIO_ICCR_INIT		0x0005
+#define PEAK_GPIO_ICCR_START		0x00
 
 #define PEAK_MISC_CR_TOG_RST		0x05
 
 #define PEAK_MISC_CR_PP_EPP		0x04
 
-/*
- * Parent device(9) accessing e. g. PCI-BUS, etc.
- */
 struct peak_softc {
 	device_t 	pk_dev;
 	struct resource		*pk_res;

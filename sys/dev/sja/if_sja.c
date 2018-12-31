@@ -105,7 +105,7 @@ sja_attach(device_t dev)
 	struct sja_softc *sja;
 	struct sja_chan *sc;
 	struct ifnet *ifp;
-	int error, rid;
+	int rid, error;
 	
 	sja = device_get_softc(dev);
 	sja->sja_dev = dev; 

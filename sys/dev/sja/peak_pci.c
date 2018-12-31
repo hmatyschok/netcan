@@ -67,9 +67,9 @@
 	bus_read_4((sc)->pk_res, reg, val)
 
 /*
- * Backend for device(9) driver on pci(4) 
- * bus for PEAK Systems can(4) adapter.
- * 
+ * Implements proxy pattern on pci(4) bus 
+ * for instances of the sja(4) contoller.
+ *
  * XXX: Well, work on progess ...
  */
 
@@ -161,7 +161,7 @@ peak_pci_attach(device_t dev)
 	struct sja_chan *sja;
 	uint32_t csid, cnt;
 	uint16_t icr;
-	int error = 0, i;
+	int i, error = 0;
 	
 	sc = device_get_softc(dev);
 	sc->pk_dev = dev;
@@ -217,10 +217,10 @@ peak_pci_attach(device_t dev)
 	}	
 	
 	/* set-up GPIO control register, if any */
-	CSR_WRITE_2(sc, PEAK_GPIO_ICCR, PEAK_GPIO_IC_CR_INIT);
+	CSR_WRITE_2(sc, PEAK_GPIO_ICCR, PEAK_GPIO_ICCR_INIT);
 	
 	/* enable all channels, if any */
-	CSR_WRITE_1(sc, PEAK_GPIO_ICR, PEAK_GPIO_ICR_START);
+	CSR_WRITE_1(sc, PEAK_GPIO_ICR, PEAK_GPIO_ICCR_START);
 	
 	/* toggle reset */
 	CSR_WRITE_1(sc, PEAK_MISC_CR, PEAK_MISC_CR_TOG_RST);
