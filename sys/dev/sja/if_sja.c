@@ -254,13 +254,13 @@ done:
 static int 
 sja_error(struct sja_softc *sja, uint8_t intr)
 {
-	int error = 0;
 	struct ifnet *ifp;
 	struct can_ifsoftc *csc;
  	struct mbuf *m;
  	struct can_frame *cf;
 	uint8_t status;
 	uint8_t flags;
+	int error = 0;
 	
 	SJA_LOCK_ASSERT(sja);
 	ifp = sja->sja_ifp;
@@ -358,7 +358,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	/* pass CAN frame to upper layer */
 	SJA_UNLOCK(sja);
 	(*ifp->if_input)(ifp, m);
-	SJA_LOCK(sja)
+	SJA_LOCK(sja);
 done:
 	return (error);
 }
@@ -497,7 +497,7 @@ sja_start_locked(struct ifnet *ifp)
 }
 
 /*
- * Copy CAN frame into TX buffer.
+ * Copy can(4) frame into TX buffer.
  */
 static void 
 sja_encap(struct sja_softc *sja, struct mbuf *mp)
@@ -547,7 +547,7 @@ sja_encap(struct sja_softc *sja, struct mbuf *mp)
 		
 		addr = SJA_DATA_EFF;
 	} else {
-		cf->can_id &= CAN_EFF_MASK;
+		cf->can_id &= CAN_SFF_MASK;
 		cf->can_id <<= 5;
 		
 		CSR_WRITE_2(sja, SJA_ID, cf->can_id);
