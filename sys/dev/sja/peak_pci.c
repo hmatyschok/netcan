@@ -51,6 +51,21 @@
 #include <dev/sja/if_sjareg.h>
 #include <dev/sja/peak_pcireg.h>
 
+#define CSR_WRITE_1(sc, reg, val) \
+	bus_write_1((sc)->pk_res, reg, val)
+#define CSR_READ_1(sja, reg) \
+	bus_read_1((sc)->pk_res, reg, val)
+
+#define CSR_WRITE_2(sc, reg, val) \
+	bus_write_2((sc)->pk_res, reg, val)
+#define CSR_READ_2(sja, reg) \
+	bus_read_2((sc)->pk_res, reg, val)
+
+#define CSR_WRITE_4(sc, reg, val) \
+	bus_write_4((sc)->pk_res, reg, val)
+#define CSR_READ_4(sja, reg) \
+	bus_read_4((sc)->pk_res, reg, val)
+
 /*
  * Backend for device(9) driver on pci(4) 
  * bus for PEAK Systems can(4) adapter.

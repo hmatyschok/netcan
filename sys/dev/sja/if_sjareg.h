@@ -331,28 +331,3 @@ struct sja_softc {
 #define	SJA_LOCK(sja)		mtx_lock(&(sja)->sja_mtx)
 #define	SJA_UNLOCK(sja)		mtx_unlock(&(sja)->sja_mtx)
 #define	SJA_LOCK_ASSERT(sja)	mtx_assert(&(sja)->sja_mtx, MA_OWNED)
-
-/* accessor-macros */
-#define CSR_WRITE_1(sja, reg, val) \
-	bus_write_1((sja)->sja_res, (reg << (sja)->sja_base), val)
-#define CSR_READ_1(sja, reg) \
-	bus_read_1((sja)->sja_res, (reg << (sja)->sja_base))
-#define SJA_SETBIT(sja, reg, x) \
-	CSR_WRITE_1(sja, reg, CSR_READ_1(sja, reg) | (x))
-#define SJA_CLRBIT(sc, reg, x) \
-	CSR_WRITE_1(sja, reg, CSR_READ_1(sja, reg) & ~(x))
-
-#define CSR_WRITE_2(sja, reg, val) \
-	bus_write_2((sja)->sja_res, (reg << (sja)->sja_base), val)
-#define CSR_READ_2(sja, reg) \
-	bus_read_2((sja)->sja_res, (reg << (sja)->sja_base))
-
-#define CSR_WRITE_4(sja, reg, val) \
-	bus_write_4((sja)->sja_res, (reg << (sja)->sja_base), val)
-#define CSR_READ_4(sja, reg) \
-	bus_read_4((sja)->sja_res, (reg << (sja)->sja_base))
-
-/* utility-macros */
-#define	sja_timercmp(tvp, uvp, val)	\
-	(((uvp)->tv_sec - (tvp)->tv_sec) < (val))
-
