@@ -227,7 +227,7 @@ peak_pci_attach(device_t dev)
 	DELAY(60);
 	
 	/* leave parport mux mode */
-	CSR_WRITE_1(sc, PEAK_MISC + 3, PEAK_MISC_PMUX_STOP);
+	CSR_WRITE_1(sc, PEAK_MISC + 3, PEAK_MISC_PP_EPP);
 	icr = CSR_READ_2(sc, PEAK_ICR + 2);
 
 	/* attach set of SJA1000 controller as its children */		

@@ -79,7 +79,7 @@
 
 #define PEAK_MISC_TOG_RST		0x05
 
-#define PEAK_MISC_PMUX_STOP		0x04
+#define PEAK_MISC_PP_EPP		0x04
 
 /*
  * Parent device(9) accessing e. g. PCI-BUS, etc.
