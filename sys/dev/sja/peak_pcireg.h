@@ -59,8 +59,14 @@
  */ 
 
 #define PEAK_ICR		0x00		/* interrupt control register */
+#define PEAK_ICCR		0x02		/*   clear command register */
+
 #define PEAK_GPIO_ICR		0x18	/* GPIO interface control register */
+#define PEAK_GPIO_ICCR		0x1a	/*   clear command register */
+
 #define PEAK_MISC		0x1c		/* miscellaneous register */
+#define PEAK_MISC_CR		0x1f	/*   command register */
+
 #define PEAK_CSID		0x2e	
 
 /*
@@ -74,12 +80,12 @@
  * ...
  */
 
-#define PEAK_GPIO_ICR_INIT		0x0005
-#define PEAK_GPIO_ICR_START		0x00
+#define PEAK_GPIO_IC_CR_INIT		0x0005
+#define PEAK_GPIO_IC_CR_START		0x00
 
-#define PEAK_MISC_TOG_RST		0x05
+#define PEAK_MISC_CR_TOG_RST		0x05
 
-#define PEAK_MISC_PP_EPP		0x04
+#define PEAK_MISC_CR_PP_EPP		0x04
 
 /*
  * Parent device(9) accessing e. g. PCI-BUS, etc.

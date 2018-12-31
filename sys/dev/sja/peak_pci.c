@@ -217,18 +217,18 @@ peak_pci_attach(device_t dev)
 	}	
 	
 	/* set-up GPIO control register, if any */
-	CSR_WRITE_2(sc, PEAK_GPIO_ICR + 2, PEAK_GPIO_ICR_INIT);
+	CSR_WRITE_2(sc, PEAK_GPIO_ICCR, PEAK_GPIO_IC_CR_INIT);
 	
 	/* enable all channels, if any */
 	CSR_WRITE_1(sc, PEAK_GPIO_ICR, PEAK_GPIO_ICR_START);
 	
 	/* toggle reset */
-	CSR_WRITE_1(sc, PEAK_MISC + 3, PEAK_MISC_TOG_RST);
+	CSR_WRITE_1(sc, PEAK_MISC_CR, PEAK_MISC_CR_TOG_RST);
 	DELAY(60);
 	
 	/* leave parport mux mode */
-	CSR_WRITE_1(sc, PEAK_MISC + 3, PEAK_MISC_PP_EPP);
-	icr = CSR_READ_2(sc, PEAK_ICR + 2);
+	CSR_WRITE_1(sc, PEAK_MISC_CR, PEAK_MISC_CR_PP_EPP);
+	icr = CSR_READ_2(sc, PEAK_ICCR);
 
 	/* attach set of SJA1000 controller as its children */		
 	for (i = 0; i < pk->pk_chan_cnt; i++) { 
@@ -244,7 +244,7 @@ peak_pci_attach(device_t dev)
 	}
 	
 	/* enable interrupts */
-	CSR_WRITE_2(sc, PEAK_ICR + 2, icr);
+	CSR_WRITE_2(sc, PEAK_ICCR, icr);
 out:	
 	return (error);
 fail:
