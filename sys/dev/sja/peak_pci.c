@@ -40,10 +40,6 @@
 #include <net/if_var.h>
 #include <net/if_types.h>
 
-/*
- * XXX: Well, work on progess ...
- */
-
 #include <machine/bus.h>
 #include <machine/resource.h>
 #include <sys/bus.h>
@@ -52,47 +48,19 @@
 #include <dev/pci/pcireg.h>
 #include <dev/pci/pcivar.h>
 
+#include <dev/sja/if_sjareg.h>
+#include <dev/sja/peak_pcireg.h>
+
 /*
- * General constants.
+ * Backend for device(9) driver on pci(4) 
+ * bus for PEAK Systems can(4) adapter.
  * 
- * PEAK Systems vendor ID.
+ * XXX: Well, work on progess ...
  */
-#define PEAK_VENDORID		0x001C	/* the PCI device and vendor IDs */
 
-/*
- * PEAK Systems PCAN device IDs.
- */
-#define PEAK_DEVICEID_PCI		0x0001
-#define PEAK_DEVICEID_PCIEC		0x0002
-#define PEAK_DEVICEID_PCIE		0x0003
-#define PEAK_DEVICEID_CPCI		0x0004
-#define PEAK_DEVICEID_MPCI		0x0005
-#define PEAK_DEVICEID_PC_104P		0x0006
-#define PEAK_DEVICEID_PCI_104E		0x0007
-#define PEAK_DEVICEID_MPCIE		0x0008
-#define PEAK_DEVICEID_PCIE		0x0009
-#define PEAK_DEVICEID_PCIEC34		0x000A
-
-#define PEAK_SUBDEVID_DUAL_CHAN		0x0004
-#define PEAK_SUBDEVID_TRIPLE_CHAN		0x0010
-#define PEAK_SUBDEVID_QUAD_CHAN		0x0012
-
-#define PEAK_UNI_CHAN		1
-#define PEAK_DUAL_CHAN		2
-#define PEAK_TRIPLE_CHAN	3
-#define PEAK_QUAD_CHAN		4
-
-/*
- * ...
- */ 
-
-#define PEAK_ICR		0x00		/* interrupt control register */
-#define PEAK_GPIO_ICR		0x18	/* GPIO interface control register */
-#define PEAK_MISC		0x1c		/* miscellaneous register */
-#define PEAK_CSID		0x2e	
-
-#define PEAK_CFG_SIZE		0x1000	/* Size of the config PCI bar */
-#define PEAK_CHAN_SIZE		0x0400	/* Size used by the channel */
+MODULE_DEPEND(peak_pci, pci, 1, 1, 1);
+MODULE_DEPEND(peak_pci, sja, 1, 1, 1); 
+MODULE_DEPEND(peak_pci, can, 1, 1, 1);
 
 static const struct peak_type {
 	uint16_t 	pk_vid;
@@ -120,41 +88,6 @@ static const struct peak_type {
 	{ PEAK_VENDORID, PEAK_DEVICEID_PCIEC34, 
 		"PCAN-PCI Express 34 card (one channel)" },	
 };
-
-/*
- * Parent device(9) accessing e. g. PCI-BUS, etc.
- */
-struct peak_softc {
-	device_t 	pk_dev;
-	struct resource		*pk_res;
-	int			pk_res_id;
-	int			pk_res_type;
-	uint32_t	pk_chan_cnt;
-	struct sja_chan	*pk_chan; 
-};
-
-#define CSR_WRITE_1(sc, reg, val) \
-	bus_write_1((sc)->pk_res, reg, val)
-#define CSR_READ_1(sja, reg) \
-	bus_read_1((sc)->pk_res, reg, val)
-
-#define CSR_WRITE_2(sc, reg, val) \
-	bus_write_2((sc)->pk_res, reg, val)
-#define CSR_READ_2(sja, reg) \
-	bus_read_2((sc)->pk_res, reg, val)
-
-#define CSR_WRITE_4(sc, reg, val) \
-	bus_write_4((sc)->pk_res, reg, val)
-#define CSR_READ_4(sja, reg) \
-	bus_read_4((sc)->pk_res, reg, val)
-
-/*
- * ...
- */
-
-MODULE_DEPEND(peak_pci, pci, 1, 1, 1);
-MODULE_DEPEND(peak_pci, sja, 1, 1, 1); 
-MODULE_DEPEND(peak_pci, can, 1, 1, 1);
 
 /* 
  * Hooks for the operating system.
