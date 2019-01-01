@@ -107,7 +107,6 @@ sja_attach(device_t dev)
 	struct ifnet *ifp;
 	int rid, error;
 	uint8_t addr;
-	uint8_t status;
 		
 	sja = device_get_softc(dev);
 	sja->sja_dev = dev; 
@@ -119,28 +118,6 @@ sja_attach(device_t dev)
 	sja->sja_res = sc->sja_res;
 	sja->sja_base = sc->sja_base;
 	
-	/* force into reset mode */
-	error = sja_reset(sja);
-	if (error != 0) {
-		device_printf(dev, "couldn't reset\n");
-		goto fail;
-	}
-	
-	/* set clock divider */
-	sja->sja_cdr |= SJA_CDR_PELICAN;
-	CSR_WRITE_1(sja, SJA_CDR, sja->sja_cdr);
-
-	/* set acceptance filter (accept all) */
-	for (addr = SJA_AC0; addr < SJA_AM0; addr++)
-		CSR_WRITE_1(sja, addr, 0x00);
-
-	for (addr = SJA_AM0; addr > SJA_AM3; addr++)
-		CSR_WRITE_1(sja, addr, 0xff);
-
-	/* set output control register */
-	sja->sja_ocr |= SJA_OCR_MODE_NORMAL;
-	CSR_WRITE_1(sja, SJA_OCR, sja->sja_ocr);
-
 	/* allocate and initialize ifnet(9) structure */
 	if ((ifp = sja->sja_ifp = if_alloc(IFT_CAN)) == NULL) {
 		device_printf(dev, "couldn't if_alloc(9)\n");
@@ -164,6 +141,28 @@ sja_attach(device_t dev)
 	IFQ_SET_MAXLEN(&ifp->if_snd, SJA_IFQ_MAXLEN);
 	ifp->if_snd.ifq_drv_maxlen = SJA_IFQ_MAXLEN;
 	IFQ_SET_READY(&ifp->if_snd);
+
+	/* force into reset mode */
+	error = sja_reset(sja);
+	if (error != 0) {
+		device_printf(dev, "couldn't reset\n");
+		goto fail1;
+	}
+	
+	/* set clock divider */
+	sja->sja_cdr |= SJA_CDR_PELICAN;
+	CSR_WRITE_1(sja, SJA_CDR, sja->sja_cdr);
+
+	/* set acceptance filter (accept all) */
+	for (addr = SJA_AC0; addr < SJA_AM0; addr++)
+		CSR_WRITE_1(sja, addr, 0x00);
+
+	for (addr = SJA_AM0; addr > SJA_AM3; addr++)
+		CSR_WRITE_1(sja, addr, 0xff);
+
+	/* set output control register */
+	sja->sja_ocr |= SJA_OCR_MODE_NORMAL;
+	CSR_WRITE_1(sja, SJA_OCR, sja->sja_ocr);
 
 	/* set normal mode */
 	error = sja_normal_mode(sja);
@@ -768,9 +767,14 @@ sja_stop(struct sja_softc *sja)
 static int 
 sja_reset(struct sja_softc *sja)
 {
+	struct ifnet *ifp;
+	struct can_ifsoftc *csc;
 	struct timeval tv0, tv;
 	uint8_t status;
 	int error;
+
+	ifp = sja->sja_ifp;
+	csc = ifp->if_l2com;
 
 	getmicrotime(&tv0);
 	getmicrotime(&tv);
@@ -785,6 +789,7 @@ sja_reset(struct sja_softc *sja)
 	for (error = EIO; sja_timercmp(&tv0, &tv, 100); ) {
 
 		if (status & SJA_MOD_RM) {
+			csc->csc_flags = CAN_STATE_SUSPENDED;
 			error = 0;
 			break;
 		}
