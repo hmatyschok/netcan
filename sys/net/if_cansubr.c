@@ -65,7 +65,7 @@
  * $Id$
  */ 
 /*
- * Copyright (c) 2018 Henning Matyschok
+ * Copyright (c) 2018, 2019 Henning Matyschok
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
