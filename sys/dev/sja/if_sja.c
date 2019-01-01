@@ -103,21 +103,45 @@ static int
 sja_attach(device_t dev)
 {
 	struct sja_softc *sja;
-	struct sja_chan *sc;
+	struct sja_data *sc;
 	struct ifnet *ifp;
 	int rid, error;
-	
+	uint8_t addr;
+	uint8_t status;
+		
 	sja = device_get_softc(dev);
 	sja->sja_dev = dev; 
-	
-	sc = device_get_ivar(dev);
-	sja->sja_csr = sc->sja_csr;
-	sja->sja_res = sc->sja_res;
-	sja->sja_base = sc->sja_base;
 	
 	mtx_init(&sja->sja_mtx, device_get_nameunit(dev), 
 		MTX_NETWORK_LOCK, MTX_DEF);	
 	
+	sc = device_get_ivar(dev);
+	sja->sja_res = sc->sja_res;
+	sja->sja_base = sc->sja_base;
+	
+	/* force into reset mode */
+	error = sja_reset(sja);
+	if (error != 0) {
+		device_printf(dev, "couldn't reset\n");
+		goto fail;
+	}
+	
+	/* set clock divider */
+	sja->sja_cdr |= SJA_CDR_PELICAN;
+	CSR_WRITE_1(sja, SJA_CDR, sja->sja_cdr);
+
+	/* set acceptance filter (accept all) */
+	for (addr = SJA_AC0; addr < SJA_AM0; addr++)
+		CSR_WRITE_1(sja, addr, 0x00);
+
+	for (addr = SJA_AM0; addr > SJA_AM3; addr++)
+		CSR_WRITE_1(sja, addr, 0xff);
+
+	/* set output control register */
+	sja->sja_ocr |= SJA_OCR_MODE_NORMAL;
+	CSR_WRITE_1(sja, SJA_OCR, sja->sja_ocr);
+
+	/* allocate and initialize ifnet(9) structure */
 	if ((ifp = sja->sja_ifp = if_alloc(IFT_CAN)) == NULL) {
 		device_printf(dev, "couldn't if_alloc(9)\n");
 		error = ENOSPC;
@@ -141,6 +165,14 @@ sja_attach(device_t dev)
 	ifp->if_snd.ifq_drv_maxlen = SJA_IFQ_MAXLEN;
 	IFQ_SET_READY(&ifp->if_snd);
 
+	/* set normal mode */
+	error = sja_normal_mode(sja);
+	if (error != 0) {
+		device_printf(dev, "couldn't set normal mode\n");
+		goto fail1;
+	}
+
+	/* hook interrupts */
 	TASK_INIT(&sja->sja_intr_task, 0, sja_intr_task, sja);
 
 	error = bus_setup_intr(dev, sja->sja_res, 
@@ -149,11 +181,12 @@ sja_attach(device_t dev)
 
 	if (error != 0) {
 		device_printf(dev, "couldn't set up irq\n");
-		can_ifdetach(ifp);
-		goto fail;
+		goto fail1;
 	}
 out: 
 	return (error);
+fail1:
+	can_ifdetach(ifp);
 fail:
 	(void)sja_detach(dev);
 	goto out;
@@ -735,15 +768,9 @@ sja_stop(struct sja_softc *sja)
 static int 
 sja_reset(struct sja_softc *sja)
 {
-	struct ifnet *ifp;
-	struct can_ifsoftc *csc;
 	struct timeval tv0, tv;
 	uint8_t status;
 	int error;
-
-	SJA_LOCK_ASSERT(sja);
-	ifp = sja->sja_ifp;
-	csc = ifp->if_l2com;
 
 	getmicrotime(&tv0);
 	getmicrotime(&tv);
@@ -758,7 +785,6 @@ sja_reset(struct sja_softc *sja)
 	for (error = EIO; sja_timercmp(&tv0, &tv, 100); ) {
 
 		if (status & SJA_MOD_RM) {
-			csc->csc_flags = CAN_STATE_SUSPENDED;
 			error = 0;
 			break;
 		}
@@ -785,10 +811,18 @@ sja_normal_mode(struct sja_softc *sja)
 	uint8_t status;
 	int error;
 
-	SJA_LOCK_ASSERT(sja);
 	ifp = sja->sja_ifp;
 	csc = ifp->if_l2com;
 
+	/* flush error counters and error code capture */
+	CSR_WRITE_1(sja, SJA_TEC, 0x00);
+	CSR_WRITE_1(sja, SJA_REC, 0x00);
+	
+	status = CSR_READ_1(sja, SJA_ECC);
+	
+	/* clear interrupt flags */
+	status = CSR_READ_1(sja, SJA_IR);
+	
 	getmicrotime(&tv0);
 	getmicrotime(&tv);
 	

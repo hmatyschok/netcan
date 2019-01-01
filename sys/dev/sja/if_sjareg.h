@@ -53,8 +53,8 @@
 #define SJA_AM2		0x16		/* acceptance mask 2 */
 #define SJA_AM3		0x17		/* acceptance mask 3 */
 	/* 0x18 - 0x1c reserved */
-#define SJA_RC_MC		0x1d		/* rx message counter */
-#define SJA_RX_ADDR		0x1e		/* rx ring start-addr */
+#define SJA_RMC		0x1d		/* rx message counter */
+#define SJA_RBSA		0x1e		/* rx ring start-addr */
 #define SJA_CDR		0x1f		/* clock divider */
 #define SJA_RAM0		0x20		/* internal RAM addr 0 [FIFO] */
 #define SJA_RAM1		0x21		/* internal RAM addr 1 [FIFO] */
@@ -277,7 +277,6 @@
 /*
  * SJA1000, 6.4.1{3,4} {T,R}X Buffer
  */
- 
 #define SJA_FI		0x16		/* maps to CAN frame information */
 #define SJA_ID		0x17		/* maps to CAN id */
 #define SJA_DATA_SFF		0x19		/* maps to data region, SFF */
@@ -289,13 +288,23 @@
 #define SJA_FI_FF		0x80 	/* frame format */
 
 /*
+ * SJA1000, 6.4.16 RX Message Counter [RMC]
+ */
+#define SJA_RMC_MASK	0x1f
+
+/*
+ * SJA1000, 6.4.17 RX Buffer Start Address [RBSA]
+ */
+#define SJA_RBSA_MASK	0x3f
+ 
+/*
  * SJA1000, 6.5.1 Bus Timing Register 0 [BTR0]
  */
 #define SJA_BTR0_BRP_MASK		0x3f 	/* baud rate prescaler */
 #define SJA_BTR0_SJW_MASK		0xc0 	/* synchroniziation junp width */
 
 /*
- * SJA1000, 6.5.2 Bus Timing Register 0 [BTR1]
+ * SJA1000, 6.5.2 Bus Timing Register 1 [BTR1]
  */
 #define SJA_BTR1_SAM		0x80 	/* sampling */
 
@@ -305,12 +314,45 @@
 #endif
 
 /*
+ * SJA1000, 6.5.3 Output Control Register [OCR]
+ */
+#define SJA_OCR_MODE_MASK	0x03 
+#define SJA_OCR_MODE(reg)	((reg) & SJA_OCR_MODE_MASK)
+
+/* bi-phase output mode */
+#define SJA_OCR_MODE_BPO(reg) \
+	(((reg) & SJA_OCR_MODE_MASK) == 0x00)
+
+/* test output mode */
+#define SJA_OCR_MODE_TO(reg) \
+	(((reg) & SJA_OCR_MODE_MASK) == 0x01)
+
+/* normal output mode */
+#define SJA_OCR_MODE_NO(reg) \
+	(((reg) & SJA_OCR_MODE_MASK) == 0x02)
+
+/* clock output mode */
+#define SJA_OCR_MODE_CLKO(reg) \
+	(((reg) & SJA_OCR_MODE_MASK) == 0x03)
+
+/*
+ * SJA1000, 6.5.4 Clock Divider Register [CDR]
+ */
+#define SJA_CDR_CD_MASK		0x07
+#define SJA_CDR_CO_MASK		0x08
+
+/* clock divider */
+#define SJA_CDR_CD(reg) 	((reg) & SJA_CDR_CD_MASK)
+
+/* clock off */
+#define SJA_CDR_CO(reg) 	((reg) & SJA_CDR_CO_MASK)
+
+/*
  * XXX: work in progress..
  */
  
 
 struct sja_data {
-	struct resource		*sja_csr;
 	struct resource		*sja_res;
 	int			sja_res_id;
 	int			sja_res_type;
@@ -320,10 +362,10 @@ struct sja_data {
 struct sja_softc {
 	struct ifnet	*sja_ifp;		/* generic ifnet(9) glue */
 	device_t	sja_dev;
-	struct resource		*sja_csr;
 	struct resource		*sja_res;
 	uint8_t		sja_base;
 	uint8_t		sja_cdr;
+	uint8_t		sja_ocr;
 	void	*sja_intr_hand;
 	struct task	sja_intr_task;
 	struct mtx	sja_mtx;

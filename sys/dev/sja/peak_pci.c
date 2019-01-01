@@ -200,10 +200,7 @@ peak_pci_attach(device_t dev)
 	for (i = 0; i < pk->pk_chan_cnt; i++) { 
 		pkc = &sc->pk_chan[i];
 		sja = &pkc->pkc_sja;
-		
-		sja->sja_csr = sc->pk_res;
-		sja->sja_base = 2;
-		
+
 		sja->sja_res_id = PCIR_BAR(1) + i * PEAK_CHAN_SIZE;
 		sja->sja_res_type = SYS_RES_IRQ;
 		sja->sja_res = bus_alloc_resource_anywhere(dev, 
@@ -214,6 +211,8 @@ peak_pci_attach(device_t dev)
 			error = ENXIO;
 			goto fail;
 		}
+		
+		sja->sja_base = 2;
 	}	
 	
 	/* set-up GPIO control register, if any */

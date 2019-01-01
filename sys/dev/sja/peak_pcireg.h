@@ -88,8 +88,8 @@
 #define PEAK_MISC_CR_PP_EPP		0x04
 
 struct peak_chan {
-	device_t	pkc_dev;	
-	struct sja_chan pkc_sja;
+	device_t		pkc_dev;	
+	struct sja_chan		pkc_sja;
 };
 
 struct peak_softc {
