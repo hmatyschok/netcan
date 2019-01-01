@@ -137,12 +137,10 @@ peak_pci_probe(device_t dev)
 {
 	const struct peak_type	*t;
 	uint16_t devid, vendor;
-	int	i, error;
+	int	i, error = ENXIO;
 	
 	vendor = pci_get_vendor(dev);
 	devid = pci_get_device(dev);
-	
-	error = ENXIO;
 	
 	for (t = pk_devs, i = 0; i < nitems(pk_devs); i++, t++) {
 		if (vendor == t->pk_vid && devid == t->pk_did) {
@@ -158,7 +156,8 @@ static int
 peak_pci_attach(device_t dev)
 {
 	struct peak_softc *sc;
-	struct sja_chan *sja;
+	struct peak_chan *pkc;
+	struct sja_data *sja;
 	uint32_t csid, cnt;
 	uint16_t icr;
 	int i, error = 0;
@@ -180,7 +179,7 @@ peak_pci_attach(device_t dev)
 	else 
 		pk->pk_chan_cnt = PEAK_QUAD_CHAN;
 	
-	sc->pk_chan = malloc(sizeof(struct sja_chan) * pk->pk_chan_cnt, 
+	sc->pk_chan = malloc(sizeof(struct peak_chan) * pk->pk_chan_cnt, 
 		M_DEVBUF, M_WAITOK | M_ZERO);	
 		
 	pci_write_config(dev, PCIR_COMMAND, 4, 2);
@@ -199,7 +198,8 @@ peak_pci_attach(device_t dev)
 	}
 	
 	for (i = 0; i < pk->pk_chan_cnt; i++) { 
-		sja = &sc->pk_chan[i];
+		pkc = &sc->pk_chan[i];
+		sja = &pkc->pkc_sja;
 		
 		sja->sja_csr = sc->pk_res;
 		sja->sja_base = 2;
@@ -232,15 +232,16 @@ peak_pci_attach(device_t dev)
 
 	/* attach set of SJA1000 controller as its children */		
 	for (i = 0; i < pk->pk_chan_cnt; i++) { 
-		sja = &sc->pk_chan[i];
+		pkc = &sc->pk_chan[i];
+		sja = &pkc->pkc_sja;
 				
-		sja->sja_dev = device_add_child(dev, "sja", -1); 
+		pkc->pkc_dev = device_add_child(dev, "sja", -1); 
 		if (sja->sja_dev == NULL) {
 			device_printf(dev, "couldn't map channels");
 			error = ENXIO;
 			goto fail;
 		}
-		device_set_ivars(sja->sja_dev, sja);
+		device_set_ivars(pkc->pkc_dev, sja);
 	}
 	
 	/* enable interrupts */
@@ -256,7 +257,8 @@ static int
 peak_pci_detach(device_t dev)
 {
 	struct peak_softc *sc;
-	struct sja_chan *sja;
+	struct peak_chan *pkc;
+	struct sja_data *sja;
 	int i;
  
 	sc = device_get_softc(dev);
@@ -266,16 +268,17 @@ peak_pci_detach(device_t dev)
  
 	/* detach each channel, if any */
 	for (i = 0; i < sc->pk_chan_cnt; i++) {
-		sja = &sc->pk_chan[i];
+		pkc = &sc->pk_chan[i];
 		
-		if (sja->sja_dev != NULL)
-			(void)device_delete_child(dev, sja->sja_dev);
+		if (pkc->pkc_dev != NULL)
+			(void)device_delete_child(dev, pkc->pkc_dev);
 	}
 	(void)bus_generic_detach(dev);
 	
 	/* release bound resources */
 	for (i = 0; i < sc->pk_chan_cnt; i++) {
-		sja = &sc->pk_chan[i];
+		pkc = &sc->pk_chan[i];
+		sja = &pkc->pkc_sja;
 			
 		if (sja->sja_res != NULL) {
 			(void)bus_release_resource(dev, sja->sja_res_type, 

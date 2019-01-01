@@ -326,9 +326,9 @@ can_ifinit_timings(struct can_ifsoftc *csc)
 int 
 can_restart(struct ifnet *ifp)
 {
-	int error = 0;
 	struct mbuf *m;
 	struct can_frame *cf;
+	int error = 0;
 		
 	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL)) {
 		error = ENOBUFS;

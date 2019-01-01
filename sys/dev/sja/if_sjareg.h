@@ -309,8 +309,7 @@
  */
  
 
-struct sja_chan {
-	device_t	sja_dev;
+struct sja_data {
 	struct resource		*sja_csr;
 	struct resource		*sja_res;
 	int			sja_res_id;
@@ -324,6 +323,7 @@ struct sja_softc {
 	struct resource		*sja_csr;
 	struct resource		*sja_res;
 	uint8_t		sja_base;
+	uint8_t		sja_cdr;
 	void	*sja_intr_hand;
 	struct task	sja_intr_task;
 	struct mtx	sja_mtx;

@@ -502,13 +502,12 @@ sja_start_locked(struct ifnet *ifp)
 static void 
 sja_encap(struct sja_softc *sja, struct mbuf *mp)
 {
-	int error = 0;
 	struct mbuf *m;
 	struct can_frame *cf;
 	uint8_t status;
 	uint8_t addr;
 	uint16_t maddr;
-	int i;
+	int i, error = 0;
 	
 	SJA_LOCK_ASSERT(sja);
 	
@@ -618,8 +617,7 @@ sja_init_locked(struct sja_softc *sja)
 	struct ifnet *ifp;
 	struct can_ifsoftc *csc;
 	struct timeval tv0, tv;
-	uint8_t status;
-	uint8_t addr;
+	uint8_t status, addr;
 	
 	SJA_LOCK_ASSERT(sja);
 	ifp = sja->sja_ifp;
@@ -628,9 +626,10 @@ sja_init_locked(struct sja_softc *sja)
 	if (ifp->if_drv_flags & IFF_DRV_RUNNING)
 		return;
 
-	/* force controller into reset mode */
+	/* disable interrupts and abort pending transmission, if any */
 	sja_stop(sja);
 
+	/* force controller into reset mode */
 	getmicrotime(&tv0);
 	getmicrotime(&tv);
 	
