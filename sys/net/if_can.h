@@ -354,9 +354,6 @@ struct can_link_timings {
 
 struct can_ifsoftc; 
 
-/* 
- * XXX: I'll remove this and externalize this to if_ioctl(9). 
- */
 typedef int (*can_set_timings_t)(struct can_ifsoftc *csc);
 
 /*
@@ -376,11 +373,11 @@ struct can_ifsoftc {
 	struct ifnet	*csc_ifp; 	/* our ifnet(9) interface */
 	struct can_link_timecaps	csc_timecaps; /* timing capabilities */
 	struct can_link_timings	csc_timings; /* operating timing values */
+	can_set_timings_t	csc_set_timings;
 	uint32_t	csc_linkmodes;
 	uint32_t	csc_flags;
 	struct callout	csc_timo; 	/* callout for error control */
 	struct mtx	csc_mtx;
-	can_set_timings_t	csc_set_timings;
 };
 #define CSC_LOCK(csc)		mtx_lock(&(csc)->csc_mtx)
 #define	CSC_UNLOCK(csc)		mtx_unlock(&(csc)->csc_mtx)
