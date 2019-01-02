@@ -387,7 +387,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	m->m_len = m->m_pkthdr.len = sizeof(*cf);
 	m->m_pkthdr.rcvif = ifp;
 
-	/* pass CAN frame to upper layer */
+	/* pass can(4) frame to upper layer */
 	SJA_UNLOCK(sja);
 	(*ifp->if_input)(ifp, m);
 	SJA_LOCK(sja);
@@ -396,7 +396,7 @@ done:
 }
 
 /*
- * Copy CAN frame from RX buffer into mbuf(9).
+ * Copy can(4) frame from RX buffer into mbuf(9).
  */
 static void 	
 sja_rxeof(struct sja_softc *sja)
@@ -450,7 +450,7 @@ again:
 	m->m_len = m->m_pkthdr.len = sizeof(*cf);
 	m->m_pkthdr.rcvif = ifp;
 	
-	/* pass CAN frame to layer above */
+	/* pass can(4) frame to layer above */
 	SJA_UNLOCK(sja);
  	(*ifp->if_input)(ifp, m);
 	SJA_LOCK(sja);
@@ -464,8 +464,7 @@ done:	/* SJA1000, 6.4.4, note 4 */
 }
 
 /*
- * Transmit CAN frame, called by if_transmit(9)
- * indirectly during runtime of can_output(9).
+ * Transmit can(4) frame.
  */
 static void
 sja_start(struct ifnet *ifp)
@@ -556,7 +555,7 @@ sja_encap(struct sja_softc *sja, struct mbuf *mp)
 		
 	cf = mtod(m, struct can_frame *);
 	
-	/* determine CAN frame type and map dlc */
+	/* determine can(4) frame type and map dlc */
 	if (cf->can_id & CAN_EFF_FLAG) { 
 		status = SJA_FI_FF;  
 	
@@ -804,9 +803,6 @@ sja_reset(struct sja_softc *sja)
 	return (error);
 }
 
-/*
- * XXX: namespace resolution..
- */
 static int 
 sja_normal_mode(struct sja_softc *sja)
 {
