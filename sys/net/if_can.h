@@ -63,7 +63,7 @@
  * DAMAGE.
  */
 /*
- * Copyright (c) 2018 Henning Matyschok
+ * Copyright (c) 2018, 2019 Henning Matyschok
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -328,7 +328,7 @@ struct can_link_timings {
 #define CAN_LINKMODE_PRESUME_ACK	0x40    /* Ignore missing CAN ACKs */
 #define CAN_LINKMODE_FD_NON_ISO		0x80	/* CAN FD, non-ISO mode */
 
-#define CAN_IFFBITS \
+#define CAN_IFFBITS \ /* XXX: incomplete, ... work in progres. */
     "\020\1LOOPBACK\2LISTENONLY\3TRIPLESAMPLE\4PRESUMEACK"
 
 #define CANGLINKMODE	3 /* (uint32_t) get bits */
@@ -352,8 +352,11 @@ struct can_link_timings {
 #include <sys/queue.h>
 #include <sys/time.h>
 
-struct can_ifsoftc;
+struct can_ifsoftc; 
 
+/* 
+ * XXX: I'll remove this and externalize this to if_ioctl(9). 
+ */
 typedef int (*can_set_timings_t)(struct can_ifsoftc *csc);
 
 /*
