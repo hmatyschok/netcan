@@ -66,6 +66,25 @@
 #define	sja_timercmp(tvp, uvp, val)	\
 	(((uvp)->tv_sec - (tvp)->tv_sec) < (val))
 
+static int	sja_probe(device_t);
+static int	sja_attach(device_t);
+static int	sja_detach(device_t);
+
+static void	sja_rxeof(struct sja_softc *);
+static void	sja_txeof(struct sja_softc *);
+static void	sja_error(struct sja_softc *, uint8_t);
+static int	sja_intr(void *);
+static void	sja_int_task(void *, int);
+static void	sja_start(struct ifnet *);
+static void	sja_start_locked(struct ifnet *);
+static void	sja_encap(struct sja_softc *, struct mbuf **); 
+static int	sja_ioctl(struct ifnet *, u_long, caddr_t data);
+
+/*
+ * ...
+ */
+
+
 /*
  * can(4) link timing capabilities 
  */
@@ -531,7 +550,7 @@ sja_start_locked(struct ifnet *ifp)
  * Copy can(4) frame into TX buffer.
  */
 static void 
-sja_encap(struct sja_softc *sja, struct mbuf *mp)
+sja_encap(struct sja_softc *sja, struct mbuf **mp)
 {
 	struct mbuf *m;
 	struct can_frame *cf;
