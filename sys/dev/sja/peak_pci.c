@@ -171,15 +171,15 @@ peak_pci_attach(device_t dev)
 	csid = pci_read_config(dev, PCIR_SUBDEV_0, 4);
 
 	if (csid < PEAK_SUBDEV_DUAL_CHAN)	 /* 0x0004 */
-		pk->pk_chan_cnt = PEAK_UNI_CHAN;
+		pk->pkc_chan_cnt = PEAK_UNI_CHAN;
 	else if (csid < PEAK_SUBDEV_TRIPLE_CHAN) 	/* 0x0010 */
-		pk->pk_chan_cnt = PEAK_DUAL_CHAN;
+		pk->pkc_chan_cnt = PEAK_DUAL_CHAN;
 	else if (csid < PEAK_SUBDEV_QUAD_CHAN) 	/* 0x0012 */
-		pk->pk_chan_cnt = PEAK_TRIPLE_CHAN;
+		pk->pkc_chan_cnt = PEAK_TRIPLE_CHAN;
 	else 
-		pk->pk_chan_cnt = PEAK_QUAD_CHAN;
+		pk->pkc_chan_cnt = PEAK_QUAD_CHAN;
 	
-	sc->pk_chan = malloc(sizeof(struct peak_chan) * pk->pk_chan_cnt, 
+	sc->pk_chan = malloc(sizeof(struct peak_chan) * pk->pkc_chan_cnt, 
 		M_DEVBUF, M_WAITOK | M_ZERO);	
 		
 	pci_write_config(dev, PCIR_COMMAND, 4, 2);
@@ -197,7 +197,7 @@ peak_pci_attach(device_t dev)
 		goto fail;
 	}
 	
-	for (i = 0; i < pk->pk_chan_cnt; i++) { 
+	for (i = 0; i < pk->pkc_chan_cnt; i++) { 
 		pkc = &sc->pk_chan[i];
 		sja = &pkc->pkc_sja;
 
@@ -230,7 +230,7 @@ peak_pci_attach(device_t dev)
 	icr = CSR_READ_2(sc, PEAK_ICCR);
 
 	/* attach set of SJA1000 controller as its children */		
-	for (i = 0; i < pk->pk_chan_cnt; i++) { 
+	for (i = 0; i < pk->pkc_chan_cnt; i++) { 
 		pkc = &sc->pk_chan[i];
 		sja = &pkc->pkc_sja;
 				

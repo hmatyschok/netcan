@@ -118,8 +118,6 @@ static driver_t sja_driver = {
 
 static devclass_t sja_devclass;
 
-
-
 /*
  * Force controller into reset mode.
  */
@@ -229,7 +227,7 @@ sja_normal_mode(struct sja_softc *sja)
 }
 
 /*
- * Ctor implemented by device(9) driver(9) hook.
+ * Ctor implements device(9) driver(9) hook.
  */
 static int 
 sja_attach(device_t dev)
@@ -324,7 +322,7 @@ fail:
 }
 
 /*
- * Dtor implemented by device(9) driver(9) hook.
+ * Dtor implements device(9) driver(9) hook.
  */
 static int
 sja_detach(device_t dev)
