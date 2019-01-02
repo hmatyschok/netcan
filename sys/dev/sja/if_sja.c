@@ -284,7 +284,7 @@ sja_intr_task(void *arg)
 	
 	status = CSR_READ_1(sja, SJA_IR);
 
-	for (n = 0; status != SJA_IR_OFF && n < 6; n++) { 
+	for (n = 0; status != SJA_IR_OFF && n < 6; n++) { /* XXX */
 		
 		if (status & SJA_IR_RX)
 			sja_rxeof(sja);
