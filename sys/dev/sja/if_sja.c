@@ -37,7 +37,7 @@
 #include <net/if_types.h>
 
 /*
- * XXX: Well, work on progess ...
+ * XXX: Well, work in progess ...
  */
 
 #include <dev/sja/if_sjareg.h>
