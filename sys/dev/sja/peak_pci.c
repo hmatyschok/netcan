@@ -172,13 +172,13 @@ peak_pci_attach(device_t dev)
 	csid = pci_read_config(dev, PCIR_SUBDEV_0, 4);
 
 	if (csid < PEAK_SUBDEV_DUAL_CHAN)	 /* 0x0004 */
-		pk->pk_chan_cnt = PEAK_UNI_CHAN;
+		sc->pk_chan_cnt = PEAK_UNI_CHAN;
 	else if (csid < PEAK_SUBDEV_TRIPLE_CHAN) 	/* 0x0010 */
-		pk->pk_chan_cnt = PEAK_DUAL_CHAN;
+		sc->pk_chan_cnt = PEAK_DUAL_CHAN;
 	else if (csid < PEAK_SUBDEV_QUAD_CHAN) 	/* 0x0012 */
-		pk->pk_chan_cnt = PEAK_TRIPLE_CHAN;
+		sc->pk_chan_cnt = PEAK_TRIPLE_CHAN;
 	else 
-		pk->pk_chan_cnt = PEAK_QUAD_CHAN;
+		sc->pk_chan_cnt = PEAK_QUAD_CHAN;
 	
 	sc->pk_chan = malloc(sizeof(struct sja_chan) * pk->pk_chan_cnt, 
 		M_DEVBUF, M_WAITOK | M_ZERO);	
