@@ -67,8 +67,9 @@
 	bus_read_4((sc)->pk_res, reg, val)
 
 /*
- * Implements proxy pattern on pci(4) bus 
- * for instances of the sja(4) contoller.
+ * Device driver(9) for PEAK PCAN PCI family 
+ * cards implements proxy pattern on pci(4) 
+ * bus for instances of the sja(4) contoller.
  *
  * XXX: Well, work on progess ...
  */
@@ -156,8 +157,8 @@ static int
 peak_pci_attach(device_t dev)
 {
 	struct peak_softc *sc;
-	struct peak_chan *pkc;
-	struct sja_data *sja;
+	struct sja_chan *sjac;
+	struct sja_data *sjad;
 	uint32_t csid, cnt;
 	uint16_t icr;
 	int i, error = 0;
@@ -171,15 +172,15 @@ peak_pci_attach(device_t dev)
 	csid = pci_read_config(dev, PCIR_SUBDEV_0, 4);
 
 	if (csid < PEAK_SUBDEV_DUAL_CHAN)	 /* 0x0004 */
-		pk->pkc_chan_cnt = PEAK_UNI_CHAN;
+		pk->sjac_chan_cnt = PEAK_UNI_CHAN;
 	else if (csid < PEAK_SUBDEV_TRIPLE_CHAN) 	/* 0x0010 */
-		pk->pkc_chan_cnt = PEAK_DUAL_CHAN;
+		pk->sjac_chan_cnt = PEAK_DUAL_CHAN;
 	else if (csid < PEAK_SUBDEV_QUAD_CHAN) 	/* 0x0012 */
-		pk->pkc_chan_cnt = PEAK_TRIPLE_CHAN;
+		pk->sjac_chan_cnt = PEAK_TRIPLE_CHAN;
 	else 
-		pk->pkc_chan_cnt = PEAK_QUAD_CHAN;
+		pk->sjac_chan_cnt = PEAK_QUAD_CHAN;
 	
-	sc->pk_chan = malloc(sizeof(struct peak_chan) * pk->pkc_chan_cnt, 
+	sc->pk_chan = malloc(sizeof(struct sja_chan) * pk->sjac_chan_cnt, 
 		M_DEVBUF, M_WAITOK | M_ZERO);	
 		
 	pci_write_config(dev, PCIR_COMMAND, 4, 2);
@@ -197,22 +198,22 @@ peak_pci_attach(device_t dev)
 		goto fail;
 	}
 	
-	for (i = 0; i < pk->pkc_chan_cnt; i++) { 
-		pkc = &sc->pk_chan[i];
-		sja = &pkc->pkc_sja;
+	for (i = 0; i < pk->sjac_chan_cnt; i++) { 
+		sjac = &sc->pk_chan[i];
+		sjad = &sjac->sjac_data;
 
-		sja->sja_res_id = PCIR_BAR(1) + i * PEAK_CHAN_SIZE;
-		sja->sja_res_type = SYS_RES_IRQ;
-		sja->sja_res = bus_alloc_resource_anywhere(dev, 
-			sja->sja_res_type, &sja->sja_res_id, 
+		sjad->sjad_res_id = PCIR_BAR(1) + i * PEAK_CHAN_SIZE;
+		sjad->sjad_res_type = SYS_RES_IRQ;
+		sjad->sjad_res = bus_alloc_resource_anywhere(dev, 
+			sjad->sjad_res_type, &sjad->sjad_res_id, 
 			PEAK_CHAN_SIZE, RF_ACTIVE);
-		if (sja->sja_res == NULL) {
+		if (sjad->sjad_res == NULL) {
 			device_printf(dev, "couldn't map port\n");
 			error = ENXIO;
 			goto fail;
 		}
 		
-		sja->sja_base = 2;
+		sjad->sjad_base = 2;
 	}	
 	
 	/* set-up GPIO control register, if any */
@@ -230,17 +231,17 @@ peak_pci_attach(device_t dev)
 	icr = CSR_READ_2(sc, PEAK_ICCR);
 
 	/* attach set of SJA1000 controller as its children */		
-	for (i = 0; i < pk->pkc_chan_cnt; i++) { 
-		pkc = &sc->pk_chan[i];
-		sja = &pkc->pkc_sja;
+	for (i = 0; i < pk->sjac_chan_cnt; i++) { 
+		sjac = &sc->pk_chan[i];
+		sjad = &sjac->sjac_data;
 				
-		pkc->pkc_dev = device_add_child(dev, "sja", -1); 
-		if (sja->sja_dev == NULL) {
+		sjac->sjac_dev = device_add_child(dev, "sja", -1); 
+		if (sjad->sjad_dev == NULL) {
 			device_printf(dev, "couldn't map channels");
 			error = ENXIO;
 			goto fail;
 		}
-		device_set_ivars(pkc->pkc_dev, sja);
+		device_set_ivars(sjac->sjac_dev, sja);
 	}
 	
 	/* enable interrupts */
@@ -256,8 +257,8 @@ static int
 peak_pci_detach(device_t dev)
 {
 	struct peak_softc *sc;
-	struct peak_chan *pkc;
-	struct sja_data *sja;
+	struct sja_chan *sjac;
+	struct sja_data *sjad;
 	int i;
  
 	sc = device_get_softc(dev);
@@ -267,21 +268,21 @@ peak_pci_detach(device_t dev)
  
 	/* detach each channel, if any */
 	for (i = 0; i < sc->pk_chan_cnt; i++) {
-		pkc = &sc->pk_chan[i];
+		sjac = &sc->pk_chan[i];
 		
-		if (pkc->pkc_dev != NULL)
-			(void)device_delete_child(dev, pkc->pkc_dev);
+		if (sjac->sjac_dev != NULL)
+			(void)device_delete_child(dev, sjac->sjac_dev);
 	}
 	(void)bus_generic_detach(dev);
 	
 	/* release bound resources */
 	for (i = 0; i < sc->pk_chan_cnt; i++) {
-		pkc = &sc->pk_chan[i];
-		sja = &pkc->pkc_sja;
+		sjac = &sc->pk_chan[i];
+		sjad = &sjac->sjac_data;
 			
-		if (sja->sja_res != NULL) {
-			(void)bus_release_resource(dev, sja->sja_res_type, 
-				sja->sja_res);
+		if (sjad->sjad_res != NULL) {
+			(void)bus_release_resource(dev, sjad->sjad_res_type, 
+				sjad->sjad_res);
 		}
 	}
 	

@@ -351,12 +351,16 @@
  * XXX: work in progress..
  */
  
-
 struct sja_data {
-	struct resource		*sja_res;
-	int			sja_res_id;
-	int			sja_res_type;
-	uint8_t		sja_base;
+	struct resource		*sjad_res;
+	int			sjad_res_id;
+	int			sjad_res_type;
+	uint8_t		sjad_base;
+};
+
+struct sja_chan {
+	device_t 	sjac_dev;	
+	struct sja_data		sjac_var;
 };
 
 struct sja_softc {
