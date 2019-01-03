@@ -220,17 +220,8 @@
  */ 
 #define SJA_ECC_SEG		0x1f 
 #define SJA_ECC_DIR		0x20 	/* error occured during reception */
+
 #define SJA_ECC_ERR_MASK 	0xc0 
-
-#if 0
-#define SJA_ECC_BIT_ERR(reg) 	(((reg) & SJA_ECC_ERR_MASK) == 0x00) 	
-#define SJA_ECC_FORM_ERR(reg) 	(((reg) & SJA_ECC_ERR_MASK) == 0x40)
-#define SJA_ECC_STUFF_ERR(reg) 	(((reg) & SJA_ECC_ERR_MASK) == 0x80)
-#define SJA_ECC_OTHER_ERR(reg) 	(((reg) & SJA_ECC_ERR_MASK) == 0xc0)
-
-#define SJA_ECC_TX_ERR(reg) 	(((reg) & SJA_ECC_DIR) == 0x00) 	
-#define SJA_ECC_RX_ERR(reg) 	(((reg) & SJA_ECC_DIR) == 0x20)
-#endif
 
 #define SJA_ECC_BE		0x00		/* bit error */
 #define SJA_ECC_SOF		0x03		/* start of frame */
@@ -258,6 +249,20 @@
 #define SJA_ECC_ED		0x17		/* tolerate dominant bits */
 #define SJA_ECC_OF		0x1c		/* overload flag */
 #define SJA_ECC_SEG 	0x1f		/* segment flag */
+
+#define IS_SJA_ECC_BIT_ERR(reg) \
+	(((reg) & SJA_ECC_ERR_MASK) == 0x00) 	
+#define IS_SJA_ECC_FORM_ERR(reg) \
+	(((reg) & SJA_ECC_ERR_MASK) == 0x40)
+#define IS_SJA_ECC_STUFF_ERR(reg) \
+	(((reg) & SJA_ECC_ERR_MASK) == 0x80)
+#define IS_SJA_ECC_OTHER_ERR(reg) \
+	(((reg) & SJA_ECC_ERR_MASK) == 0xc0)
+
+#define IS_SJA_ECC_TX_ERR(reg) \ 
+	(((reg) & SJA_ECC_DIR) == 0x00) 	
+#define IS_SJA_ECC_RX_ERR(reg) \
+	(((reg) & SJA_ECC_DIR) == 0x20)
 
 /* 
  * SJA1000, 6.4.10 Error Warning Limit Register [EWLR] 
@@ -308,32 +313,31 @@
  */
 #define SJA_BTR1_SAM		0x80 	/* sampling */
 
-#if 0
 #define SJA_BTR0_BRP(reg) 	((reg) & SJA_BTR0_BRP_MASK)
 #define SJA_BTR0_SJW(reg) 	(((reg) & SJA_BTR0_BRP_MASK) >> 6)
-#endif
 
 /*
  * SJA1000, 6.5.3 Output Control Register [OCR]
  */
-#define SJA_OCR_MODE_MASK	0x03 
+#define SJA_OCR_MODE_BPH		0x00		/* bi-phase output mode */
+#define SJA_OCR_MODE_TST		0x01		/* test output mode */
+#define SJA_OCR_MODE_NORM		0x02		/* normal output mode */
+#define SJA_OCR_MODE_CLK		0x03		/* clock output mode */
+
+#define SJA_OCR_MODE_MASK		0x03 
 #define SJA_OCR_MODE(reg)	((reg) & SJA_OCR_MODE_MASK)
 
-/* bi-phase output mode */
-#define SJA_OCR_MODE_BPO(reg) \
-	(((reg) & SJA_OCR_MODE_MASK) == 0x00)
+#define IS_SJA_OCR_MODE_BPO(reg) \
+	(((reg) & SJA_OCR_MODE_MASK) == SJA_OCR_MODE_BPH)
+	
+#define IS_SJA_OCR_MODE_TO(reg) \
+	(((reg) & SJA_OCR_MODE_MASK) == SJA_OCR_MODE_TST)
 
-/* test output mode */
-#define SJA_OCR_MODE_TO(reg) \
-	(((reg) & SJA_OCR_MODE_MASK) == 0x01)
+#define IS_SJA_OCR_MODE_NO(reg) \
+	(((reg) & SJA_OCR_MODE_MASK) == SJA_OCR_MODE_NORM)
 
-/* normal output mode */
-#define SJA_OCR_MODE_NO(reg) \
-	(((reg) & SJA_OCR_MODE_MASK) == 0x02)
-
-/* clock output mode */
-#define SJA_OCR_MODE_CLKO(reg) \
-	(((reg) & SJA_OCR_MODE_MASK) == 0x03)
+#define IS_SJA_OCR_MODE_CLKO(reg) \
+	(((reg) & SJA_OCR_MODE_MASK) == SJA_OCR_MODE_CLK)
 
 /*
  * SJA1000, 6.5.4 Clock Divider Register [CDR]
@@ -342,17 +346,19 @@
 #define SJA_CDR_CO_MASK		0x08
 
 /* clock divider */
-#define SJA_CDR_CD(reg) 	((reg) & SJA_CDR_CD_MASK)
+#define SJA_CDR_CD(reg) \
+	((reg) & SJA_CDR_CD_MASK)
 
 /* clock off */
-#define SJA_CDR_CO(reg) 	((reg) & SJA_CDR_CO_MASK)
+#define SJA_CDR_CO(reg) \
+	((reg) & SJA_CDR_CO_MASK)
 
 /*
  * XXX: work in progress..
  */
  
 struct sja_data {
-	struct resource		*sjad_res;
+	struct resource		*sjad_res;		/* 
 	int			sjad_res_id;
 	int			sjad_res_type;
 	uint8_t		sjad_base;
