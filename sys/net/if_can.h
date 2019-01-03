@@ -374,6 +374,7 @@ struct can_ifsoftc {
 	struct can_link_timecaps	csc_timecaps; /* timing capabilities */
 	struct can_link_timings	csc_timings; /* operating timing values */
 	can_set_timings_t	csc_set_timings;
+	uint32_t	csc_freq;		/* CLK frequency */
 	uint32_t	csc_linkmodes;
 	uint32_t	csc_flags;
 	struct callout	csc_timo; 	/* callout for error control */

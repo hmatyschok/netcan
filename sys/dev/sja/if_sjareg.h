@@ -355,16 +355,14 @@
 /*
  * SJA1000, 6.5.4 Clock Divider Register [CDR]
  */
-#define SJA_CDR_CD_MASK		0x07
-#define SJA_CDR_CO_MASK		0x08
+#define SJA_CDR_CLK_OUT		0x07
+#define SJA_CDR_CLK_OFF		0x08		/* clock off on CLKOUT */
+#define SJA_CDR_RXINPEN		0x20		/* TX1 is RX irq output */
+#define SJA_CDR_CBP		0x040		/* can(4) input comperator bypass */
+#define SJA_CDR_PELICAN		0x80		/* PeliCAN mode */
 
 /* clock divider */
-#define SJA_CDR_CD(reg) \
-	((reg) & SJA_CDR_CD_MASK)
-
-/* clock off */
-#define SJA_CDR_CO(reg) \
-	((reg) & SJA_CDR_CO_MASK)
+#define SJA_CDR_CD(reg)		((reg) & SJA_CDR_CLK_OUT)
 
 /*
  * XXX: work in progress..
