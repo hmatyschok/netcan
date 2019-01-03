@@ -213,7 +213,7 @@ peak_pci_attach(device_t dev)
 			goto fail;
 		}
 		
-		sjad->sjad_base = 2;
+		sjad->sjad_shift = 2;
 	}	
 	
 	/* set-up GPIO control register, if any */

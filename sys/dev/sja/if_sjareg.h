@@ -358,10 +358,10 @@
  */
  
 struct sja_data {
-	struct resource		*sjad_res;		/* 
+	struct resource		*sjad_res;
 	int			sjad_res_id;
 	int			sjad_res_type;
-	uint8_t		sjad_base;
+	uint8_t		sjad_shift;
 };
 
 struct sja_chan {
@@ -373,7 +373,7 @@ struct sja_softc {
 	struct ifnet	*sja_ifp;		/* generic ifnet(9) glue */
 	device_t	sja_dev;
 	struct resource		*sja_res;
-	uint8_t		sja_base;
+	uint8_t		sja_shift;
 	uint8_t		sja_cdr;
 	uint8_t		sja_ocr;
 	void	*sja_intr_hand;
