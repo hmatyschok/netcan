@@ -327,16 +327,16 @@
 #define SJA_OCR_MODE_MASK		0x07 
 #define SJA_OCR_MODE(reg)	((reg) & SJA_OCR_MODE_MASK)
 
-#define IS_SJA_OCR_MODE_BPO(reg) \
+#define IS_SJA_OCR_MODE_BPH(reg) \
 	(((reg) & SJA_OCR_MODE_MASK) == SJA_OCR_MODE_BPH)
 	
-#define IS_SJA_OCR_MODE_TO(reg) \
+#define IS_SJA_OCR_MODE_TST(reg) \
 	(((reg) & SJA_OCR_MODE_MASK) == SJA_OCR_MODE_TST)
 
-#define IS_SJA_OCR_MODE_NO(reg) \
+#define IS_SJA_OCR_MODE_NORM(reg) \
 	(((reg) & SJA_OCR_MODE_MASK) == SJA_OCR_MODE_NORM)
 
-#define IS_SJA_OCR_MODE_CLKO(reg) \
+#define IS_SJA_OCR_MODE_CLK(reg) \
 	(((reg) & SJA_OCR_MODE_MASK) == SJA_OCR_MODE_CLK)
 
 #define SJA_OCR_TX0_INV		0x04		/* invert */
