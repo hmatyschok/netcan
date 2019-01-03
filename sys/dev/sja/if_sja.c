@@ -245,8 +245,9 @@ sja_attach(device_t dev)
 		MTX_NETWORK_LOCK, MTX_DEF);	
 	
 	sc = device_get_ivar(dev);
-	sja->sja_res = sc->sja_res;
-	sja->sja_shift = sc->sja_shift;
+	sja->sja_res = sc->sjad_res;
+	sja->sja_cdr = sc->sjad_cdr;
+	sja->sja_ocr = sc->sjad_ocr;
 	
 	/* allocate and initialize ifnet(9) structure */
 	if ((ifp = sja->sja_ifp = if_alloc(IFT_CAN)) == NULL) {
