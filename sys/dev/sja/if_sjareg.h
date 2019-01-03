@@ -324,7 +324,7 @@
 #define SJA_OCR_MODE_NORM		0x02		/* normal output mode */
 #define SJA_OCR_MODE_CLK		0x03		/* clock output mode */
 
-#define SJA_OCR_MODE_MASK		0x03 
+#define SJA_OCR_MODE_MASK		0x07 
 #define SJA_OCR_MODE(reg)	((reg) & SJA_OCR_MODE_MASK)
 
 #define IS_SJA_OCR_MODE_BPO(reg) \
