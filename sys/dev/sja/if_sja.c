@@ -233,7 +233,7 @@ static int
 sja_attach(device_t dev)
 {
 	struct sja_softc *sja;
-	struct sja_data *sc;
+	struct sja_data *sjad;
 	struct ifnet *ifp;
 	int rid, error;
 	uint8_t addr;
@@ -244,10 +244,10 @@ sja_attach(device_t dev)
 	mtx_init(&sja->sja_mtx, device_get_nameunit(dev), 
 		MTX_NETWORK_LOCK, MTX_DEF);	
 	
-	sc = device_get_ivar(dev);
-	sja->sja_res = sc->sjad_res;
-	sja->sja_cdr = sc->sjad_cdr;
-	sja->sja_ocr = sc->sjad_ocr;
+	sja = device_get_ivar(dev);
+	sja->sja_res = sjad->sjad_res;
+	sja->sja_cdr = sjad->sjad_cdr;
+	sja->sja_ocr = sjad->sjad_ocr;
 	
 	/* allocate and initialize ifnet(9) structure */
 	if ((ifp = sja->sja_ifp = if_alloc(IFT_CAN)) == NULL) {

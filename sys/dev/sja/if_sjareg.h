@@ -340,14 +340,14 @@
 	(((reg) & SJA_OCR_MODE_MASK) == SJA_OCR_MODE_CLK)
 
 #define SJA_OCR_TX0_INV		0x04		/* invert */
-#define SJA_OCR_TX0_PULLDN		0x08 		/* pulldown */
-#define SJA_OCR_TX0_PULLUP		0x10
-#define SJA_OCR_TX0_PSHPULL		0x18
+#define SJA_OCR_TX0_PDN		0x08 		/* pulldown */
+#define SJA_OCR_TX0_PUP		0x10		/* pullup */
+#define SJA_OCR_TX0_PSHP		0x18		/* pushpull */
 
 #define SJA_OCR_TX1_INV		0x20
-#define SJA_OCR_TX1_PULLDN		0x40
-#define SJA_OCR_TX1_PULLUP		0x80
-#define SJA_OCR_TX1_PSHPULL		0xc0
+#define SJA_OCR_TX1_PDN		0x40
+#define SJA_OCR_TX1_PUP		0x80
+#define SJA_OCR_TX1_PSHP		0xc0
 
 #define SJA_OCR_TX_MASK		0xfc
 #define SJA_OCR_TX_SHIFT		2
