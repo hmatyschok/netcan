@@ -68,7 +68,8 @@
  * ...
  */
 
-#define KVASER_ICR_ADDON_INTENABLE_M		0x2000
+#define KVASER_ICR_INIT		0x00002000UL
+#define KVASER_TCR_PSV		0x80808080UL
 
 struct kvaser_softc {
 	device_t 	kv_dev;

@@ -49,7 +49,7 @@
 	bus_read_1((sja)->sja_res, (reg << (sja)->sja_shift))
 #define SJA_SETBIT(sja, reg, x) \
 	CSR_WRITE_1(sja, reg, CSR_READ_1(sja, reg) | (x))
-#define SJA_CLRBIT(sc, reg, x) \
+#define SJA_CLRBIT(sja, reg, x) \
 	CSR_WRITE_1(sja, reg, CSR_READ_1(sja, reg) & ~(x))
 
 #define CSR_WRITE_2(sja, reg, val) \
