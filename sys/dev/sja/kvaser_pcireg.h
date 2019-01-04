@@ -71,8 +71,8 @@
 #define KVASER_ICR_INIT		0x00002000UL
 #define KVASER_TCR_PSV		0x80808080UL
 
-#define KVASER_XILINX_VERSION		7
-#define KVASER_XILINX_VERSION_PRESUMED   14
+#define KVASER_VERS_ID		7
+#define KVASER_VERS_ID_PRESUMED   14
 
 struct kvaser_softc {
 	device_t 	kv_dev;
@@ -86,7 +86,7 @@ struct kvaser_softc {
 	struct resource		*kv_res;
 	int			kv_res_id;
 	int			kv_res_type;
-	uint8_t		kv_version;
+	uint8_t		kv_vers_id;
 
 	/* PCI port */
 	struct resource		*kv_base;

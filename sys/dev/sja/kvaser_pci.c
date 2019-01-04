@@ -177,8 +177,8 @@ kvaser_pci_attach(device_t dev)
 		goto fail;
 	}
 	
-	sc->kv_version = bus_read_1(sc->kv_res, KVASER_XILINX_VERSION);
-	sc->kv_version >>= 4;
+	sc->kv_vers_id = bus_read_1(sc->kv_res, KVASER_VERS_ID);
+	sc->kv_vers_id >>= 4;
 	
 	for (i = 0; i < KVASER_CHAN_MAX; i++) { 
 		sjac = &sc->kv_chan[i];
