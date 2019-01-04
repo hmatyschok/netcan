@@ -88,11 +88,6 @@ struct kvaser_softc {
 	int			kv_res_type;
 	uint8_t		kv_vers_id;
 
-	/* PCI port */
-	struct resource		*kv_base;
-	int			kv_base_id;
-	int			kv_base_type;
-
 	/* set of sja(4) controller */
 	uint32_t	kv_chan_cnt;
 	struct sja_chan		kv_chan[KVASER_CHAN_MAX]; 
