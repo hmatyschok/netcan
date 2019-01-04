@@ -184,7 +184,7 @@ kvaser_pci_attach(device_t dev)
 		sjac = &sc->kv_chan[i];
 		sjad = &sjac->sjac_data;
 
-		sjad->sjad_res_id = PCIR_BAR(1) + i * PEAK_CHAN_SIZE;
+		sjad->sjad_res_id = PCIR_BAR(1) + i * KVASER_CHAN_SIZE;
 		sjad->sjad_res_type = SYS_RES_IRQ;
 		sjad->sjad_res = bus_alloc_resource_anywhere(dev, 
 			sjad->sjad_res_type, &sjad->sjad_res_id, 
@@ -194,7 +194,6 @@ kvaser_pci_attach(device_t dev)
 			break;
 		}
 		
-		sjad->sjad_shift = 0;
 		sjad->sjad_cdr = KVASER_CDR_DFLT;
 		sjad->sjad_ocr = KVASER_OCR_DFLT;
 		sjad->sjad_freq = KVASER_CLK_FREQ;
