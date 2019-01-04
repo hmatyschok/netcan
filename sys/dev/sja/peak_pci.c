@@ -231,7 +231,7 @@ peak_pci_attach(device_t dev)
 	icr = CSR_READ_2(sc, PEAK_ICCR);
 
 	/* attach set of SJA1000 controller as its children */		
-	for (i = 0; i < pk->pk_chan_cnt; i++) { 
+	for (i = 0; i < sc->pk_chan_cnt; i++) { 
 		sjac = &sc->pk_chan[i];
 		sjad = &sjac->sjac_data;
 				
@@ -241,7 +241,7 @@ peak_pci_attach(device_t dev)
 			error = ENXIO;
 			goto fail;
 		}
-		device_set_ivars(sjac->sjac_dev, sja);
+		device_set_ivars(sjac->sjac_dev, sjad);
 	}
 	
 	/* enable interrupts */
