@@ -62,6 +62,8 @@
  
 #define KVASER_CHAN_SIZE     0x20
 
+#define KVASER_CHAN_MAX		4
+
 /*
  * ...
  */
@@ -89,5 +91,5 @@ struct kvaser_softc {
 
 	/* set of sja(4) controller */
 	uint32_t	kv_chan_cnt;
-	struct sja_chan	*kv_chan; 
+	struct sja_chan		kv_chan[KVASER_CHAN_MAX]; 
 };

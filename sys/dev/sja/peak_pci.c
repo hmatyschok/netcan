@@ -188,17 +188,17 @@ peak_pci_attach(device_t dev)
 
 	/* allocate resources for control registers and ports */
 	sc->pk_res_id = PCIR_BAR(0); 
-	sc->pk_res_type = SYS_RES_IOPORT;
+	sc->pk_res_type = SYS_RES_MEMORY;
 	sc->pk_res = bus_alloc_resource_anywhere(dev, 
 		sc->pk_res_type, &sc->pk_res_id, 
 			PEAK_CFG_SIZE, RF_ACTIVE);
 	if (sc->pk_res == NULL) {
-		device_printf(dev, "couldn't map CMR\n");
+		device_printf(dev, "couldn't map CSR\n");
 		error = ENXIO;
 		goto fail;
 	}
 	
-	for (i = 0; i < pk->pk_chan_cnt; i++) { 
+	for (i = 0; i < sc->pk_chan_cnt; i++) { 
 		sjac = &sc->pk_chan[i];
 		sjad = &sjac->sjac_data;
 
@@ -206,7 +206,7 @@ peak_pci_attach(device_t dev)
 		sjad->sjad_res_type = SYS_RES_IRQ;
 		sjad->sjad_res = bus_alloc_resource_anywhere(dev, 
 			sjad->sjad_res_type, &sjad->sjad_res_id, 
-			PEAK_CHAN_SIZE, RF_ACTIVE);
+			PEAK_CHAN_SIZE, RF_ACTIVE | RF_SHAREABLE);
 		if (sjad->sjad_res == NULL) {
 			device_printf(dev, "couldn't map port\n");
 			error = ENXIO;

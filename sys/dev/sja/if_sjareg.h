@@ -356,7 +356,7 @@
  * SJA1000, 6.5.4 Clock Divider Register [CDR]
  */
 #define SJA_CDR_CLK_OUT		0x07
-#define SJA_CDR_CLK_OFF		0x08		/* clock off on CLKOUT */
+#define SJA_CDR_CLK_OFF		0x08		/* clock off on clock out */
 #define SJA_CDR_RXINPEN		0x20		/* TX1 is RX irq output */
 #define SJA_CDR_CBP		0x040		/* can(4) input comperator bypass */
 #define SJA_CDR_PELICAN		0x80		/* PeliCAN mode */
@@ -375,6 +375,7 @@ struct sja_data {
 	uint8_t		sjad_shift;
 	uint8_t		sjad_cdr;
 	uint8_t		sjad_ocr;
+	uint8_t		sjad_freq;
 };
 
 struct sja_chan {
