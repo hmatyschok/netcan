@@ -65,9 +65,6 @@
 	bus_write_4((sc)->kv_cfg, reg, val)
 #define CSR_READ_4(sc, reg) \
 	bus_read_4((sc)->kv_cfg, reg)
-	
-#define KVASER_VERSION(sc) \
-	(() >> 4)	
 
 /*
  * Device driver(9) for KVASER PCAN PCI cards 
