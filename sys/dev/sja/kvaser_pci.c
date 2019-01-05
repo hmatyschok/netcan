@@ -239,13 +239,42 @@ kvaser_pci_detach(device_t dev)
 	struct kvaser_softc *sc;
 	struct sja_chan *sjac;
 	struct sja_data *sjad;
+	uint32_t icr;
 	int i;
  
 	sc = device_get_softc(dev);
- 
-/*
- * ...
- */	
+
+	/* disable interrupts */
+	icr = CSR_READ_4(sc, KVASER_ICR);
+	icr &= ~KVASER_ICR_INIT;
 	
+	CSR_WRITE_4(sc, KVASER_ICR, icr);
+	
+	/* detach each channel, if any */
+	for (i = 0; i < sc->kv_chan_cnt; i++) {
+		sjac = &sc->kv_chan[i];
+		
+		if (sjac->sjac_dev != NULL)
+			(void)device_delete_child(dev, sjac->sjac_dev);
+	}
+	(void)bus_generic_detach(dev);
+	
+	/* release bound resources */
+	for (i = 0; i < sc->pkv_chan_cnt; i++) {
+		sjac = &sc->kv_chan[i];
+		sjad = &sjac->sjac_data;
+			
+		if (sjad->sjad_res != NULL) {
+			(void)bus_release_resource(dev, sjad->sjad_res_type, 
+				sjad->sjad_res);
+		}
+	}
+	
+	if (sc->kv_res != NULL)
+		(void)bus_release_resource(dev, sc->kv_res_type, sc->kv_res);
+	
+	if (sc->kv_cfg != NULL)
+		(void)bus_release_resource(dev, sc->kv_cfg_type, sc->kv_cfg);
+
 	return (0);
 }
