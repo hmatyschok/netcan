@@ -185,7 +185,7 @@ kvaser_pci_attach(device_t dev)
 		sjad->sjad_res_type = SYS_RES_IRQ;
 		sjad->sjad_res = bus_alloc_resource_anywhere(dev, 
 			sjad->sjad_res_type, &sjad->sjad_res_id, 
-				PEAK_CHAN_SIZE, RF_ACTIVE | RF_SHAREABLE);
+				KVASER_CHAN_SIZE, RF_ACTIVE | RF_SHAREABLE);
 		if (sjad->sjad_res == NULL) {
 			device_printf(dev, "couldn't map port %i\n", i);
 			break;
