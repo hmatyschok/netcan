@@ -102,7 +102,8 @@ static const struct peak_type {
 	{ PEAK_VENDORID, PEAK_DEVICEID_PCIE, 
 		"PCAN-PCI Express OEM" },
 	{ PEAK_VENDORID, PEAK_DEVICEID_PCIEC34, 
-		"PCAN-PCI Express 34 card (one channel)" },	
+		"PCAN-PCI Express 34 card (one channel)" },
+	{ 0 }
 };
 
 /* 

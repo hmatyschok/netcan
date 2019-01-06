@@ -271,7 +271,7 @@ sja_attach(device_t dev)
 	ifp->if_start = sja_start;
 	ifp->if_ioctl = sja_ioctl;
 	
-	can_ifattach(ifp, sja_set_link_timings);
+	can_ifattach(ifp, sja_set_link_timings, sjad->sjad_freq);
 
 	ifp->if_mtu = CAN_MTU;
 	

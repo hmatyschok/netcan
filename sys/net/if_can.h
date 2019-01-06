@@ -392,7 +392,7 @@ int 	can_hex2id(u_char *, struct can_frame *);
 void 	can_mbuf_tag_clean(struct mbuf *);
 
 /* interface-layer */
-void 	can_ifattach(struct ifnet *, can_set_timings_t);
+void 	can_ifattach(struct ifnet *, can_set_timings_t, uint32_t);
 void 	can_ifdetach(struct ifnet *);
 void 	can_bpf_mtap(struct ifnet *, struct mbuf *);
 void 	can_ifinit_timings(struct can_ifsoftc *);

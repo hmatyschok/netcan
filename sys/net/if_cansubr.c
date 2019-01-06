@@ -143,7 +143,7 @@ can_set_timings(struct can_ifsoftc *csc)
 }
 
 /*
- * Process a received CAN frame, the packet is 
+ * Process a received can(4) frame, the packet is 
  * in the mbuf(9) chain with the CAN header.
  */
 static void
@@ -156,19 +156,19 @@ can_ifinput(struct ifnet *ifp, struct mbuf *m)
 	    ("%s: NULL interface pointer", __func__));
 	
 	if ((ifp->if_flags & IFF_UP) == 0) {
-		if_printf(ifp, "discard CAN frame at !IFF_UP\n");
+		if_printf(ifp, "discard can(4) frame at !IFF_UP\n");
 		goto bad;
 	}
 	
 #ifdef DIAGNOSTIC
 	if ((ifp->if_drv_flags & IFF_DRV_RUNNING) == 0) {
-		if_printf(ifp, "discard CAN frame at !IFF_DRV_RUNNING\n");
+		if_printf(ifp, "discard can(4) frame at !IFF_DRV_RUNNING\n");
 		goto bad;
 	}
 #endif 	/* DIAGNOSTIC */
 	
 	if (m->m_pkthdr.len < sizeof(struct can_frame)) {
-		if_printf(ifp, "discard CAN frame"
+		if_printf(ifp, "discard can(4) frame"
 			" (len %u pkt len %u)\n",
 			m->m_len, m->m_pkthdr.len);
 		goto bad1;
@@ -176,7 +176,7 @@ can_ifinput(struct ifnet *ifp, struct mbuf *m)
 	
 	if (m->m_len < sizeof(struct can_frame)) {
 	    if ((m = m_pullup(m, sizeof(struct can_frame))) == NULL) {
-			if_printf(ifp, "m_pullup(9) failed, discard CAN frame.");
+			if_printf(ifp, "m_pullup(9) failed, discard can(4) frame.");
 			goto bad1;
 		}
 	}
@@ -221,7 +221,7 @@ bad:
 }
 
 /*
- * Wrapper for tx CAN frame by interface-layer.
+ * Wrapper for tx can(4) frame by interface-layer.
  */
 static int
 can_ifoutput(struct ifnet *ifp, struct mbuf *m, 
@@ -274,7 +274,7 @@ bad:
 }
 
 void
-can_ifattach(struct ifnet *ifp, can_set_timings_t cst)
+can_ifattach(struct ifnet *ifp, can_set_timings_t cst, uint32_t freq)
 {
 	struct can_ifsoftc *csc;
 		
@@ -290,7 +290,14 @@ can_ifattach(struct ifnet *ifp, can_set_timings_t cst)
 	    ("%s: ifp->if_l2com == NULL", __func__));
 	csc = ifp->if_l2com; 
 	mtx_init(&csc->csc_mtx, "csc_mtx", NULL, MTX_DEF);
-	csc->csc_set_timings = (cst == NULL) ? can_set_timings : cst;
+	
+	csc->csc_freq = freq;
+	
+	if (cst == NULL) 
+		csc->csc_set_timings = can_set_timings;
+	else
+		csc->csc_set_timings = cst;
+	
 	
 	if_printf(ifp, "Index: %d\n", ifp->if_index);
 }
@@ -343,7 +350,7 @@ can_restart(struct ifnet *ifp)
 	m->m_len = m->m_pkthdr.len = sizeof(*cf);
 	m->m_pkthdr.rcvif = ifp;
 	
-	/* pass CAN frame to layer above */
+	/* pass can(4) frame to layer above */
  	(*ifp->if_input)(ifp, m);
  	
 done:
@@ -508,7 +515,7 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 }
 
 /*
- * Capture a CAN frame.
+ * Capture a can(4) frame.
  */
 void
 can_bpf_mtap(struct ifnet *ifp, struct mbuf *m)
@@ -688,7 +695,7 @@ can_hex2id(u_char *buf, struct can_frame *cf)
 }
 
 /*
- * Subr. for common structure of CAN interface. 
+ * Subr. for common structure of can(4) interface. 
  */
 
 static void *

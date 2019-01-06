@@ -375,7 +375,7 @@ struct sja_data {
 	uint8_t		sjad_shift;
 	uint8_t		sjad_cdr;
 	uint8_t		sjad_ocr;
-	uint8_t		sjad_freq;
+	uint32_t		sjad_freq;
 };
 
 struct sja_chan {

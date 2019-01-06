@@ -771,7 +771,7 @@ slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 	ifp->if_start = slc_ifstart;
 	ifp->if_ioctl = slc_ifioctl;
 	
-	can_ifattach(ifp, NULL);
+	can_ifattach(ifp, NULL, 0);
 
 	ifp->if_mtu = SLC_MTU;
 	
