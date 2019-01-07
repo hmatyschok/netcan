@@ -108,5 +108,5 @@ struct plx_softc {
 
 	/* set of sja(4) controller */
 	uint32_t	plx_chan_cnt;
-	struct sja_chan		plx_chan[KVASER_CHAN_MAX]; 
+	struct sja_chan		plx_chan[PLX_CHAN_MAX]; 
 };
