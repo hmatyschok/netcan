@@ -615,7 +615,7 @@ plx_pci_attach(device_t dev)
 	}	
 	
 	/* attach set of SJA1000 controller as its children */		
-	for (i = 0; i < PLX_MAX_CHAN; i++) { 
+	for (i = 0; i < PLX_CHAN_MAX; i++) { 
 		sjac = &sc->plx_chan[i];
 		sjad = &sjac->sjac_data;
 				
