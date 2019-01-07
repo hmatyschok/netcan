@@ -78,7 +78,8 @@ static const struct kvaser_type  kv_devs[] = {
 	{ KVASER_VENDORID0, PEAK_DEVICEID_PCI0, 
 		"KVASER PCAN PCI card 0" },
 	{ KVASER_VENDORID1, KVASER_DEVICEID_PCI1, 
-		"KVASER PCAN PCI card 1" }
+		"KVASER PCAN PCI card 1" },
+	{ 0, 0, NULL }	
 };
 
 /* 
