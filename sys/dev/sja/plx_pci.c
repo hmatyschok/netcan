@@ -708,35 +708,6 @@ plx_pci_match(device_ dev)
 	return (NULL);	
 }
 
-/*
- * 
- */
-static void 
-plx_pci_reset(struct plx_softc *sc)
-{
-	
-};
-
-/*
- * PLX9056 software reset.
- */
-static void 
-plx_pci_9056_reset(struct plx_softc *sc)
-{
-	uint32_t status;
-
-	status = CSR_READ_4(sc, PLX_9056_TCR);
-	status |= PLX_TCR_RST;
-	
-	CSR_WRITE_4(sc, PLX_9056_TCR, status);
-	DELAY(100);
-	
-	status &= ~PLX_TCR_RST;
-	CSR_WRITE_4(sc, PLX_9056_TCR, status);
-
-	
-};
-
 MODULE_DEPEND(plx_pci, pci, 1, 1, 1);
 MODULE_DEPEND(plx_pci, sja, 1, 1, 1); 
 MODULE_DEPEND(plx_pci, can, 1, 1, 1);
