@@ -60,19 +60,19 @@
  */
 
 #define CSR_WRITE_1(sc, reg, val) \
-	bus_write_1((sc)->plx_cfg, reg, val)
+	bus_write_1((sc)->plx_res, reg, val)
 #define CSR_READ_1(sja, reg) \
-	bus_read_1((sc)->plx_cfg, reg)
+	bus_read_1((sc)->plx_res, reg)
 
 #define CSR_WRITE_2(sc, reg, val) \
-	bus_write_2((sc)->plx_cfg, reg, val)
+	bus_write_2((sc)->plx_res, reg, val)
 #define CSR_READ_2(sja, reg) \
-	bus_read_2((sc)->plx_cfg, reg)
+	bus_read_2((sc)->plx_res, reg)
 
 #define CSR_WRITE_4(sc, reg, val) \
-	bus_write_4((sc)->plx_cfg, reg, val)
+	bus_write_4((sc)->plx_res, reg, val)
 #define CSR_READ_4(sc, reg) \
-	bus_read_4((sc)->plx_cfg, reg)
+	bus_read_4((sc)->plx_res, reg)
 
 /* 
  * Adlink PCI-7841/cPCI-7841 [SE] cards. 
@@ -486,7 +486,6 @@ plx_pci_attach(device_t dev)
 				sjad->sjad_res_type, &sjad->sjad_res_id, 
 					res->plx_cnt, RF_ACTIVE | RF_SHAREABLE);
 		}
-		
 		
 		if (sjad->sjad_res == NULL) {
 			device_printf(dev, "couldn't map port %i\n", i);
