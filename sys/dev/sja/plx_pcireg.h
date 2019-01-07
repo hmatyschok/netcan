@@ -82,19 +82,19 @@
 #define PLX_TCR		0x50		/* control / software reset */
 
 #define PLX_ICR_INT0_ENB		0x00000001	/* local interrupt 0 */
-#define PLX_ICR_INT1_ENB		(1 << 3)	/* local interrupt 1 */
-#define PLX_ICR_PINT_ENB		(1 << 6)	/* PCI interrupt */
+#define PLX_ICR_INT1_ENB		0x00000008	/* local interrupt 1 */
+#define PLX_ICR_PINT_ENB		0x00000040	/* PCI interrupt */
 
-#define PLX_TCR_RST		(1 << 30)	/* PCI Adapter Software Reset */
+#define PLX_TCR_RST		0x40000000	/* PCI Adapter Software Reset */
 
 /* PLX9056 */
 
 #define PLX_9056_ICR		0x68		/* interrupt control / status */
 #define PLX_9056_TCR		0x6c		/* control / software reset */
 
-#define PLX_9056_ICR_INT0_ENB		(1 << 11)
-#define PLX_9056_ICR_PINT_ENB		(1 << 8)
-#define PLX_9056_TCR_RCR		(1 << 29) /* read configuration */
+#define PLX_9056_ICR_INT0_ENB		0x00000800
+#define PLX_9056_ICR_PINT_ENB		0x00000100
+#define PLX_9056_TCR_RCR		0x20000000 /* read configuration */
 
 #define PLX_CHAN_MAX		2
 
