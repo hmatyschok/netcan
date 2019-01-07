@@ -78,11 +78,7 @@ MODULE_DEPEND(peak_pci, pci, 1, 1, 1);
 MODULE_DEPEND(peak_pci, sja, 1, 1, 1); 
 MODULE_DEPEND(peak_pci, can, 1, 1, 1);
 
-static const struct peak_type {
-	uint16_t 	pk_vid;
-	uint16_t 	pk_did;
-	const char 	*pk_name;
-} pk_devs[] = {
+static const struct peak_type pk_devs[] = {
 	{ PEAK_VENDORID, PEAK_DEVICEID_PCI, 
 		"PCAN PCI/PCIe card" },
 	{ PEAK_VENDORID, PEAK_DEVICEID_PCIEC, 
@@ -144,7 +140,7 @@ peak_pci_probe(device_t dev)
 	did = pci_get_device(dev);
 	
 	for (t = pk_devs, i = 0; i < nitems(pk_devs); i++, t++) {
-		if (vid == t->pk_vid && did == t->pk_did) {
+		if (t->pk_vid == vid && t->pk_did == did) {
 			device_set_desc(dev, t->pk_name);
 			error = BUS_PROBE_DEFAULT;
 			break;

@@ -51,6 +51,14 @@
 #include <dev/sja/if_sjareg.h>
 #include <dev/sja/kvaser_pcireg.h>
 
+/*
+ * Device driver(9) for KVASER PCAN PCI cards 
+ * implements proxy pattern on pci(4) bus for 
+ * instances of the sja(4) contoller.
+ *
+ * XXX: Well, work on progess ...
+ */
+
 #define CSR_WRITE_1(sc, reg, val) \
 	bus_write_1((sc)->kv_cfg, reg, val)
 #define CSR_READ_1(sja, reg) \
@@ -66,23 +74,7 @@
 #define CSR_READ_4(sc, reg) \
 	bus_read_4((sc)->kv_cfg, reg)
 
-/*
- * Device driver(9) for KVASER PCAN PCI cards 
- * implements proxy pattern on pci(4) bus for 
- * instances of the sja(4) contoller.
- *
- * XXX: Well, work on progess ...
- */
-
-MODULE_DEPEND(kvaser_pci, pci, 1, 1, 1);
-MODULE_DEPEND(kvaser_pci, sja, 1, 1, 1); 
-MODULE_DEPEND(kvaser_pci, can, 1, 1, 1);
-
-static const struct kvaser_type {
-	uint16_t 	kv_vid;
-	uint16_t 	kv_did;
-	const char 	*kv_name;
-} kv_devs[] = {
+static const struct kvaser_type  kv_devs[] = {
 	{ KVASER_VENDORID0, PEAK_DEVICEID_PCI0, 
 		"KVASER PCAN PCI card 0" },
 	{ KVASER_VENDORID1, KVASER_DEVICEID_PCI1, 
@@ -128,7 +120,7 @@ kvaser_pci_probe(device_t dev)
 	devid = pci_get_device(dev);
 	
 	for (t = kv_devs, i = 0; i < nitems(kv_devs); i++, t++) {
-		if (did == t->kv_vid && vid == t->kv_did) {
+		if (t->kv_vid == vid && t->kv_did == did) {
 			device_set_desc(dev, t->kv_name);
 			error = BUS_PROBE_DEFAULT;
 			break;
@@ -278,3 +270,7 @@ kvaser_pci_detach(device_t dev)
 
 	return (0);
 }
+
+MODULE_DEPEND(kvaser_pci, pci, 1, 1, 1);
+MODULE_DEPEND(kvaser_pci, sja, 1, 1, 1); 
+MODULE_DEPEND(kvaser_pci, can, 1, 1, 1);

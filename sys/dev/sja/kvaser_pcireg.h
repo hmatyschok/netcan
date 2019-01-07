@@ -38,6 +38,12 @@
 #define KVASER_DEVICEID_PCI0		0x8406
 #define KVASER_DEVICEID_PCI1		0x0008
 
+struct kvaser_type {
+	uint16_t 	kv_vid;
+	uint16_t 	kv_did;
+	const char 	*kv_name;
+};
+
 /*
  * Default values.
  */

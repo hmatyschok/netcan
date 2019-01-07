@@ -45,6 +45,12 @@
 #define PEAK_DEVICEID_PCIE		0x0009
 #define PEAK_DEVICEID_PCIEC34		0x000A
 
+struct peak_type {
+	uint16_t 	pk_vid;
+	uint16_t 	pk_did;
+	const char 	*pk_name;
+};
+
 #define PEAK_SUBDEVID_DUAL_CHAN		0x0004
 #define PEAK_SUBDEVID_TRIPLE_CHAN		0x0010
 #define PEAK_SUBDEVID_QUAD_CHAN		0x0012

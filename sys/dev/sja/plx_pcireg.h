@@ -67,6 +67,29 @@
 #define PLX_SUBVENDID_ANY			0xffff
 
 /*
+ * Provides information for bus_alloc_resource_any{where}(9).
+ */
+struct plx_desc {
+	int		plx_id;
+	int		plx_off;
+	rman_res_t		plx_cnt;
+};
+
+struct plx_data {
+	struct plx_desc		plx_res;
+	struct plx_desc		plx_chan[PLX_CHAN_MAX];
+};
+
+struct plx_type {
+	uint16_t 	plx_vid;
+	uint16_t 	plx_did;
+	uint16_t	plx_sub_vid;
+	uint16_t	plx_sub_did;
+	struct plx_data		*plx_pt;
+	const char 	*plx_name;
+};
+
+/*
  * Default values.
  */
 #define PLX_OCR_DFLT		(SJA_OCR_TX0_PSHP | SJA_OCR_TX1_PSHP)
@@ -88,7 +111,6 @@
 #define PLX_TCR_RST		0x40000000	/* PCI Adapter Software Reset */
 
 /* PLX9056 */
-
 #define PLX_9056_ICR		0x68		/* interrupt control / status */
 #define PLX_9056_TCR		0x6c		/* control / software reset */
 
@@ -102,9 +124,9 @@ struct plx_softc {
 	device_t 	plx_dev;
 
 	/* ICR / TCR */
-	struct resource		*plx_cfg;
-	int			plx_cfg_id;
-	int			plx_cfg_type;
+	struct resource		*plx_res;
+	int			plx_res_id;
+	int			plx_res_type;
 
 	/* set of sja(4) controller */
 	uint32_t	plx_chan_cnt;
