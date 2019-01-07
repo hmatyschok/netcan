@@ -211,6 +211,11 @@ kvaser_pci_attach(device_t dev)
 		device_set_ivars(sjac->sjac_dev, sjad);
 	}
 	
+	if ((error = bus_generic_attach(dev)) != 0) {
+		device_printf(dev, "failed to attach ports\n");
+		goto fail;
+	}	
+	
 	/* assert passive mode */
 	CSR_WRITE_4(sc, KVASER_TCR, KVASER_TCR_PSV);
 	
