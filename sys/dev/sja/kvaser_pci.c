@@ -48,9 +48,6 @@
 #include <dev/pci/pcireg.h>
 #include <dev/pci/pcivar.h>
 
-#include <dev/sja/if_sjareg.h>
-#include <dev/sja/kvaser_pcireg.h>
-
 /*
  * Device driver(9) for KVASER PCAN PCI cards 
  * implements proxy pattern on pci(4) bus for 
@@ -59,20 +56,8 @@
  * XXX: Well, work on progess ...
  */
 
-#define CSR_WRITE_1(sc, reg, val) \
-	bus_write_1((sc)->kv_cfg, reg, val)
-#define CSR_READ_1(sc, reg) \
-	bus_read_1((sc)->kv_cfg, reg)
-
-#define CSR_WRITE_2(sc, reg, val) \
-	bus_write_2((sc)->kv_cfg, reg, val)
-#define CSR_READ_2(sc, reg) \
-	bus_read_2((sc)->kv_cfg, reg)
-
-#define CSR_WRITE_4(sc, reg, val) \
-	bus_write_4((sc)->kv_cfg, reg, val)
-#define CSR_READ_4(sc, reg) \
-	bus_read_4((sc)->kv_cfg, reg)
+#include <dev/sja/if_sjareg.h>
+#include <dev/sja/kvaser_pcireg.h>
 
 static const struct kvaser_type  kv_devs[] = {
 	{ KVASER_VENDORID0, PEAK_DEVICEID_PCI0, 
@@ -137,7 +122,7 @@ kvaser_pci_attach(device_t dev)
 	struct sja_chan *sjac;
 	struct sja_data *sjad;
 	int i, error = 0;
-	uint32_t icr;
+	uint32_t status;
 	
 	sc = device_get_softc(dev);
 	sc->kv_dev = dev;
@@ -217,13 +202,13 @@ kvaser_pci_attach(device_t dev)
 	}	
 	
 	/* assert passive mode */
-	CSR_WRITE_4(sc, KVASER_TCR, KVASER_TCR_PSV);
+	bus_write_4(sc->kv_cfg, KVASER_TCR, KVASER_TCR_PSV);
 	
 	/* enable interrupts */
-	icr = CSR_READ_4(sc, KVASER_ICR);
-	icr |= KVASER_ICR_INIT;
+	status = bus_read_4(sc->kv_cfg, KVASER_ICR);
+	status |= KVASER_ICR_INIT;
 	
-	CSR_WRITE_4(sc, KVASER_ICR, icr);
+	bus_write_4(sc->kv_cfg, KVASER_ICR, status);
 out:	
 	return (error);
 fail:
@@ -237,16 +222,16 @@ kvaser_pci_detach(device_t dev)
 	struct kvaser_softc *sc;
 	struct sja_chan *sjac;
 	struct sja_data *sjad;
-	uint32_t icr;
+	uint32_t stauts;
 	int i;
  
 	sc = device_get_softc(dev);
 
 	/* disable interrupts */
-	icr = CSR_READ_4(sc, KVASER_ICR);
-	icr &= ~KVASER_ICR_INIT;
+	status = bus_read_4(sc->kv_cfg, KVASER_ICR);
+	status &= ~KVASER_ICR_INIT;
 	
-	CSR_WRITE_4(sc, KVASER_ICR, icr);
+	bus_write_4(sc->kv_cfg, KVASER_ICR, status);
 	
 	/* detach each channel, if any */
 	for (i = 0; i < sc->kv_chan_cnt; i++) {
