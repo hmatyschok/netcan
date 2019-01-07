@@ -74,10 +74,6 @@
  * XXX: Well, work on progess ...
  */
 
-MODULE_DEPEND(peak_pci, pci, 1, 1, 1);
-MODULE_DEPEND(peak_pci, sja, 1, 1, 1); 
-MODULE_DEPEND(peak_pci, can, 1, 1, 1);
-
 static const struct peak_type pk_devs[] = {
 	{ PEAK_VENDORID, PEAK_DEVICEID_PCI, 
 		"PCAN PCI/PCIe card" },
@@ -295,3 +291,7 @@ peak_pci_detach(device_t dev)
 	
 	return (0);
 }
+
+MODULE_DEPEND(peak_pci, pci, 1, 1, 1);
+MODULE_DEPEND(peak_pci, sja, 1, 1, 1); 
+MODULE_DEPEND(peak_pci, can, 1, 1, 1);
