@@ -617,11 +617,11 @@ plx_pci_attach(device_t dev)
 	
 	/* enable interrupts */
 	if ((status = sc->plx_id->plx_icr_read) != 0)
-		status = bus_read_4(sc->sc_res, sc->plx_id->plx_icr_addr);
+		status = bus_read_4(sc->plx_res, sc->plx_id->plx_icr_addr);
 		
 	status |= sc->plx_id->plx_icr;
 	
-	bus_write_4(sc->sc_res, sc->plx_id->plx_icr_addr, status);
+	bus_write_4(sc->plx_res, sc->plx_id->plx_icr_addr, status);
 out:	
 	return (error);
 fail:
@@ -641,29 +641,29 @@ plx_pci_detach(device_t dev)
 	sc = device_get_softc(dev);
 
 	/* local bus reset for PLX9056 and PLX9030/50/52 */
-	status = bus_read_4(sc->sc_res, sc->plx_id->plx_tcr_addr);
+	status = bus_read_4(sc->plx_res, sc->plx_id->plx_tcr_addr);
 	status |= sc->plx_id->plx_tcr_rst;
 	
-	bus_write_4(sc->sc_res, sc->plx_id->plx_tcr_addr, status);
+	bus_write_4(sc->plx_res, sc->plx_id->plx_tcr_addr, status);
 	DELAY(100);
 	
 	status &= ~(sc->plx_id->plx_tcr_rst);
 	
-	bus_write_4(sc->sc_res, sc->plx_id->plx_tcr_addr, status);
+	bus_write_4(sc->plx_res, sc->plx_id->plx_tcr_addr, status);
 	
 	/* reload data from EEPROM on PLX9056, if any */
 	if (sc->plx_id->plx_tcr_rcr != 0) {
 		status |= sc->plx_id->plx_tcr_rcr;
-		bus_write_4(sc->sc_res, sc->plx_id->plx_tcr_addr, status);
+		bus_write_4(sc->plx_res, sc->plx_id->plx_tcr_addr, status);
 	
 		DELAY(10);	/* XXX: ... */
 
 		status &= ~(sc->plx_id->plx_tcr_rcr);
-		bus_write_4(sc->sc_res, sc->plx_id->plx_tcr_addr, status);	
+		bus_write_4(sc->plx_res, sc->plx_id->plx_tcr_addr, status);	
 	}
 	
 	/* disable interrupts */
-	bus_write_4(sc->sc_res, sc->plx_id->plx_icr_addr, 0);
+	bus_write_4(sc->plx_res, sc->plx_id->plx_icr_addr, 0);
  
 	/* detach each channel, if any */
 	for (i = 0; i < PLX_CHAN_MAX; i++) {
@@ -685,7 +685,7 @@ plx_pci_detach(device_t dev)
 		}
 	}
 	
-	if (sc->pk_res != NULL)
+	if (sc->plx_res != NULL)
 		(void)bus_release_resource(dev, sc->plx_res_type, sc->plx_res);
 
 	return (0);
