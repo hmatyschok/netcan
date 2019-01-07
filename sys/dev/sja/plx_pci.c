@@ -427,12 +427,17 @@ plx_pci_attach(device_t dev)
 {
 	const struct plx_type	*t;
 	struct plx_data *plx;
-	struct plx_softc *sc;
 	struct plx_desc *res;
+	struct plx_softc *sc;
 	struct sja_chan *sjac;
 	struct sja_data *sjad;
 	int i, error = 0;
 	uint32_t icr;
+
+	sc = device_get_softc(dev);
+	sc->plx_dev = dev;
+	
+	(void)pci_enable_busmaster(dev);
 
 	/* determine its type */
 	if ((t = plx_pci_match(dev)) == NULL) {
@@ -442,11 +447,6 @@ plx_pci_attach(device_t dev)
 	}
 
 	plx = t->plx_d;
-
-	sc = device_get_softc(dev);
-	sc->plx_dev = dev;
-	
-	(void)pci_enable_busmaster(dev);
 	
 	/* allocate resources for control registers and ports */
 	res = &plx->plx_res;
