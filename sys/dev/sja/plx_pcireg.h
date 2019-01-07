@@ -69,6 +69,7 @@
 /*
  * Provides information for bus_alloc_resource_any{where}(9).
  */
+
 struct plx_desc {
 	int		plx_bar;
 	int		plx_off;
@@ -76,18 +77,19 @@ struct plx_desc {
 };
 
 struct plx_data {
-	/* resources */
+	/* parameter for resource allocation */
 	struct plx_desc		plx_res;
 	struct plx_desc		plx_chan[PLX_CHAN_MAX];
 	
-	/* initializiation */
+	/* parameter for initializiation */
 	uint32_t		plx_icr_read;
 	uint32_t		plx_icr_addr;
 	uint32_t		plx_icr;
 	
-	/* finaliziation */
-	
-	/* ... */
+	/* parameter for software reset */	
+	uint32_t		plx_tcr_addr;
+	uint32_t		plx_tcr_rst;
+	uint32_t		plx_tcr_rcr;
 };
 
 struct plx_type {

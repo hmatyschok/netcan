@@ -61,18 +61,21 @@
 
 #define CSR_WRITE_1(sc, reg, val) \
 	bus_write_1((sc)->plx_res, reg, val)
-#define CSR_READ_1(sja, reg) \
+#define CSR_READ_1(sc, reg) \
 	bus_read_1((sc)->plx_res, reg)
 
 #define CSR_WRITE_2(sc, reg, val) \
 	bus_write_2((sc)->plx_res, reg, val)
-#define CSR_READ_2(sja, reg) \
+#define CSR_READ_2(sc, reg) \
 	bus_read_2((sc)->plx_res, reg)
 
 #define CSR_WRITE_4(sc, reg, val) \
 	bus_write_4((sc)->plx_res, reg, val)
 #define CSR_READ_4(sc, reg) \
 	bus_read_4((sc)->plx_res, reg)
+
+static void		plx_pci_reset(struct plx_softc *sc);
+static void 	plx_pci_9056_reset(struct plx_softc *sc);
 
 /* 
  * Adlink PCI-7841/cPCI-7841 [SE] cards. 
@@ -99,6 +102,9 @@ static struct plx_data plx_adlink = {
 	.plx_icr_read = 1,
 	.plx_icr_addr = PLX_ICR,
 	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
+	
+	.plx_status_addr = PLX_TCR;
+	.plx_status = 
 };
 
 /*
@@ -475,7 +481,7 @@ plx_pci_attach(device_t dev)
 	struct sja_chan *sjac;
 	struct sja_data *sjad;
 	int i, error = 0;
-	uint32_t icr;
+	uint32_t status;
 
 	sc = device_get_softc(dev);
 	sc->plx_dev = dev;
@@ -561,12 +567,12 @@ plx_pci_attach(device_t dev)
 	}
 	
 	/* enable interrupts */
-	if ((icr = sc->plx_id->plx_icr_read) != 0)
-		icr = CSR_READ_4(sc, sc->plx_id->plx_icr_addr);
+	if ((status = sc->plx_id->plx_icr_read) != 0)
+		status = CSR_READ_4(sc, sc->plx_id->plx_icr_addr);
 		
-	icr |= sc->plx_id->plx_icr;
+	status |= sc->plx_id->plx_icr;
 	
-	CSR_WRITE_4(sc, sc->plx_id->plx_icr_addr, icr);
+	CSR_WRITE_4(sc, sc->plx_id->plx_icr_addr, status);
 out:	
 	return (error);
 fail:
@@ -580,9 +586,32 @@ plx_pci_detach(device_t dev)
 	struct plx_softc *sc;
 	struct sja_chan *sjac;
 	struct sja_data *sjad;
+	uint32_t status;
 	int i;
  
 	sc = device_get_softc(dev);
+
+	/* local bus reset for PLX9056 and PLX9030/50/52 */
+	status = CSR_READ_4(sc, sc->plx_id->plx_tcr_addr);
+	status |= sc->plx_id->plx_tcr_rst;
+	
+	CSR_WRITE_4(sc, sc->plx_id->plx_tcr_addr, status);
+	DELAY(100);
+	
+	status &= ~sc->plx_id->plx_tcr_rst;
+	
+	CSR_WRITE_4(sc, sc->plx_id->plx_tcr_addr, status);
+	
+	/* reload data from EEPROM on PLX9056, if any */
+	if (sc->plx_id->plx_tcr_rcr != 0) {
+		status |= sc->plx_id->plx_tcr_rcr;
+		CSR_WRITE_4(sc, sc->plx_id->plx_tcr_addr, status);
+	
+		DELAY(10);	/* XXX: ... */
+
+		status &= ~sc->plx_id->plx_tcr_rcr;
+		CSR_WRITE_4(sc, sc->plx_id->plx_tcr_addr, status);	
+	}
  
 	/* disable interrupts */
 	CSR_WRITE_4(sc, sc->plx_id->plx_icr_addr, 0x00000000);
@@ -637,6 +666,35 @@ plx_pci_match(device_ dev)
 	}
 	return (NULL);	
 }
+
+/*
+ * 
+ */
+static void 
+plx_pci_reset(struct plx_softc *sc)
+{
+	
+};
+
+/*
+ * PLX9056 software reset.
+ */
+static void 
+plx_pci_9056_reset(struct plx_softc *sc)
+{
+	uint32_t status;
+
+	status = CSR_READ_4(sc, PLX_9056_TCR);
+	status |= PLX_TCR_RST;
+	
+	CSR_WRITE_4(sc, PLX_9056_TCR, status);
+	DELAY(100);
+	
+	status &= ~PLX_TCR_RST;
+	CSR_WRITE_4(sc, PLX_9056_TCR, status);
+
+	
+};
 
 MODULE_DEPEND(plx_pci, pci, 1, 1, 1);
 MODULE_DEPEND(plx_pci, sja, 1, 1, 1); 

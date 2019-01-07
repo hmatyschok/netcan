@@ -53,17 +53,17 @@
 
 #define CSR_WRITE_1(sc, reg, val) \
 	bus_write_1((sc)->pk_res, reg, val)
-#define CSR_READ_1(sja, reg) \
+#define CSR_READ_1(sc, reg) \
 	bus_read_1((sc)->pk_res, reg)
 
 #define CSR_WRITE_2(sc, reg, val) \
 	bus_write_2((sc)->pk_res, reg, val)
-#define CSR_READ_2(sja, reg) \
+#define CSR_READ_2(sc, reg) \
 	bus_read_2((sc)->pk_res, reg)
 
 #define CSR_WRITE_4(sc, reg, val) \
 	bus_write_4((sc)->pk_res, reg, val)
-#define CSR_READ_4(sja, reg) \
+#define CSR_READ_4(sc, reg) \
 	bus_read_4((sc)->pk_res, reg)
 
 /*
