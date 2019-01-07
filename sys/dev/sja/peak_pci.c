@@ -48,24 +48,6 @@
 #include <dev/pci/pcireg.h>
 #include <dev/pci/pcivar.h>
 
-#include <dev/sja/if_sjareg.h>
-#include <dev/sja/peak_pcireg.h>
-
-#define CSR_WRITE_1(sc, reg, val) \
-	bus_write_1((sc)->pk_res, reg, val)
-#define CSR_READ_1(sc, reg) \
-	bus_read_1((sc)->pk_res, reg)
-
-#define CSR_WRITE_2(sc, reg, val) \
-	bus_write_2((sc)->pk_res, reg, val)
-#define CSR_READ_2(sc, reg) \
-	bus_read_2((sc)->pk_res, reg)
-
-#define CSR_WRITE_4(sc, reg, val) \
-	bus_write_4((sc)->pk_res, reg, val)
-#define CSR_READ_4(sc, reg) \
-	bus_read_4((sc)->pk_res, reg)
-
 /*
  * Device driver(9) for PEAK PCAN PCI family 
  * cards implements proxy pattern on pci(4) 
@@ -73,6 +55,9 @@
  *
  * XXX: Well, work on progess ...
  */
+
+#include <dev/sja/if_sjareg.h>
+#include <dev/sja/peak_pcireg.h>
 
 static const struct peak_type pk_devs[] = {
 	{ PEAK_VENDORID, PEAK_DEVICEID_PCI, 
@@ -153,7 +138,7 @@ peak_pci_attach(device_t dev)
 	struct sja_chan *sjac;
 	struct sja_data *sjad;
 	uint32_t csid, cnt;
-	uint16_t icr;
+	uint16_t status;
 	int i, error = 0;
 	
 	sc = device_get_softc(dev);
@@ -199,7 +184,7 @@ peak_pci_attach(device_t dev)
 		sjad->sjad_res_type = SYS_RES_IRQ;
 		sjad->sjad_res = bus_alloc_resource_anywhere(dev, 
 			sjad->sjad_res_type, &sjad->sjad_res_id, 
-			PEAK_CHAN_SIZE, RF_ACTIVE | RF_SHAREABLE);
+				PEAK_CHAN_SIZE, RF_ACTIVE | RF_SHAREABLE);
 		if (sjad->sjad_res == NULL) {
 			device_printf(dev, "couldn't map port\n");
 			error = ENXIO;
@@ -210,18 +195,18 @@ peak_pci_attach(device_t dev)
 	}	
 	
 	/* set-up GPIO control register, if any */
-	CSR_WRITE_2(sc, PEAK_GPIO_ICCR, PEAK_GPIO_ICCR_INIT);
+	bus_write_2(sc->pk_res, PEAK_GPIO_ICCR, PEAK_GPIO_ICCR_INIT);
 	
 	/* enable all channels, if any */
-	CSR_WRITE_1(sc, PEAK_GPIO_ICR, PEAK_GPIO_ICCR_START);
+	bus_write_1(sc->pk_res, PEAK_GPIO_ICR, PEAK_GPIO_ICCR_START);
 	
 	/* toggle reset */
-	CSR_WRITE_1(sc, PEAK_MISC_CR, PEAK_MISC_CR_TOG_RST);
+	bus_write_1(sc->pk_res, PEAK_MISC_CR, PEAK_MISC_CR_TOG_RST);
 	DELAY(60);
 	
 	/* leave parport mux mode */
-	CSR_WRITE_1(sc, PEAK_MISC_CR, PEAK_MISC_CR_PP_EPP);
-	icr = CSR_READ_2(sc, PEAK_ICCR);
+	bus_write_1(sc->pk_res, PEAK_MISC_CR, PEAK_MISC_CR_PP_EPP);
+	status = bus_read_2(sc->pk_res, PEAK_ICCR);
 
 	/* attach set of SJA1000 controller as its children */		
 	for (i = 0; i < sc->pk_chan_cnt; i++) { 
@@ -243,7 +228,7 @@ peak_pci_attach(device_t dev)
 	}
 	
 	/* enable interrupts */
-	CSR_WRITE_2(sc, PEAK_ICCR, icr);
+	bus_write_2(sc->pk_res, PEAK_ICCR, status);
 out:	
 	return (error);
 fail:
@@ -262,7 +247,7 @@ peak_pci_detach(device_t dev)
 	sc = device_get_softc(dev);
  
 	/* disable interrupts */
-	CSR_WRITE_2(sc, PEAK_ICCR, 0x0000);
+	bus_write_2(sc->pk_res, PEAK_ICCR, 0);
  
 	/* detach each channel, if any */
 	for (i = 0; i < sc->pk_chan_cnt; i++) {
