@@ -614,7 +614,7 @@ plx_pci_attach(device_t dev)
 		sjad->sjad_freq = PLX_CLK_FREQ;
 	}	
 	
-	/* attach set of SJA1000 controller as its children */		
+	/* attach set of sja(4) controller as its children */		
 	for (i = 0; i < PLX_CHAN_MAX; i++) { 
 		sjac = &sc->plx_chan[i];
 		sjad = &sjac->sjac_data;
@@ -665,7 +665,7 @@ plx_pci_detach(device_t dev)
 	CSR_WRITE_4(sc, sc->plx_id->plx_tcr_addr, status);
 	DELAY(100);
 	
-	status &= ~sc->plx_id->plx_tcr_rst;
+	status &= ~(sc->plx_id->plx_tcr_rst);
 	
 	CSR_WRITE_4(sc, sc->plx_id->plx_tcr_addr, status);
 	
@@ -676,7 +676,7 @@ plx_pci_detach(device_t dev)
 	
 		DELAY(10);	/* XXX: ... */
 
-		status &= ~sc->plx_id->plx_tcr_rcr;
+		status &= ~(sc->plx_id->plx_tcr_rcr);
 		CSR_WRITE_4(sc, sc->plx_id->plx_tcr_addr, status);	
 	}
 	
