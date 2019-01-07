@@ -120,7 +120,7 @@ struct plx_type {
 #define PLX_ICR_INT1_ENB		0x00000008	/* local interrupt 1 */
 #define PLX_ICR_PINT_ENB		0x00000040	/* PCI interrupt */
 
-#define PLX_TCR_RST		0x40000000	/* PCI Adapter Software Reset */
+#define PLX_TCR_RST		0x40000000	/* pci(4) adapter software reset */
 
 /* PLX9056 */
 #define PLX_9056_ICR		0x68		/* interrupt control / status */
