@@ -76,9 +76,18 @@ struct plx_desc {
 };
 
 struct plx_data {
+	/* resources */
 	struct plx_desc		plx_res;
 	struct plx_desc		plx_chan[PLX_CHAN_MAX];
+	
+	/* initializiation */
+	uint32_t		plx_icr_read;
+	uint32_t		plx_icr_addr;
 	uint32_t		plx_icr;
+	
+	/* finaliziation */
+	
+	/* ... */
 };
 
 struct plx_type {

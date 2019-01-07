@@ -96,6 +96,8 @@ static struct plx_data plx_adlink = {
 		.plx_cnt = 	0x80,
 	},
 	
+	.plx_icr_read = 1,
+	.plx_icr_addr = PLX_ICR,
 	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
 };
 
@@ -121,6 +123,8 @@ static struct plx_data plx_esd_200 = {
 		.plx_cnt = 	0x80,
 	},
 	
+	.plx_icr_read = 1,
+	.plx_icr_addr = PLX_ICR,
 	.plx_icr = (PLX_ICR_INT0_ENB | PLC_ICR_PINT_ENB),
 };
 
@@ -146,6 +150,8 @@ static struct plx_data plx_esd_266 = {
 		.plx_cnt = 	0x80,
 	},
 	
+	.plx_icr_read = 0,
+	.plx_icr_addr = PLX_9056_ICR,
 	.plx_icr = (PLX_9056_ICR_INT0_ENB | PLX_9056_ICR_PINT_ENB),
 };
 
@@ -171,6 +177,8 @@ static struct plx_data plx_esd_2000 = {
 		.plx_cnt = 	0x80,
 	},
 	
+	.plx_icr_read = 0,
+	.plx_icr_addr = PLX_9056_ICR,
 	.plx_icr = (PLX_9056_ICR_INT0_ENB | PLX_9056_ICR_PINT_ENB),
 };
 
@@ -196,6 +204,8 @@ static struct plx_data plx_ixxat = {
 		.plx_cnt = 	0x80,
 	},
 	
+	.plx_icr_read = 1,
+	.plx_icr_addr = PLX_ICR,
 	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
 };
 
@@ -221,6 +231,8 @@ static struct plx_data plx_marathon_pci = {
 		.plx_cnt = 	0,
 	},
 	
+	.plx_icr_read = 1,
+	.plx_icr_addr = PLX_ICR,
 	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
 };
 
@@ -246,6 +258,8 @@ static struct plx_data plx_marathon_pcie = {
 		.plx_cnt = 	0,
 	},
 	
+	.plx_icr_read = 0,
+	.plx_icr_addr = PLX_9056_ICR,
 	.plx_icr = (PLX_9056_ICR_INT0_ENB | PLX_9056_ICR_PINT_ENB),
 };
 
@@ -271,6 +285,8 @@ static struct plx_data plx_tews = {
 		.plx_cnt = 	0x80,
 	},
 	
+	.plx_icr_read = 1,
+	.plx_icr_addr = PLX_ICR,
 	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
 };
 
@@ -296,6 +312,8 @@ static struct plx_data plx_cti = {
 		.plx_cnt = 	0x80,
 	},
 	
+	.plx_icr_read = 1,
+	.plx_icr_addr = PLX_ICR,
 	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
 };
 
@@ -321,6 +339,8 @@ static struct plx_data plx_elcus = {
 		.plx_cnt = 	0x80,
 	},
 	
+	.plx_icr_read = 1,
+	.plx_icr_addr = PLX_ICR,
 	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
 };
 
@@ -346,6 +366,8 @@ static struct plx_data plx_moxa = {
 		.plx_cnt = 	0x80,
 	},
 	
+	.plx_icr_read = 1,
+	.plx_icr_addr = PLX_ICR,
 	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
 };
 
@@ -539,9 +561,13 @@ plx_pci_attach(device_t dev)
 		goto fail;
 	}
 	
-	/*
-	 * ...
-	 */
+	/* enable interrupts */
+	if ((icr = plx->plx_icr_read) != 0)
+		icr = CSR_READ_4(sc, plx->plx_icr_addr);
+		
+	icr |= plx->plx_icr;
+	
+	CSR_WRITE_4(sc, plx->plx_icr_addr, icr);
 out:	
 	return (error);
 fail:
