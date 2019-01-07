@@ -48,9 +48,6 @@
 #include <dev/pci/pcireg.h>
 #include <dev/pci/pcivar.h>
 
-#include <dev/sja/if_sjareg.h>
-#include <dev/sja/plx_pcireg.h>
-
 /*
  * Device driver(9) for PLX90xx PCI-bridge 
  * cards implements proxy pattern on pci(4) 
@@ -59,20 +56,8 @@
  * XXX: Well, work on progess ...
  */
 
-#define CSR_WRITE_1(sc, reg, val) \
-	bus_write_1((sc)->plx_res, reg, val)
-#define CSR_READ_1(sc, reg) \
-	bus_read_1((sc)->plx_res, reg)
-
-#define CSR_WRITE_2(sc, reg, val) \
-	bus_write_2((sc)->plx_res, reg, val)
-#define CSR_READ_2(sc, reg) \
-	bus_read_2((sc)->plx_res, reg)
-
-#define CSR_WRITE_4(sc, reg, val) \
-	bus_write_4((sc)->plx_res, reg, val)
-#define CSR_READ_4(sc, reg) \
-	bus_read_4((sc)->plx_res, reg)
+#include <dev/sja/if_sjareg.h>
+#include <dev/sja/plx_pcireg.h>
 
 /* 
  * Adlink PCI-7841/cPCI-7841 [SE] cards. 
@@ -632,11 +617,11 @@ plx_pci_attach(device_t dev)
 	
 	/* enable interrupts */
 	if ((status = sc->plx_id->plx_icr_read) != 0)
-		status = CSR_READ_4(sc, sc->plx_id->plx_icr_addr);
+		status = bus_read_4(sc->sc_res, sc->plx_id->plx_icr_addr);
 		
 	status |= sc->plx_id->plx_icr;
 	
-	CSR_WRITE_4(sc, sc->plx_id->plx_icr_addr, status);
+	bus_write_4(sc->sc_res, sc->plx_id->plx_icr_addr, status);
 out:	
 	return (error);
 fail:
@@ -656,29 +641,29 @@ plx_pci_detach(device_t dev)
 	sc = device_get_softc(dev);
 
 	/* local bus reset for PLX9056 and PLX9030/50/52 */
-	status = CSR_READ_4(sc, sc->plx_id->plx_tcr_addr);
+	status = bus_read_4(sc->sc_res, sc->plx_id->plx_tcr_addr);
 	status |= sc->plx_id->plx_tcr_rst;
 	
-	CSR_WRITE_4(sc, sc->plx_id->plx_tcr_addr, status);
+	bus_write_4(sc->sc_res, sc->plx_id->plx_tcr_addr, status);
 	DELAY(100);
 	
 	status &= ~(sc->plx_id->plx_tcr_rst);
 	
-	CSR_WRITE_4(sc, sc->plx_id->plx_tcr_addr, status);
+	bus_write_4(sc->sc_res, sc->plx_id->plx_tcr_addr, status);
 	
 	/* reload data from EEPROM on PLX9056, if any */
 	if (sc->plx_id->plx_tcr_rcr != 0) {
 		status |= sc->plx_id->plx_tcr_rcr;
-		CSR_WRITE_4(sc, sc->plx_id->plx_tcr_addr, status);
+		bus_write_4(sc->sc_res, sc->plx_id->plx_tcr_addr, status);
 	
 		DELAY(10);	/* XXX: ... */
 
 		status &= ~(sc->plx_id->plx_tcr_rcr);
-		CSR_WRITE_4(sc, sc->plx_id->plx_tcr_addr, status);	
+		bus_write_4(sc->sc_res, sc->plx_id->plx_tcr_addr, status);	
 	}
 	
 	/* disable interrupts */
-	CSR_WRITE_4(sc, sc->plx_id->plx_icr_addr, 0);
+	bus_write_4(sc->sc_res, sc->plx_id->plx_icr_addr, 0);
  
 	/* detach each channel, if any */
 	for (i = 0; i < PLX_CHAN_MAX; i++) {
