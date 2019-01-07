@@ -489,10 +489,10 @@ plx_pci_attach(device_t dev)
 		goto fail;
 	}
 
-	sc->plx_d = t->plx_d;
+	sc->plx_id = t->plx_id;
 	
 	/* allocate resources for control registers and ports */
-	res = &sc->plx_d->plx_res;
+	res = &sc->plx_id->plx_res;
 	
 	sc->plx_res_id = res->plx_id + res->plx_off; 
 	sc->plx_res_type = SYS_RES_MEMORY;
@@ -513,7 +513,7 @@ plx_pci_attach(device_t dev)
 	}
 	
 	for (i = 0; i < PLX_CHAN_MAX; i++) { 
-		res = &sc->plx_d->plx_chan[i]; 
+		res = &sc->plx_id->plx_chan[i]; 
 		sjac = &sc->plx_chan[i];
 		sjad = &sjac->sjac_data;
 
@@ -561,12 +561,12 @@ plx_pci_attach(device_t dev)
 	}
 	
 	/* enable interrupts */
-	if ((icr = sc->plx_d->plx_icr_read) != 0)
-		icr = CSR_READ_4(sc, sc->plx_d->plx_icr_addr);
+	if ((icr = sc->plx_id->plx_icr_read) != 0)
+		icr = CSR_READ_4(sc, sc->plx_id->plx_icr_addr);
 		
-	icr |= sc->plx_d->plx_icr;
+	icr |= sc->plx_id->plx_icr;
 	
-	CSR_WRITE_4(sc, sc->plx_d->plx_icr_addr, icr);
+	CSR_WRITE_4(sc, sc->plx_id->plx_icr_addr, icr);
 out:	
 	return (error);
 fail:
@@ -585,7 +585,7 @@ plx_pci_detach(device_t dev)
 	sc = device_get_softc(dev);
  
 	/* disable interrupts */
-	CSR_WRITE_4(sc, sc->plx_d->plx_icr_addr, 0x00000000);
+	CSR_WRITE_4(sc, sc->plx_id->plx_icr_addr, 0x00000000);
  
 	/* detach each channel, if any */
 	for (i = 0; i < PLX_CHAN_MAX; i++) {

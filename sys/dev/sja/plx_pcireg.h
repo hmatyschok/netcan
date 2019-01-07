@@ -95,7 +95,7 @@ struct plx_type {
 	uint16_t 	plx_did;
 	uint16_t	plx_sub_vid;
 	uint16_t	plx_sub_did;
-	struct plx_data		*plx_d;
+	struct plx_data		*plx_id;
 	const char 	*plx_name;
 };
 
@@ -133,7 +133,7 @@ struct plx_type {
 struct plx_softc {
 	device_t 	plx_dev;
 
-	struct plx_data		*plx_d;
+	struct plx_data		*plx_id;
 
 	/* ICR / TCR */
 	struct resource		*plx_res;
