@@ -679,9 +679,9 @@ plx_pci_detach(device_t dev)
 		status &= ~sc->plx_id->plx_tcr_rcr;
 		CSR_WRITE_4(sc, sc->plx_id->plx_tcr_addr, status);	
 	}
- 
+	
 	/* disable interrupts */
-	CSR_WRITE_4(sc, sc->plx_id->plx_icr_addr, 0x00000000);
+	CSR_WRITE_4(sc, sc->plx_id->plx_icr_addr, 0);
  
 	/* detach each channel, if any */
 	for (i = 0; i < PLX_CHAN_MAX; i++) {
