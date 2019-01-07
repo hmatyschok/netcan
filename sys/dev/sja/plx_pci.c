@@ -74,9 +74,6 @@
 #define CSR_READ_4(sc, reg) \
 	bus_read_4((sc)->plx_res, reg)
 
-static void		plx_pci_reset(struct plx_softc *sc);
-static void 	plx_pci_9056_reset(struct plx_softc *sc);
-
 /* 
  * Adlink PCI-7841/cPCI-7841 [SE] cards. 
  */ 
