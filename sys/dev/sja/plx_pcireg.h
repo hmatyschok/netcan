@@ -133,6 +133,8 @@ struct plx_type {
 struct plx_softc {
 	device_t 	plx_dev;
 
+	struct plx_data		*plx_d;
+
 	/* ICR / TCR */
 	struct resource		*plx_res;
 	int			plx_res_id;

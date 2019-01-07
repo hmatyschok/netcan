@@ -470,9 +470,8 @@ static int
 plx_pci_attach(device_t dev)
 {
 	const struct plx_type	*t;
-	struct plx_data *plx;
-	struct plx_desc *res;
 	struct plx_softc *sc;
+	struct plx_desc *res;	
 	struct sja_chan *sjac;
 	struct sja_data *sjad;
 	int i, error = 0;
@@ -490,10 +489,10 @@ plx_pci_attach(device_t dev)
 		goto fail;
 	}
 
-	plx = t->plx_d;
+	sc->plx_d = t->plx_d;
 	
 	/* allocate resources for control registers and ports */
-	res = &plx->plx_res;
+	res = &sc->plx_d->plx_res;
 	
 	sc->plx_res_id = res->plx_id + res->plx_off; 
 	sc->plx_res_type = SYS_RES_MEMORY;
@@ -514,7 +513,7 @@ plx_pci_attach(device_t dev)
 	}
 	
 	for (i = 0; i < PLX_CHAN_MAX; i++) { 
-		res = &plx->plx_chan[i]; 
+		res = &sc->plx_d->plx_chan[i]; 
 		sjac = &sc->plx_chan[i];
 		sjad = &sjac->sjac_data;
 
@@ -562,12 +561,12 @@ plx_pci_attach(device_t dev)
 	}
 	
 	/* enable interrupts */
-	if ((icr = plx->plx_icr_read) != 0)
-		icr = CSR_READ_4(sc, plx->plx_icr_addr);
+	if ((icr = sc->plx_d->plx_icr_read) != 0)
+		icr = CSR_READ_4(sc, sc->plx_d->plx_icr_addr);
 		
-	icr |= plx->plx_icr;
+	icr |= sc->plx_d->plx_icr;
 	
-	CSR_WRITE_4(sc, plx->plx_icr_addr, icr);
+	CSR_WRITE_4(sc, sc->plx_d->plx_icr_addr, icr);
 out:	
 	return (error);
 fail:
@@ -581,12 +580,35 @@ plx_pci_detach(device_t dev)
 	struct plx_softc *sc;
 	struct sja_chan *sjac;
 	struct sja_data *sjad;
-	uint32_t icr;
 	int i;
  
-/*
- * ...
- */
+	sc = device_get_softc(dev);
+ 
+	/* disable interrupts */
+	CSR_WRITE_4(sc, sc->plx_d->plx_icr_addr, 0x00000000);
+ 
+	/* detach each channel, if any */
+	for (i = 0; i < PLX_CHAN_MAX; i++) {
+		sjac = &sc->plx_chan[i];
+		
+		if (sjac->sjac_dev != NULL)
+			(void)device_delete_child(dev, sjac->sjac_dev);
+	}
+	(void)bus_generic_detach(dev);
+ 
+	/* release bound resources */
+	for (i = 0; i < PLX_CHAN_MAX; i++) {
+		sjac = &sc->plx_chan[i];
+		sjad = &sjac->sjac_data;
+			
+		if (sjad->sjad_res != NULL) {
+			(void)bus_release_resource(dev, sjad->sjad_res_type, 
+				sjad->sjad_res);
+		}
+	}
+	
+	if (sc->pk_res != NULL)
+		(void)bus_release_resource(dev, sc->plx_res_type, sc->plx_res);
 
 	return (0);
 }
