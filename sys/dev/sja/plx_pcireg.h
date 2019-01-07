@@ -70,7 +70,7 @@
  * Provides information for bus_alloc_resource_any{where}(9).
  */
 struct plx_desc {
-	int		plx_id;
+	int		plx_pb;
 	int		plx_off;
 	rman_res_t		plx_cnt;
 };

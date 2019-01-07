@@ -79,19 +79,19 @@
  */ 
 static struct plx_data plx_adlink = {
 	.plx_res = {
-		.plx_id =	PCIR_BAR(0),
+		.plx_pb =	PCIR_BAR(0),
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
 	
 	.plx_chan[0] = {
-		.plx_id =	PCIR_BAR(2),
+		.plx_pb =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
 	
 	.plx_chan[1] = {
-		.plx_id =	PCIR_BAR(2),
+		.plx_pb =	PCIR_BAR(2),
 		.plx_off =	0x80,
 		.plx_cnt = 	0x80,
 	},
@@ -106,19 +106,19 @@ static struct plx_data plx_adlink = {
  */
 static struct plx_data plx_esd_200 = {
 	.plx_res = {
-		.plx_id =	PCIR_BAR(0),
+		.plx_pb =	PCIR_BAR(0),
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
 	
 	.plx_chan[0] = {
-		.plx_id =	PCIR_BAR(2),
+		.plx_pb =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
 	
 	.plx_chan[1] = {
-		.plx_id =	PCIR_BAR(2),
+		.plx_pb =	PCIR_BAR(2),
 		.plx_off =	0x100,
 		.plx_cnt = 	0x80,
 	},
@@ -133,19 +133,19 @@ static struct plx_data plx_esd_200 = {
  */
 static struct plx_data plx_esd_266 = {
 	.plx_res = {
-		.plx_id =	PCIR_BAR(0),
+		.plx_pb =	PCIR_BAR(0),
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
 	
 	.plx_chan[0] = {
-		.plx_id =	PCIR_BAR(2),
+		.plx_pb =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
 	
 	.plx_chan[1] = {
-		.plx_id =	PCIR_BAR(2),
+		.plx_pb =	PCIR_BAR(2),
 		.plx_off =	0x100,
 		.plx_cnt = 	0x80,
 	},
@@ -160,19 +160,19 @@ static struct plx_data plx_esd_266 = {
  */
 static struct plx_data plx_esd_2000 = {
 	.plx_res = {
-		.plx_id =	PCIR_BAR(0),
+		.plx_pb =	PCIR_BAR(0),
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
 	
 	.plx_chan[0] = {
-		.plx_id =	PCIR_BAR(2),
+		.plx_pb =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
 	
 	.plx_chan[1] = {
-		.plx_id =	PCIR_BAR(2),
+		.plx_pb =	PCIR_BAR(2),
 		.plx_off =	0x100,
 		.plx_cnt = 	0x80,
 	},
@@ -187,19 +187,19 @@ static struct plx_data plx_esd_2000 = {
  */
 static struct plx_data plx_ixxat = {
 	.plx_res = {
-		.plx_id =	PCIR_BAR(0),
+		.plx_pb =	PCIR_BAR(0),
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
 	
 	.plx_chan[0] = {
-		.plx_id =	PCIR_BAR(2),
+		.plx_pb =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
 	
 	.plx_chan[1] = {
-		.plx_id =	PCIR_BAR(2),
+		.plx_pb =	PCIR_BAR(2),
 		.plx_off =	0x200,
 		.plx_cnt = 	0x80,
 	},
@@ -214,19 +214,19 @@ static struct plx_data plx_ixxat = {
  */
 static struct plx_data plx_marathon_pci = {
 	.plx_res = {
-		.plx_id =	PCIR_BAR(0),
+		.plx_pb =	PCIR_BAR(0),
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
 	
 	.plx_chan[0] = {
-		.plx_id =	PCIR_BAR(2),
+		.plx_pb =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
 	
 	.plx_chan[1] = {
-		.plx_id =	PCIR_BAR(4),
+		.plx_pb =	PCIR_BAR(4),
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
@@ -241,19 +241,19 @@ static struct plx_data plx_marathon_pci = {
  */
 static struct plx_data plx_marathon_pcie = {
 	.plx_res = {
-		.plx_id =	PCIR_BAR(0),
+		.plx_pb =	PCIR_BAR(0),
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
 	
 	.plx_chan[0] = {
-		.plx_id =	PCIR_BAR(2),
+		.plx_pb =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
 	
 	.plx_chan[1] = {
-		.plx_id =	PCIR_BAR(3),
+		.plx_pb =	PCIR_BAR(3),
 		.plx_off =	0x80,
 		.plx_cnt = 	0,
 	},
@@ -268,19 +268,19 @@ static struct plx_data plx_marathon_pcie = {
  */
 static struct plx_data plx_tews = {
 	.plx_res = {
-		.plx_id =	PCIR_BAR(0),
+		.plx_pb =	PCIR_BAR(0),
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
 	
 	.plx_chan[0] = {
-		.plx_id =	PCIR_BAR(2),
+		.plx_pb =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
 	
 	.plx_chan[1] = {
-		.plx_id =	PCIR_BAR(2),
+		.plx_pb =	PCIR_BAR(2),
 		.plx_off =	0x100,
 		.plx_cnt = 	0x80,
 	},
@@ -295,19 +295,19 @@ static struct plx_data plx_tews = {
  */
 static struct plx_data plx_cti = {
 	.plx_res = {
-		.plx_id =	PCIR_BAR(0),
+		.plx_pb =	PCIR_BAR(0),
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
 	
 	.plx_chan[0] = {
-		.plx_id =	PCIR_BAR(2),
+		.plx_pb =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
 	
 	.plx_chan[1] = {
-		.plx_id =	PCIR_BAR(2),
+		.plx_pb =	PCIR_BAR(2),
 		.plx_off =	0x100,
 		.plx_cnt = 	0x80,
 	},
@@ -322,19 +322,19 @@ static struct plx_data plx_cti = {
  */
 static struct plx_data plx_elcus = {
 	.plx_res = {
-		.plx_id =	PCIR_BAR(1),
+		.plx_pb =	PCIR_BAR(1),
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
 	
 	.plx_chan[0] = {
-		.plx_id =	PCIR_BAR(2),
+		.plx_pb =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
 	
 	.plx_chan[1] = {
-		.plx_id =	PCIR_BAR(3),
+		.plx_pb =	PCIR_BAR(3),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
@@ -349,19 +349,19 @@ static struct plx_data plx_elcus = {
  */
 static struct plx_data plx_moxa = {
 	.plx_res = {
-		.plx_id =	PCIR_BAR(0),
+		.plx_pb =	PCIR_BAR(0),
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
 	
 	.plx_chan[0] = {
-		.plx_id =	PCIR_BAR(0),
+		.plx_pb =	PCIR_BAR(0),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
 	
 	.plx_chan[1] = {
-		.plx_id =	PCIR_BAR(1),
+		.plx_pb =	PCIR_BAR(1),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
@@ -494,7 +494,7 @@ plx_pci_attach(device_t dev)
 	/* allocate resources for control registers and ports */
 	res = &sc->plx_id->plx_res;
 	
-	sc->plx_res_id = res->plx_id + res->plx_off; 
+	sc->plx_res_id = res->plx_pb + res->plx_off; 
 	sc->plx_res_type = SYS_RES_MEMORY;
 	
 	if (res->plx_cnt == 0) {
@@ -517,7 +517,7 @@ plx_pci_attach(device_t dev)
 		sjac = &sc->plx_chan[i];
 		sjad = &sjac->sjac_data;
 
-		sjad->sjad_res_id = res->plx_id + res->plx_off;
+		sjad->sjad_res_id = res->plx_pb + res->plx_off;
 		sjad->sjad_res_type = SYS_RES_IRQ;
 		
 		if (res->plx_cnt == 0) {
