@@ -498,6 +498,32 @@ static devclass_t plx_pci_devclass;
 
 DRIVER_MODULE(plx_pci, pci, plx_pci_driver, plx_pci_devclass, 0, 0);
 
+
+static const struct plx_type *
+plx_pci_match(device_ dev)
+{
+	const struct plx_type	*t;
+	uint16_t did, vid;
+	uint16_t sub_did, sub_vid;
+	int	i;
+	
+	vid = pci_get_vendor(dev);
+	did = pci_get_device(dev);
+	sub_vid = pci_get_subvendor(dev);
+	sub_did = pci_get_subdevice(dev);
+	
+	for (t = plx_devs, i = 0; i < nitems(plx_devs); i++, t++) {
+		if ((t->plx_vid == vid) && (t->plx_did == did) 
+			&& ((t->plx_sub_vid == sub_vid) || 
+				(t->plx_sub_vid == PLX_SUBVENDID_ANY)) 
+			&& ((t->plx_sub_did == sub_did) || 
+				(t->plx_sub_vid == PLX_SUBVENDID_ANY))) {
+			return (t);
+		}
+	}
+	return (NULL);	
+}
+
 static int
 plx_pci_probe(device_t dev)
 {
@@ -681,31 +707,6 @@ plx_pci_detach(device_t dev)
 		(void)bus_release_resource(dev, sc->plx_res_type, sc->plx_res);
 
 	return (0);
-}
-
-static const struct plx_type *
-plx_pci_match(device_ dev)
-{
-	const struct plx_type	*t;
-	uint16_t did, vid;
-	uint16_t sub_did, sub_vid;
-	int	i;
-	
-	vid = pci_get_vendor(dev);
-	did = pci_get_device(dev);
-	sub_vid = pci_get_subvendor(dev);
-	sub_did = pci_get_subdevice(dev);
-	
-	for (t = plx_devs, i = 0; i < nitems(plx_devs); i++, t++) {
-		if ((t->plx_vid == vid) && (t->plx_did == did) 
-			&& ((t->plx_sub_vid == sub_vid) || 
-				(t->plx_sub_vid == PLX_SUBVENDID_ANY)) 
-			&& ((t->plx_sub_did == sub_did) || 
-				(t->plx_sub_vid == PLX_SUBVENDID_ANY))) {
-			return (t);
-		}
-	}
-	return (NULL);	
 }
 
 MODULE_DEPEND(plx_pci, pci, 1, 1, 1);
