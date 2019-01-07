@@ -86,8 +86,7 @@ static const struct kvaser_type {
 	{ KVASER_VENDORID0, PEAK_DEVICEID_PCI0, 
 		"KVASER PCAN PCI card 0" },
 	{ KVASER_VENDORID1, KVASER_DEVICEID_PCI1, 
-		"KVASER PCAN PCI card 1" },
-	{ 0 }
+		"KVASER PCAN PCI card 1" }
 };
 
 /* 
@@ -122,14 +121,14 @@ static int
 kvaser_pci_probe(device_t dev)
 {
 	const struct kvaser_type	*t;
-	uint16_t devid, vendor;
+	uint16_t did, vid;
 	int	i, error = ENXIO;
 	
 	vendor = pci_get_vendor(dev);
 	devid = pci_get_device(dev);
 	
 	for (t = kv_devs, i = 0; i < nitems(kv_devs); i++, t++) {
-		if (vendor == t->kv_vid && devid == t->kv_did) {
+		if (did == t->kv_vid && vid == t->kv_did) {
 			device_set_desc(dev, t->kv_name);
 			error = BUS_PROBE_DEFAULT;
 			break;

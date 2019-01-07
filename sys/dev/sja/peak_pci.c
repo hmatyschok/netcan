@@ -102,8 +102,7 @@ static const struct peak_type {
 	{ PEAK_VENDORID, PEAK_DEVICEID_PCIE, 
 		"PCAN-PCI Express OEM" },
 	{ PEAK_VENDORID, PEAK_DEVICEID_PCIEC34, 
-		"PCAN-PCI Express 34 card (one channel)" },
-	{ 0 }
+		"PCAN-PCI Express 34 card (one channel)" }
 };
 
 /* 
@@ -138,14 +137,14 @@ static int
 peak_pci_probe(device_t dev)
 {
 	const struct peak_type	*t;
-	uint16_t devid, vendor;
+	uint16_t did, vid;
 	int	i, error = ENXIO;
 	
-	vendor = pci_get_vendor(dev);
-	devid = pci_get_device(dev);
+	vid = pci_get_vendor(dev);
+	did = pci_get_device(dev);
 	
 	for (t = pk_devs, i = 0; i < nitems(pk_devs); i++, t++) {
-		if (vendor == t->pk_vid && devid == t->pk_did) {
+		if (vid == t->pk_vid && did == t->pk_did) {
 			device_set_desc(dev, t->pk_name);
 			error = BUS_PROBE_DEFAULT;
 			break;
