@@ -85,7 +85,7 @@ struct plx_type {
 	uint16_t 	plx_did;
 	uint16_t	plx_sub_vid;
 	uint16_t	plx_sub_did;
-	struct plx_data		*plx_pt;
+	struct plx_data		*plx_d;
 	const char 	*plx_name;
 };
 
@@ -129,6 +129,5 @@ struct plx_softc {
 	int			plx_res_type;
 
 	/* set of sja(4) controller */
-	uint32_t	plx_chan_cnt;
 	struct sja_chan		plx_chan[PLX_CHAN_MAX]; 
 };
