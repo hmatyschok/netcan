@@ -95,6 +95,8 @@ static struct plx_data plx_adlink = {
 		.plx_off =	0x80,
 		.plx_cnt = 	0x80,
 	},
+	
+	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
 };
 
 /*
@@ -118,6 +120,8 @@ static struct plx_data plx_esd_200 = {
 		.plx_off =	0x100,
 		.plx_cnt = 	0x80,
 	},
+	
+	.plx_icr = (PLX_ICR_INT0_ENB | PLC_ICR_PINT_ENB),
 };
 
 /*
@@ -141,6 +145,8 @@ static struct plx_data plx_esd_266 = {
 		.plx_off =	0x100,
 		.plx_cnt = 	0x80,
 	},
+	
+	.plx_icr = (PLX_9056_ICR_INT0_ENB | PLX_9056_ICR_PINT_ENB),
 };
 
 /*
@@ -164,6 +170,8 @@ static struct plx_data plx_esd_2000 = {
 		.plx_off =	0x100,
 		.plx_cnt = 	0x80,
 	},
+	
+	.plx_icr = (PLX_9056_ICR_INT0_ENB | PLX_9056_ICR_PINT_ENB),
 };
 
 /*
@@ -187,6 +195,8 @@ static struct plx_data plx_ixxat = {
 		.plx_off =	0x200,
 		.plx_cnt = 	0x80,
 	},
+	
+	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
 };
 
 /*
@@ -210,6 +220,8 @@ static struct plx_data plx_marathon_pci = {
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
+	
+	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
 };
 
 /*
@@ -233,6 +245,8 @@ static struct plx_data plx_marathon_pcie = {
 		.plx_off =	0x80,
 		.plx_cnt = 	0,
 	},
+	
+	.plx_icr = (PLX_9056_ICR_INT0_ENB | PLX_9056_ICR_PINT_ENB),
 };
 
 /*
@@ -256,6 +270,8 @@ static struct plx_data plx_tews = {
 		.plx_off =	0x100,
 		.plx_cnt = 	0x80,
 	},
+	
+	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
 };
 
 /*
@@ -279,6 +295,8 @@ static struct plx_data plx_cti = {
 		.plx_off =	0x100,
 		.plx_cnt = 	0x80,
 	},
+	
+	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
 };
 
 /*
@@ -302,6 +320,8 @@ static struct plx_data plx_elcus = {
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
+	
+	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
 };
 
 /*
@@ -325,6 +345,8 @@ static struct plx_data plx_moxa = {
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
+	
+	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
 };
 
 /*

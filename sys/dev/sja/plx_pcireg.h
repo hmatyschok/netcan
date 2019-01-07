@@ -78,6 +78,7 @@ struct plx_desc {
 struct plx_data {
 	struct plx_desc		plx_res;
 	struct plx_desc		plx_chan[PLX_CHAN_MAX];
+	uint32_t		plx_icr;
 };
 
 struct plx_type {
