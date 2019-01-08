@@ -640,6 +640,9 @@ plx_pci_detach(device_t dev)
  
 	sc = device_get_softc(dev);
 
+	if (sc->plx_id == NULL)
+		goto out;
+
 	/* local bus reset for PLX9056 and PLX9030/50/52 */
 	status = bus_read_4(sc->plx_res, sc->plx_id->plx_tcr_addr);
 	status |= sc->plx_id->plx_tcr_rst;
@@ -687,7 +690,7 @@ plx_pci_detach(device_t dev)
 	
 	if (sc->plx_res != NULL)
 		(void)bus_release_resource(dev, sc->plx_res_type, sc->plx_res);
-
+out:
 	return (0);
 }
 
