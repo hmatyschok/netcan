@@ -192,6 +192,9 @@ peak_pci_attach(device_t dev)
 		}
 		
 		sjad->sjad_shift = 2;
+		sjad->sjad_cdr = PEAK_CDR_DFLT;
+		sjad->sjad_ocr = PEAK_OCR_DFLT;
+		sjad->sjad_freq = PEAK_CLK_FREQ;
 	}	
 	
 	/* set-up GPIO control register, if any */

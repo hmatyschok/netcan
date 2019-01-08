@@ -61,6 +61,13 @@ struct peak_type {
 #define PEAK_QUAD_CHAN		4
 
 /*
+ * Default values.
+ */
+#define PEAK_OCR_DFLT		(SJA_OCR_TX0_PSHP)
+#define PEAK_CDR_DFLT		(SJA_CDR_CBP | SJA_CDR_CLK_OUT)
+#define PEAK_CLK_FREQ		(16000000 / 2)
+
+/*
  * XXX: work on progress ...
  */ 
 
