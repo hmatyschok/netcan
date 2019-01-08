@@ -482,7 +482,7 @@ DRIVER_MODULE(plx_pci, pci, plx_pci_driver, plx_pci_devclass, 0, 0);
 
 
 static const struct plx_type *
-plx_pci_match(device_ dev)
+plx_pci_match(device_t dev)
 {
 	const struct plx_type	*t;
 	uint16_t did, vid;
