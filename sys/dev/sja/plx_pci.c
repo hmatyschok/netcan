@@ -450,7 +450,7 @@ static const struct plx_type plx_devs[] = {
 	{ 0, 0, 0, 0, NULL, NULL}	
 };
 
-static const struct plx_type *	plx_pci_match(device_ dev);
+static const struct plx_type *	plx_pci_match(device_t dev);
 
 /* 
  * Hooks for the operating system.
