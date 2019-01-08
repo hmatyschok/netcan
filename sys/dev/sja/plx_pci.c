@@ -667,7 +667,8 @@ plx_pci_detach(device_t dev)
 	
 	/* disable interrupts */
 	bus_write_4(sc->plx_res, sc->plx_id->plx_icr_addr, 0);
- 
+
+out: 
 	/* detach each channel, if any */
 	for (i = 0; i < PLX_CHAN_MAX; i++) {
 		sjac = &sc->plx_chan[i];
@@ -690,7 +691,7 @@ plx_pci_detach(device_t dev)
 	
 	if (sc->plx_res != NULL)
 		(void)bus_release_resource(dev, sc->plx_res_type, sc->plx_res);
-out:
+
 	return (0);
 }
 
