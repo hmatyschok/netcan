@@ -659,7 +659,7 @@ plx_pci_detach(device_t dev)
 		status |= sc->plx_id->plx_tcr_rcr;
 		bus_write_4(sc->plx_res, sc->plx_id->plx_tcr_addr, status);
 	
-		DELAY(10);	/* XXX: ... */
+		DELAY(10000);	/* XXX: ... */
 
 		status &= ~(sc->plx_id->plx_tcr_rcr);
 		bus_write_4(sc->plx_res, sc->plx_id->plx_tcr_addr, status);	
