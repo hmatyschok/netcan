@@ -308,7 +308,7 @@ sja_attach(device_t dev)
 
 	/* hook interrupts */
 	TASK_INIT(&sja->sja_intr_task, 0, sja_intr_task, sja);
-
+	
 	error = bus_setup_intr(dev, sja->sja_res, 
 		INTR_TYPE_NET | INTR_MPSAFE, sja_intr, 
 			NULL, sja, &sja->sja_intr_hand);

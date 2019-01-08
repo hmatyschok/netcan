@@ -369,13 +369,19 @@
  */
  
 struct sja_data {
+	/* allocated resources */
 	struct resource		*sjad_res;
 	int			sjad_res_id;
 	int			sjad_res_type;
+	
+	/* default parameter */ 
 	uint8_t		sjad_shift;
 	uint8_t		sjad_cdr;
 	uint8_t		sjad_ocr;
 	uint32_t		sjad_freq;
+	
+	/* post interrupt handler */
+	task_fn_t		sjad_post_intr;
 };
 
 struct sja_chan {
@@ -392,6 +398,7 @@ struct sja_softc {
 	uint8_t		sja_ocr;
 	void	*sja_intr_hand;
 	struct task	sja_intr_task;
+	struct task	sja_post_intr;
 	struct mtx	sja_mtx;
 };
 #define	SJA_LOCK(sja)		mtx_lock(&(sja)->sja_mtx)
