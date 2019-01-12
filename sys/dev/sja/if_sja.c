@@ -56,7 +56,6 @@ static void	sja_rxeof(struct sja_softc *);
 static void	sja_txeof(struct sja_softc *);
 static void	sja_error(struct sja_softc *, uint8_t);
 static int	sja_intr(void *);
-static void	sja_int_task(void *, int);
 static void	sja_start(struct ifnet *);
 static void	sja_start_locked(struct ifnet *);
 static void	sja_encap(struct sja_softc *, struct mbuf **); 
