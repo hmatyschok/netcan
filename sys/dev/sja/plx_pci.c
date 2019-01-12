@@ -570,7 +570,7 @@ plx_pci_attach(device_t dev)
 	for (i = 0; i < PLX_CHAN_MAX; i++) { 
 		res = &sc->plx_id->plx_chan[i]; 
 		sjac = &sc->plx_chan[i];
-		sjad = &sjac->sjac_data;
+		sjad = &sjac->sjac_var;
 
 		sjad->sjad_res_id = res->plx_bar + res->plx_off;
 		sjad->sjad_res_type = SYS_RES_IRQ;
@@ -599,7 +599,7 @@ plx_pci_attach(device_t dev)
 	/* attach set of sja(4) controller as its children */		
 	for (i = 0; i < PLX_CHAN_MAX; i++) { 
 		sjac = &sc->plx_chan[i];
-		sjad = &sjac->sjac_data;
+		sjad = &sjac->sjac_var;
 				
 		sjac->sjac_dev = device_add_child(dev, "sja", -1); 
 		if (sjad->sjad_dev == NULL) {
@@ -679,7 +679,7 @@ plx_pci_detach(device_t dev)
 	/* release bound resources */
 	for (i = 0; i < PLX_CHAN_MAX; i++) {
 		sjac = &sc->plx_chan[i];
-		sjad = &sjac->sjac_data;
+		sjad = &sjac->sjac_var;
 			
 		if (sjad->sjad_res != NULL) {
 			(void)bus_release_resource(dev, sjad->sjad_res_type, 

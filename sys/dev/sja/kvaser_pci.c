@@ -157,7 +157,7 @@ kvaser_pci_attach(device_t dev)
 	
 	for (i = 0; i < KVASER_CHAN_MAX; i++) { 
 		sjac = &sc->kv_chan[i];
-		sjad = &sjac->sjac_data;
+		sjad = &sjac->sjac_var;
 
 		sjad->sjad_res_id = PCIR_BAR(1) + i * KVASER_CHAN_SIZE;
 		sjad->sjad_res_type = SYS_RES_IRQ;
@@ -185,7 +185,7 @@ kvaser_pci_attach(device_t dev)
 	/* attach set of SJA1000 controller as its children */		
 	for (i = 0; i < sc->kv_chan_cnt; i++) { 
 		sjac = &sc->kv_chan[i];
-		sjad = &sjac->sjac_data;
+		sjad = &sjac->sjac_var;
 				
 		sjac->sjac_dev = device_add_child(dev, "sja", -1); 
 		if (sjad->sjad_dev == NULL) {
@@ -245,7 +245,7 @@ kvaser_pci_detach(device_t dev)
 	/* release bound resources */
 	for (i = 0; i < sc->pkv_chan_cnt; i++) {
 		sjac = &sc->kv_chan[i];
-		sjad = &sjac->sjac_data;
+		sjad = &sjac->sjac_var;
 			
 		if (sjad->sjad_res != NULL) {
 			(void)bus_release_resource(dev, sjad->sjad_res_type, 

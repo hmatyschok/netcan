@@ -157,10 +157,7 @@ peak_pci_attach(device_t dev)
 		sc->pk_chan_cnt = PEAK_TRIPLE_CHAN;
 	else 
 		sc->pk_chan_cnt = PEAK_QUAD_CHAN;
-	
-	sc->pk_chan = malloc(sizeof(struct sja_chan) * pk->pk_chan_cnt, 
-		M_DEVBUF, M_WAITOK | M_ZERO);	
-		
+
 	pci_write_config(dev, PCIR_COMMAND, 4, 2);
 	pci_write_config(dev, PCIR_PCCARDIF_2, 4, 0);	
 
@@ -177,8 +174,8 @@ peak_pci_attach(device_t dev)
 	}
 	
 	for (i = 0; i < sc->pk_chan_cnt; i++) { 
-		sjac = &sc->pk_chan[i];
-		sjad = &sjac->sjac_data;
+		sjac = &sc->pk_chan[i].pkc_chan;
+		sjad = &sjac->sjac_var;
 
 		sjad->sjad_res_id = PCIR_BAR(1) + i * PEAK_CHAN_SIZE;
 		sjad->sjad_res_type = SYS_RES_IRQ;
@@ -195,6 +192,16 @@ peak_pci_attach(device_t dev)
 		sjad->sjad_cdr = PEAK_CDR_DFLT;
 		sjad->sjad_ocr = PEAK_OCR_DFLT;
 		sjad->sjad_freq = PEAK_CLK_FREQ;
+		sjad->sjad_port = i;
+		
+		if (i == 0)
+			sc->pk_chan[i].pkc_flags = PEAK_ICR_MASK0;
+		else if (i == 1) 
+			sc->pk_chan[i].pkc_flags = PEAK_ICR_MASK1;
+		else if (i == 2)
+			sc->pk_chan[i].pkc_flags = PEAK_ICR_MASK2;
+		else 
+			sc->pk_chan[i].pkc_flags = PEAK_ICR_MASK3;
 	}	
 	
 	/* set-up GPIO control register, if any */
@@ -211,10 +218,10 @@ peak_pci_attach(device_t dev)
 	bus_write_1(sc->pk_res, PEAK_MISC_CR, PEAK_MISC_CR_PP_EPP);
 	status = bus_read_2(sc->pk_res, PEAK_ICCR);
 
-	/* attach set of SJA1000 controller as its children */		
+	/* attach set of sja(4) controller as its children */		
 	for (i = 0; i < sc->pk_chan_cnt; i++) { 
-		sjac = &sc->pk_chan[i];
-		sjad = &sjac->sjac_data;
+		sjac = &sc->pk_chan[i].pkc_chan;
+		sjad = &sjac->sjac_var;
 				
 		sjac->sjac_dev = device_add_child(dev, "sja", -1); 
 		if (sjad->sjad_dev == NULL) {
@@ -263,8 +270,8 @@ peak_pci_detach(device_t dev)
 	
 	/* release bound resources */
 	for (i = 0; i < sc->pk_chan_cnt; i++) {
-		sjac = &sc->pk_chan[i];
-		sjad = &sjac->sjac_data;
+		sjac = &sc->pk_chan[i].pkc_chan;
+		sjad = &sjac->sjac_var;
 			
 		if (sjad->sjad_res != NULL) {
 			(void)bus_release_resource(dev, sjad->sjad_res_type, 
@@ -274,8 +281,6 @@ peak_pci_detach(device_t dev)
 	
 	if (sc->pk_res != NULL)
 		(void)bus_release_resource(dev, sc->pk_res_type, sc->pk_res);
-	
-	free(sc->pk_chan, M_DEVBUF);
 	
 	return (0);
 }

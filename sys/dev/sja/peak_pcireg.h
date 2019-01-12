@@ -73,6 +73,10 @@ struct peak_type {
 
 #define PEAK_ICR		0x00		/* interrupt control register */
 #define PEAK_ICCR		0x02		/*   clear command register */
+#define PEAK_ICCR_MASK0		0x0002		/* channel 1 */
+#define PEAK_ICCR_MASK1		0x0001		/* channel 2 */
+#define PEAK_ICCR_MASK2		0x0040		/* channel 3 */
+#define PEAK_ICCR_MASK0		0x0080		/* channel 4 */
 
 #define PEAK_GPIO_ICR		0x18	/* GPIO interface control register */
 #define PEAK_GPIO_ICCR		0x1a	/*   clear command register */
@@ -100,11 +104,16 @@ struct peak_type {
 
 #define PEAK_MISC_CR_PP_EPP		0x04
 
+struct peak_chan {
+	struct sja_chan	pkc_chan;
+	uint16_t	pkc_flags;
+};
+
 struct peak_softc {
 	device_t 	pk_dev;
 	struct resource		*pk_res;
 	int			pk_res_id;
 	int			pk_res_type;
 	uint32_t	pk_chan_cnt;
-	struct sja_chan	*pk_chan; 
+	struct peak_chan	pk_chan[PEAK_QUAD_CHAN];
 };

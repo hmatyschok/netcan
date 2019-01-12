@@ -42,30 +42,6 @@
 
 #include <dev/sja/if_sjareg.h>
 
-/* accessor-macros */
-#define CSR_WRITE_1(sja, reg, val) \
-	bus_write_1((sja)->sja_res, (reg << (sja)->sja_shift), val)
-#define CSR_READ_1(sja, reg) \
-	bus_read_1((sja)->sja_res, (reg << (sja)->sja_shift))
-#define SJA_SETBIT(sja, reg, x) \
-	CSR_WRITE_1(sja, reg, CSR_READ_1(sja, reg) | (x))
-#define SJA_CLRBIT(sja, reg, x) \
-	CSR_WRITE_1(sja, reg, CSR_READ_1(sja, reg) & ~(x))
-
-#define CSR_WRITE_2(sja, reg, val) \
-	bus_write_2((sja)->sja_res, (reg << (sja)->sja_shift), val)
-#define CSR_READ_2(sja, reg) \
-	bus_read_2((sja)->sja_res, (reg << (sja)->sja_shift))
-
-#define CSR_WRITE_4(sja, reg, val) \
-	bus_write_4((sja)->sja_res, (reg << (sja)->sja_shift), val)
-#define CSR_READ_4(sja, reg) \
-	bus_read_4((sja)->sja_res, (reg << (sja)->sja_shift))
-
-/* utility-macros */
-#define	sja_timercmp(tvp, uvp, val)	\
-	(((uvp)->tv_sec - (tvp)->tv_sec) < (val))
-
 /* 
  * Hooks for the operating system.
  */
@@ -247,7 +223,7 @@ sja_attach(device_t dev)
 	sja = device_get_softc(dev);
 	sja->sja_dev = dev; 
 	
-	sja = device_get_ivar(dev);
+	sjad = device_get_ivar(dev);
 	sja->sja_res = sjad->sjad_res;
 	sja->sja_cdr = sjad->sjad_cdr;
 	sja->sja_ocr = sjad->sjad_ocr;
@@ -466,41 +442,24 @@ static int
 sja_intr(void *arg)
 {
 	struct sja_softc *sja;
-	uint8_t status;
-	int error;
-	
-	sc = (struct sja_softc *)arg;
-	
-	status = CSR_READ_1(sja, SJA_IR);
-	
-	if (status == SJA_IR_OFF)  
-		error = FILTER_STRAY;
-	else {
-		taskqueue_enqueue(taskqueue_fast, &sja->sja_intr_task);
-		error = FILTER_HANDLED;
-	}
-	return (error);
-}
-
-static void
-sja_intr_task(void *arg, int pending)
-{
-	struct sja_softc *sja;
 	struct ifnet *ifp;
 	uint8_t status;
-	int n;
+	int n, error;
 	
-	sja = arg;
+	sja = (struct sja_softc *)arg;
 
 	SJA_LOCK(sja);
 
 	ifp = sja->sja_ifp;
 
 	if (ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
-		goto done;
+		goto bad;
 	
 	status = CSR_READ_1(sja, SJA_IR);
 
+	if (status == SJA_IR_OFF)
+		goto bad;
+	
 	for (n = 0; status != SJA_IR_OFF && n < 6; n++) { /* XXX */
 		
 		if (status & SJA_IR_RX)
@@ -515,8 +474,13 @@ sja_intr_task(void *arg, int pending)
 		}
 		intr = CSR_READ_1(sja, SJA_IR);	
 	}
-done:	
+	error = FILTER_HANDLED;	
+done:
 	SJA_UNLOCK(sja);
+	return (error);
+bad:
+	error = FILTER_STRAY;
+	goto done;
 }
 
 /*
