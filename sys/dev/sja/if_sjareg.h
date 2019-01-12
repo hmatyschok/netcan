@@ -380,8 +380,7 @@ struct sja_data {
 	uint8_t		sjad_ocr;
 	uint32_t		sjad_freq;
 	
-	/* post interrupt handler */
-	task_fn_t		sjad_post_intr;
+	int			port;
 };
 
 struct sja_chan {
