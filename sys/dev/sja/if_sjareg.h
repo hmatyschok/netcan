@@ -141,11 +141,11 @@
 /* 
  * SJA1000, 6.4.3 Mode Registers [MOD] 
  */
-#define SJA_MOD_RM		0x00 	/* reset mode */
-#define SJA_MOD_LOM		0x01 	/* listen only mode */
-#define SJA_MOD_STM		0x02 	/* self test mode */
-#define SJA_MOD_AFM		0x04 	/* acceptance filter mode */
-#define SJA_MOD_SM		0x08  	/* sleep mode */
+#define SJA_MOD_RM		0x01 	/* reset mode */
+#define SJA_MOD_LOM		0x02 	/* listen only mode */
+#define SJA_MOD_STM		0x04 	/* self test mode */
+#define SJA_MOD_AFM		0x08 	/* acceptance filter mode */
+#define SJA_MOD_SM		0x10  	/* sleep mode */
 #define SJA_MOD_RSVD		0xe0 	/* reserved */
 
 /* 
@@ -319,25 +319,25 @@
 /*
  * SJA1000, 6.5.3 Output Control Register [OCR]
  */
-#define SJA_OCR_MODE_BPH		0x00		/* bi-phase output mode */
-#define SJA_OCR_MODE_TST		0x01		/* test output mode */
-#define SJA_OCR_MODE_NORM		0x02		/* normal output mode */
-#define SJA_OCR_MODE_CLK		0x03		/* clock output mode */
+#define SJA_OCR_MOD_BPH		0x00		/* bi-phase output mode */
+#define SJA_OCR_MOD_TST		0x01		/* test output mode */
+#define SJA_OCR_MOD_NORM		0x02		/* normal output mode */
+#define SJA_OCR_MOD_CLK		0x03		/* clock output mode */
 
-#define SJA_OCR_MODE_MASK		0x07 
-#define SJA_OCR_MODE(reg)	((reg) & SJA_OCR_MODE_MASK)
+#define SJA_OCR_MOD_MASK		0x07 
+#define SJA_OCR_MOD(reg)	((reg) & SJA_OCR_MOD_MASK)
 
-#define IS_SJA_OCR_MODE_BPH(reg) \
-	(((reg) & SJA_OCR_MODE_MASK) == SJA_OCR_MODE_BPH)
+#define IS_SJA_OCR_MOD_BPH(reg) \
+	(((reg) & SJA_OCR_MOD_MASK) == SJA_OCR_MOD_BPH)
 	
-#define IS_SJA_OCR_MODE_TST(reg) \
-	(((reg) & SJA_OCR_MODE_MASK) == SJA_OCR_MODE_TST)
+#define IS_SJA_OCR_MOD_TST(reg) \
+	(((reg) & SJA_OCR_MOD_MASK) == SJA_OCR_MOD_TST)
 
-#define IS_SJA_OCR_MODE_NORM(reg) \
-	(((reg) & SJA_OCR_MODE_MASK) == SJA_OCR_MODE_NORM)
+#define IS_SJA_OCR_MOD_NORM(reg) \
+	(((reg) & SJA_OCR_MOD_MASK) == SJA_OCR_MOD_NORM)
 
-#define IS_SJA_OCR_MODE_CLK(reg) \
-	(((reg) & SJA_OCR_MODE_MASK) == SJA_OCR_MODE_CLK)
+#define IS_SJA_OCR_MOD_CLK(reg) \
+	(((reg) & SJA_OCR_MOD_MASK) == SJA_OCR_MOD_CLK)
 
 #define SJA_OCR_TX0_INV		0x04		/* invert */
 #define SJA_OCR_TX0_PDN		0x08 		/* pulldown */
@@ -369,6 +369,8 @@
  */
  
 struct sja_data {
+	int			sjad_port;
+	
 	/* allocated resources */
 	struct resource		*sjad_res;
 	int			sjad_res_id;
@@ -379,8 +381,6 @@ struct sja_data {
 	uint8_t		sjad_cdr;
 	uint8_t		sjad_ocr;
 	uint32_t		sjad_freq;
-	
-	int			port;
 };
 
 struct sja_chan {
@@ -391,11 +391,12 @@ struct sja_chan {
 struct sja_softc {
 	struct ifnet	*sja_ifp;		/* generic ifnet(9) glue */
 	device_t	sja_dev;
+	int		sja_port;
 	struct resource		*sja_res;
 	uint8_t		sja_shift;
 	uint8_t		sja_cdr;
 	uint8_t		sja_ocr;
-	void	*sja_intr_hand;
+	void	*sja_intr;
 	struct mtx	sja_mtx;
 };
 #define	SJA_LOCK(sja)		mtx_lock(&(sja)->sja_mtx)

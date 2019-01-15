@@ -42,12 +42,17 @@
 
 #include <dev/sja/if_sjareg.h>
 
+#include "sja_if.h"
+
+
 /* 
  * Hooks for the operating system.
  */
 static int	sja_probe(device_t);
 static int	sja_attach(device_t);
 static int	sja_detach(device_t);
+
+static void	sja_clear_intr(device_t, int);
 
 /*
  * Subr.
@@ -84,10 +89,14 @@ static const struct can_link_timecaps sja_timecaps = {
  * kobj(9) method-table
  */
 static device_method_t sja_methods[] = {
-	/* Device interface */
+	/* device(9) interface */
 	DEVMETHOD(device_probe, 	sja_probe),
 	DEVMETHOD(device_attach,	sja_attach),
 	DEVMETHOD(device_detach,	sja_detach),
+	
+	/* sja(4) interface */
+	DEVMETHOD(sja_clear_intr,	sja_clear_intr),	
+	
 	DEVMETHOD_END
 };
 
@@ -207,25 +216,26 @@ sja_normal_mode(struct sja_softc *sja)
 	return (error);
 }
 
-/*
- * Ctor implements device(9) driver(9) hook.
- */
+static int
+sja_probe(device_t dev)
+{
+	
+	device_set_desc(dev, "SJA1000 network interface");
+	
+	return (BUS_PROBE_SPECIFIC);
+}
+
 static int 
 sja_attach(device_t dev)
 {
 	struct sja_softc *sja;
-	struct sja_data *sjad;
 	struct ifnet *ifp;
+	struct sja_data *sjad;
 	int rid, error;
 	uint8_t addr;
 		
 	sja = device_get_softc(dev);
 	sja->sja_dev = dev; 
-	
-	sjad = device_get_ivar(dev);
-	sja->sja_res = sjad->sjad_res;
-	sja->sja_cdr = sjad->sjad_cdr;
-	sja->sja_ocr = sjad->sjad_ocr;
 	
 	mtx_init(&sja->sja_mtx, device_get_nameunit(dev), 
 		MTX_NETWORK_LOCK, MTX_DEF);	
@@ -246,9 +256,14 @@ sja_attach(device_t dev)
 	ifp->if_start = sja_start;
 	ifp->if_ioctl = sja_ioctl;
 	
-	can_ifattach(ifp, sja_set_link_timings, sjad->sjad_freq);
-
-	ifp->if_mtu = CAN_MTU;
+	sjad = device_get_ivar(dev);
+	sja->sja_port = sjad->sjad_port;
+	sja->sja_res = sjad->sjad_res;
+	sja->sja_shift = sjad->sjad_shift;
+	sja->sja_cdr = sjad->sjad_cdr;
+	sja->sja_ocr = sjad->sjad_ocr;
+	
+	can_ifattach(ifp, &sja_set_link_timings, sjad->sjad_freq);
 	
 	IFQ_SET_MAXLEN(&ifp->if_snd, SJA_IFQ_MAXLEN);
 	ifp->if_snd.ifq_drv_maxlen = SJA_IFQ_MAXLEN;
@@ -268,11 +283,11 @@ sja_attach(device_t dev)
 	for (addr = SJA_AC0; addr < SJA_AM0; addr++)
 		CSR_WRITE_1(sja, addr, 0x00);
 
-	for (addr = SJA_AM0; addr > SJA_AM3; addr++)
+	for (addr = SJA_AM0; addr <= SJA_AM3; addr++)
 		CSR_WRITE_1(sja, addr, 0xff);
 
 	/* set output control register */
-	sja->sja_ocr |= SJA_OCR_MODE_NORMAL;
+	sja->sja_ocr |= SJA_OCR_MOD_NORM;
 	CSR_WRITE_1(sja, SJA_OCR, sja->sja_ocr);
 
 	/* set normal mode */
@@ -282,11 +297,9 @@ sja_attach(device_t dev)
 	}
 
 	/* hook interrupts */
-	TASK_INIT(&sja->sja_intr_task, 0, sja_intr_task, sja);
-	
 	error = bus_setup_intr(dev, sja->sja_res, 
 		INTR_TYPE_NET | INTR_MPSAFE, sja_intr, 
-			NULL, sja, &sja->sja_intr_hand);
+			NULL, sja, &sja->sja_intr);
 
 	if (error != 0) {
 		device_printf(dev, "couldn't set up irq\n");
@@ -301,9 +314,6 @@ fail:
 	goto out;
 }
 
-/*
- * Dtor implements device(9) driver(9) hook.
- */
 static int
 sja_detach(device_t dev)
 {
@@ -318,15 +328,12 @@ sja_detach(device_t dev)
 		sja_stop(sja);
 		SJA_UNLOCK(sja);
 		mtx_destroy(&sja->sja_mtx);
-		taskqueue_drain(taskqueue_fast, 
-			&sja->sja_intr_task);
 		can_ifdetach(ifp);
 	}
 	
-	if (sja->sja_intr_hand != NULL) {
-		(void)bus_teardown_intr(dev, sja->sja_res, 
-			sja->sja_intr_hand);
-		sja->sja_intr_hand = NULL;
+	if (sja->sja_intr != NULL) {
+		(void)bus_teardown_intr(dev, sja->sja_res, sja->sja_intr);
+		sja->sja_intr = NULL;
 	}
 	
 	if (ifp != NULL)
@@ -334,7 +341,6 @@ sja_detach(device_t dev)
 	
 	return (0);
 }
-
 
 /*
  * Copy can(4) frame from RX buffer into mbuf(9).
@@ -428,7 +434,7 @@ sja_txeof(struct sja_softc *sja)
 		if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
 		(*ifp->if_start)(ifp);
 	} else {
-		status = CSR_READ_1(sja, SJA_FI) & 0x0f; 
+		status = CSR_READ_1(sja, SJA_FI) & SJA_FI_DLC; 
 		if_inc_counter(ifp, IFCOUNTER_OBYTES, status);
 		if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
 	}
@@ -475,6 +481,7 @@ sja_intr(void *arg)
 	}
 	error = FILTER_HANDLED;	
 done:
+	SJA_CLEAR_INTR(sja->sja_dev, sja->sja_port);
 	SJA_UNLOCK(sja);
 	return (error);
 bad:
@@ -492,9 +499,9 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	struct can_ifsoftc *csc;
  	struct mbuf *m;
  	struct can_frame *cf;
+ 	int error;
 	uint8_t status;
 	uint8_t flags;
-	int error = 0;
 	
 	SJA_LOCK_ASSERT(sja);
 	ifp = sja->sja_ifp;
@@ -504,6 +511,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 		error = ENOBUFS;
 		goto done;
 	}
+	error = 0;
 	 
 	(void)memset(mtod(m, caddr_t), 0, MHLEN);
 	cf = mtod(m, struct can_frame *);
@@ -531,26 +539,24 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 			}
 	
 			cf->can_id |= CAN_ERR_DEV;
-/*
- * ...
- */		
 		}	
 	}
 	
 	/* data overrun condition */ 	
 	if (intr & SJA_IR_DO) {
+		if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
+		
 		cf->can_id |= CAN_ERR_DEV;
 		cf->can_data[CAN_ERR_DEV_DF] |= CAN_ERR_DEV_RX_OVF; 
 	
 		CSR_WRITE_1(sja, SJA_CMR, SJA_CMR_CDO);
 		status = CSR_READ_1(sja, SJA_SR);
-/*
- * ...
- */	
 	}
 	
 	/* bus error condition */
 	if (intr & SJA_IR_BE) {
+		if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
+		
 		flags = CSR_READ_1(sja, SJA_ECC);
 
 		cf->can_id |= (CAN_ERR_PROTO | CAN_ERR_BE);
@@ -569,13 +575,12 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	
 		/* map error location */
 		cf->can_data[CAN_ERR_PROTO_LOC_DF] |= flags & SJA_ECC_SEG;
-/*
- * ...
- */	
 	}
 	
 	/* arbitriation lost condition */
 	if (intr & SJA_IR_AL) {
+		if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
+		
 		flags = CSR_READ_1(sja, SJA_ALC);
 
 		cf->can_id |= CAN_ERR_AL;
@@ -595,6 +600,13 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	SJA_LOCK(sja);
 done:
 	return (error);
+}
+
+static void
+sja_clear_intr(device_t dev, int port)
+{
+	if (dev->parent != NULL)
+		SJA_CLEAR_INTR(dev->parent, port);	
 }
 
 /*
@@ -731,7 +743,7 @@ sja_start_locked(struct ifnet *ifp)
 }
 
 /*
- * Initialize sja(4) +controller. 
+ * Initialize sja(4) controller. 
  */ 
 static void 
 sja_init(void *xsc)
@@ -767,10 +779,7 @@ sja_init_locked(struct sja_softc *sja)
 	getmicrotime(&tv0);
 	getmicrotime(&tv);
 	
-	status = CSR_READ_1(sja, SJA_MOD);
-		
 	for (; sja_timercmp(&tv0, &tv, 100);) {
-
 		CSR_WRITE_1(sja, SJA_MOD, SJA_MOD_RM);
 		DELAY(10);
 		
@@ -789,11 +798,11 @@ sja_init_locked(struct sja_softc *sja)
 		for (addr = SJA_AC0; addr < SJA_AM0; addr++)
 			CSR_WRITE_1(sja, addr, 0x00);
 
-		for (addr = SJA_AM0; addr > SJA_AM3; addr++)
+		for (addr = SJA_AM0; addr <= SJA_AM3; addr++)
 			CSR_WRITE_1(sja, addr, 0xff);
 
 		/* set output control register */
-		sja->sja_ocr |= SJA_OCR_MODE_NORMAL;
+		sja->sja_ocr |= SJA_OCR_MOD_NORM;
 		CSR_WRITE_1(sja, SJA_OCR, sja->sja_ocr);
 
 		/* flush error counters and error code capture */
@@ -808,8 +817,6 @@ sja_init_locked(struct sja_softc *sja)
 		/* leave reset mode */
 		getmicrotime(&tv0);
 		getmicrotime(&tv);
-
-		status = CSR_READ_1(sja, SJA_MOD);
 	
 		/* force controller into normal mode */ 
 		for (; sja_timercmp(&tv0, &tv, 100);) {

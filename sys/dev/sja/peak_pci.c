@@ -48,6 +48,8 @@
 #include <dev/pci/pcireg.h>
 #include <dev/pci/pcivar.h>
 
+#include "sja_if.h"
+
 /*
  * Device driver(9) for PEAK PCAN PCI family 
  * cards implements proxy pattern on pci(4) 
@@ -86,18 +88,24 @@ static const struct peak_type pk_devs[] = {
 /* 
  * Hooks for the operating system.
  */
-static int	peak_pci_probe(device_t dev);
-static int	peak_pci_detach(device_t dev);
-static int	peak_pci_attach(device_t dev);
+static int	peak_pci_probe(device_t);
+static int	peak_pci_detach(device_t);
+static int	peak_pci_attach(device_t);
+
+static void	peak_pci_clear_intr(device_t, int);
 
 /*
  * kobj(9) method-table
  */
 static device_method_t peak_pci_methods[] = {
-	/* Device interface */
+	/* device(9) interface */
 	DEVMETHOD(device_probe, 	peak_pci_probe),
 	DEVMETHOD(device_attach,	peak_pci_attach),
 	DEVMETHOD(device_detach,	peak_pci_detach),
+	
+	/* sja(4) interface */
+	DEVMETHOD(sja_clear_intr,		peak_pci_clear_intr),
+	
 	DEVMETHOD_END
 };
 
@@ -164,9 +172,9 @@ peak_pci_attach(device_t dev)
 	/* allocate resources for control registers and ports */
 	sc->pk_res_id = PCIR_BAR(0); 
 	sc->pk_res_type = SYS_RES_MEMORY;
-	sc->pk_res = bus_alloc_resource_anywhere(dev, 
-		sc->pk_res_type, &sc->pk_res_id, 
-			PEAK_CFG_SIZE, RF_ACTIVE);
+	sc->pk_res = bus_alloc_resource_anywhere(dev, sc->pk_res_type, 
+		&sc->pk_res_id, PEAK_CFG_SIZE, RF_ACTIVE);
+	
 	if (sc->pk_res == NULL) {
 		device_printf(dev, "couldn't map CSR\n");
 		error = ENXIO;
@@ -177,13 +185,15 @@ peak_pci_attach(device_t dev)
 		sjac = &sc->pk_chan[i].pkc_chan;
 		sjad = &sjac->sjac_var;
 
+		sjad->sjad_port = i;
+
 		sjad->sjad_res_id = PCIR_BAR(1) + i * PEAK_CHAN_SIZE;
 		sjad->sjad_res_type = SYS_RES_IRQ;
 		sjad->sjad_res = bus_alloc_resource_anywhere(dev, 
 			sjad->sjad_res_type, &sjad->sjad_res_id, 
 				PEAK_CHAN_SIZE, RF_ACTIVE | RF_SHAREABLE);
 		if (sjad->sjad_res == NULL) {
-			device_printf(dev, "couldn't map port\n");
+			device_printf(dev, "couldn't map port %d\n", i);
 			error = ENXIO;
 			goto fail;
 		}
@@ -192,7 +202,6 @@ peak_pci_attach(device_t dev)
 		sjad->sjad_cdr = PEAK_CDR_DFLT;
 		sjad->sjad_ocr = PEAK_OCR_DFLT;
 		sjad->sjad_freq = PEAK_CLK_FREQ;
-		sjad->sjad_port = i;
 		
 		if (i == 0)
 			sc->pk_chan[i].pkc_flags = PEAK_ICR_MASK0;
@@ -230,6 +239,8 @@ peak_pci_attach(device_t dev)
 			goto fail;
 		}
 		device_set_ivars(sjac->sjac_dev, sjad);
+		
+		status |= sc->pk_chan[i].pkc_flags;
 	}
 	
 	if ((error = bus_generic_attach(dev)) != 0) {
@@ -283,6 +294,24 @@ peak_pci_detach(device_t dev)
 		(void)bus_release_resource(dev, sc->pk_res_type, sc->pk_res);
 	
 	return (0);
+}
+
+static void
+peak_pci_clear_intr(device_t dev, int port)
+{
+	struct peak_softc *sc;
+	uint16_t flags, status;
+
+	sc = device_get_softc(dev);
+	
+	if (port < sc->pk_chan_cnt) {
+		flags = sc->pk_chan[port].pkc_flags;
+	
+		status = bus_read_2(sc->pk_res, PEAK_ICR);
+	
+		if (status & flags)
+			bus_write_2(sc->pk_res, PEAK_ICR, flags);
+	}
 }
 
 MODULE_DEPEND(peak_pci, pci, 1, 1, 1);
