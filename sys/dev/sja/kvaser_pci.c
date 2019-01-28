@@ -94,6 +94,8 @@ static driver_t kvaser_pci_driver = {
 static devclass_t kvaser_pci_devclass;
 
 DRIVER_MODULE(kvaser_pci, pci, kvaser_pci_driver, kvaser_pci_devclass, 0, 0);
+DRIVER_MODULE(sja, kvaser_pci, sja_driver, sja_devclass, 0, 0);
+
 
 static int
 kvaser_pci_probe(device_t dev)

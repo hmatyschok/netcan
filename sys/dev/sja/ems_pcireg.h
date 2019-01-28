@@ -27,59 +27,34 @@
 /*
  * General constants.
  * 
- * PLX90xx PCI-bridge card vendor ID.
+ * EMS CPC-PCI/PCIe/104P CAN card vendor ID.
  */
-#define PLX_VENDORID_ADLINK			0x144A
-#define PLX_VENDORID_CAN200PCI			0x10b5
-#define PLX_VENDORID_IXXAT			0x10b5
-#define PLX_VENDORID_TEWS			0x1498
-#define PLX_VENDORID_CTI			0x12c4
-#define PLX_VENDORID_MOXA			0x1393
-#define PLX_VENDORID_PLX			0x10b5
+#define EMS_VENDORID_SIEMENS			0x110a
+#define EMS_VENDORID_PLX			0x10b5
 
 /*
- * PLX90xx PCI-bridge card device IDs.
+ * PLX9030 PCI-bridge card device IDs.
  */
-#define PLX_DEVICEID_ADLINK			0x7841
-#define PLX_DEVICEID_CAN200PCI			0x9030
-#define PLX_DEVICEID_IXXAT			0x9050
-#define PLX_DEVICEID_MARATHON_PCI			0x2715
-#define PLX_DEVICEID_MARATHON_PCIE			0x3432
-#define PLX_DEVICEID_TEWS_TMPC810			0x032A
-#define PLX_DEVICEID_CTI_CRG001			0x0900
-#define PLX_DEVICEID_MOXA			0x0100
-#define PLX_DEVICEID_PLX_9030			0x9030
-#define PLX_DEVICEID_PLX_9050			0x9050
-#define PLX_DEVICEID_PLX_9056			0x9056
+#define EMS_DEVICEID_SIEMENS			0x2104
+#define EMS_DEVICEID_PLX_9030			0x9030
 
-#define PLX_SUBDEVID_ESD_PCI200			0x0004
-#define PLX_SUBDEVID_ESD_PCI266			0x0009
-#define PLX_SUBDEVID_ESD_PMC266			0x000e
-#define PLX_SUBDEVID_ESD_CPCI200			0x010b
-#define PLX_SUBDEVID_ESD_PCIE2000			0x0200
-#define PLX_SUBDEVID_ESD_PCI104200			0x0501
-#define PLX_SUBDEVID_CAN200PCI			0x0301
-#define PLX_SUBDEVID_IXXAT			0x2540
-#define PLX_SUBDEVID_ANY			0xffff
+#define EMS_SUBDEVID_CPC_PCI2			0x4000
+#define EMS_SUBDEVID_CPC_104P2			0x4002
+#define EMS_SUBDEVID_ANY			0xffff
 
-#define PLX_SUBVENDID_CAN200PCI			0xe1c5
-#define PLX_SUBVENDID_ESD			0x12fe
-#define PLX_SUBVENDID_ANY			0xffff
+#define EMS_SUBVENDID_PLX			0x10b5
+#define EMS_SUBVENDID_ANY			0xffff
 
-/*
- * Provides information for bus_alloc_resource_any{where}(9).
- */
-
-struct plx_desc {
-	int		plx_bar;
-	int		plx_off;
-	rman_res_t		plx_cnt;
+struct ems_desc {
+	int		ems_bar;
+	int		ems_off;
+	rman_res_t		ems_cnt;
 };
 
-struct plx_data {
-	/* parameter for resource allocation */
-	struct plx_desc		plx_res;
-	struct plx_desc		plx_chan[PLX_CHAN_MAX];
+struct ems_data {
+	struct ems_desc		ems_res;
+	struct ems_desc		ems_chan;
+	int		ems_chan_cnt;
 	
 	/* parameter for initializiation */
 	uint32_t		plx_icr_read;
@@ -92,56 +67,58 @@ struct plx_data {
 	uint32_t		plx_tcr_rcr;		/* set, if PLX9056 */
 };
 
-struct plx_type {
-	uint16_t 	plx_vid;
-	uint16_t 	plx_did;
-	uint16_t	plx_sub_vid;
-	uint16_t	plx_sub_did;
-	struct plx_data		*plx_id;
-	const char 	*plx_name;
+struct ems_type {
+	uint16_t 	ems_vid;
+	uint16_t 	ems_did;
+	uint16_t	ems_sub_vid;
+	uint16_t	ems_sub_did;
+	struct ems_data		*ems_id;
+	const char 	*ems_name;
 };
-
-/*
- * Default values.
- */
-#define PLX_OCR_DFLT		(SJA_OCR_TX0_PSHP | SJA_OCR_TX1_PSHP)
-#define PLX_CDR_DFLT		(SJA_CDR_CBP | SJA_CDR_CLK_OUT)
-#define PLX_CLK_FREQ		(16000000 / 2)
 
 /*
  * Important register.
  * 
- * PLX9030/9050/9052
+ * EMS CPC-PCI v1 cards.
  */
-#define PLX_ICR		0x4c		/* interrupt control / status */
-#define PLX_TCR		0x50		/* control / software reset */
+#define EMS_PITA_ICR		0x00	/* interrupt control register */
+#define EMS_PITA_ICR_INT0		0x00000002		/* interrupt status */
+#define EMS_PITA_ICR_INT0_ENB		0x00020000	/* interrupt enable */
+#define EMS_PITA_ICR_INT_RST \		/* clear interrupt */
+	(EMS_PITA_ICR_INT0|EMS_PITA_ICR_INT0_ENB)
 
-#define PLX_ICR_INT0_ENB		0x00000001	/* local interrupt 0 */
-#define PLX_ICR_INT1_ENB		0x00000008	/* local interrupt 1 */
-#define PLX_ICR_PINT_ENB		0x00000040	/* PCI interrupt */
+#define EMS_PITA_MISC		0x1c	/* misc. register */
+#define EMS_PITA_MISC_PIM		0x04000000	/* parallel interface mode */
 
-#define PLX_TCR_RST		0x40000000	/* pci(4) adapter software reset */
 
-/* PLX9056 */
-#define PLX_9056_ICR		0x68		/* interrupt control / status */
-#define PLX_9056_TCR		0x6c		/* control / software reset */
+/* EMS CPC-{PCI,104P} v2 cards. */
+#define EMS_PLX_ICR		0x4c   /* Interrupt Control/Status register */
+#define EMS_PLX_ICR_INT0_ENB		0x0001 /* LINTi1 Enable */
+#define EMS_PLX_ICR_PINT_ENB		0x0040 /* PCI Interrupt Enable */
+#define EMS_PLX_ICR_INT0_CLR		0x0400 /* Local Edge Triggerable Interrupt Clear */
+#define EMS_PLX_ICR_INT_RST \
+	(EMS_PLX_ICR_INT0_ENB|EMS_PLX_ICR_PINT_ENB|EMS_PLX_ICR_INT0_CLR)
 
-#define PLX_9056_ICR_INT0_ENB		0x00000800
-#define PLX_9056_ICR_PINT_ENB		0x00000100
-#define PLX_9056_TCR_RCR		0x20000000 /* read configuration */
+/*
+ * Default values.
+ */
+#define EMS_OCR_DFLT		(SJA_OCR_TX0_PSHP | SJA_OCR_TX1_PSHP)
+#define EMS_CDR_DFLT		(SJA_CDR_CBP | SJA_CDR_CLK_OUT)
+#define EMS_CLK_FREQ		(16000000 / 2)
 
-#define PLX_CHAN_MAX		2
+#define EMS_DUAL_CHAN		2
+#define EMS_CHAN_MAX		4
 
-struct plx_softc {
-	device_t 	plx_dev;
+struct ems_softc {
+	device_t 	ems_dev;
 
-	struct plx_data		*plx_id;
+	struct ems_data	*ems_id;
 
 	/* ICR / TCR */
-	struct resource		*plx_res;
-	int			plx_res_id;
-	int			plx_res_type;
+	struct resource		*ems_res;
+	int			ems_res_id;
+	int			ems_res_type;
 
 	/* set of sja(4) controller */
-	struct sja_chan		plx_chan[PLX_CHAN_MAX]; 
+	struct sja_chan		ems_chan[EMS_CHAN_MAX]; 
 };

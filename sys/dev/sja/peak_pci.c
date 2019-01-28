@@ -118,6 +118,7 @@ static driver_t peak_pci_driver = {
 static devclass_t peak_pci_devclass;
 
 DRIVER_MODULE(peak_pci, pci, peak_pci_driver, peak_pci_devclass, 0, 0);
+DRIVER_MODULE(sja, peak_pci, sja_driver, sja_devclass, 0, 0);
 
 static int
 peak_pci_probe(device_t dev)
@@ -268,7 +269,7 @@ peak_pci_detach(device_t dev)
 	sc = device_get_softc(dev);
  
 	/* disable interrupts */
-	bus_write_2(sc->pk_res, PEAK_ICCR, 0);
+	bus_write_2(sc->pk_res, PEAK_ICCR, 0x0000);
  
 	/* detach each channel, if any */
 	for (i = 0; i < sc->pk_chan_cnt; i++) {

@@ -605,8 +605,10 @@ done:
 static void
 sja_clear_intr(device_t dev, int port)
 {
-	if (dev->parent != NULL)
-		SJA_CLEAR_INTR(dev->parent, port);	
+	device_t parent;
+	
+	if ((parent = device_get_parent(dev)) != NULL)
+		SJA_CLEAR_INTR(parent, port);	
 }
 
 /*

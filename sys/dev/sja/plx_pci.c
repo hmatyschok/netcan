@@ -467,6 +467,7 @@ static device_method_t plx_pci_methods[] = {
 	DEVMETHOD(device_probe, 	plx_pci_probe),
 	DEVMETHOD(device_attach,	plx_pci_attach),
 	DEVMETHOD(device_detach,	plx_pci_detach),
+		
 	DEVMETHOD_END
 };
 
@@ -479,7 +480,7 @@ static driver_t plx_pci_driver = {
 static devclass_t plx_pci_devclass;
 
 DRIVER_MODULE(plx_pci, pci, plx_pci_driver, plx_pci_devclass, 0, 0);
-
+DRIVER_MODULE(sja, plx_pci, sja_driver, sja_devclass, 0, 0);
 
 static const struct plx_type *
 plx_pci_match(device_t dev)
