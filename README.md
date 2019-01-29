@@ -17,9 +17,7 @@ can(4) - Controller Area Network protocol domain(9) for FreeBSD 11.2
   
   (d) Device-driver for Adapter with Philips SJA1000 controller.
   
-  (e)  ...    
- 
- Do not try to 
+  (e)  ...   
  
 Legal Notice: 
 -------------

@@ -54,17 +54,13 @@ struct ems_desc {
 struct ems_data {
 	struct ems_desc		ems_res;
 	struct ems_desc		ems_chan;
+	
 	int		ems_chan_cnt;
 	
-	/* parameter for initializiation */
-	uint32_t		plx_icr_read;
-	uint32_t		plx_icr_addr;
-	uint32_t		plx_icr;
+	uint32_t		ems_shift;
 	
-	/* parameter for software reset */	
-	uint32_t		plx_tcr_addr;
-	uint32_t		plx_tcr_rst;
-	uint32_t		plx_tcr_rcr;		/* set, if PLX9056 */
+	uint32_t 		ems_icr_addr;
+	uint32_t 		ems_icr_rst;
 };
 
 struct ems_type {
