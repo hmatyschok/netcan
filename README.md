@@ -19,6 +19,8 @@ can(4) - Controller Area Network protocol domain(9) for FreeBSD 11.2
   
   (e)  ...    
  
+ Do not try to 
+ 
 Legal Notice: 
 -------------
  
@@ -33,7 +35,7 @@ Legal Notice:
 Additional information about contacting
 ---------------------------------------
       
-If someone wants to contact me by electronic mail, use encryption!
+If someone wants to contact me by electronic mail, please use encryption!
 
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 Version: GnuPG v2
@@ -66,8 +68,6 @@ u5E2GRq1FgrjmjTS8r+/zZfV31iFkIdc5gC9ipwBsA7H6Bx8lPP5M0l1MXS/wAWU
 8GZ4NRztiBU=
 =lsmx
 -----END PGP PUBLIC KEY BLOCK-----
-
-Otherwise, any connection attempt will be discarded. 
 
 This is a necessary security measure, because I would like to know 
 who is contacting me, because of this planet is full of individuals 
