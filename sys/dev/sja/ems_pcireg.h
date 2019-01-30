@@ -52,6 +52,7 @@ struct ems_desc {
 };
 
 struct ems_data {
+	struct ems_desc		ems_cfg;
 	struct ems_desc		ems_res;
 	struct ems_desc		ems_chan;
 	
@@ -111,6 +112,10 @@ struct ems_softc {
 	struct ems_data	*ems_id;
 
 	/* ICR / TCR */
+	struct resource		*ems_cfg;
+	int			ems_cfg_id;
+	int			ems_cfg_type;
+	
 	struct resource		*ems_res;
 	int			ems_res_id;
 	int			ems_res_type;
