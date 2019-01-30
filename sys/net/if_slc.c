@@ -831,5 +831,5 @@ slc_modevent(module_t mod, int type, void *data)
 	return (error);
 }
 
-DEV_MODULE(if_slc, slc_modevent, NULL);
+DECLARE_MODULE(if_slc, slc_modevent, NULL);
 MODULE_DEPEND(if_slc, can, 1, 1, 1);
