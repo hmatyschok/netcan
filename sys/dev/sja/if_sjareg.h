@@ -392,13 +392,13 @@ struct sja_softc {
 	struct ifnet	*sja_ifp;		/* generic ifnet(9) glue */
 	device_t	sja_dev;
 	int		sja_port;
+	struct resource 	*sja_irq;
 	struct resource		*sja_res;
 	uint8_t		sja_shift;
 	uint8_t		sja_cdr;
 	uint8_t		sja_ocr;
-	struct resource 	*sja_irq;
-	void	*sja_intr;
 	struct mtx	sja_mtx;
+	void	*sja_intr;
 };
 #define	SJA_LOCK(sja)		mtx_lock(&(sja)->sja_mtx)
 #define	SJA_UNLOCK(sja)		mtx_unlock(&(sja)->sja_mtx)
