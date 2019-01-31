@@ -396,6 +396,7 @@ struct sja_softc {
 	uint8_t		sja_shift;
 	uint8_t		sja_cdr;
 	uint8_t		sja_ocr;
+	struct resource 	*sja_irq;
 	void	*sja_intr;
 	struct mtx	sja_mtx;
 };

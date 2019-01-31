@@ -237,6 +237,24 @@ sja_attach(device_t dev)
 	sja = device_get_softc(dev);
 	sja->sja_dev = dev; 
 	
+	sjad = device_get_ivar(dev);
+	sja->sja_port = sjad->sjad_port;
+	sja->sja_res = sjad->sjad_res;
+	sja->sja_shift = sjad->sjad_shift;
+	sja->sja_cdr = sjad->sjad_cdr;
+	sja->sja_ocr = sjad->sjad_ocr;
+	
+	/* allocate interrupt */
+	rid = 0;
+	sja->sja_irq = bus_alloc_resource_any(dev, SYS_RES_IRQ, 
+		&rid, RF_SHAREABLE | RF_ACTIVE);
+
+	if (sja->sja_irq == NULL) {
+		device_printf(dev, "couldn't map interrupt\n");
+		error = ENXIO;
+		goto fail;
+	}
+	
 	mtx_init(&sja->sja_mtx, device_get_nameunit(dev), 
 		MTX_NETWORK_LOCK, MTX_DEF);	
 	
@@ -255,13 +273,6 @@ sja_attach(device_t dev)
 	ifp->if_init = sja_init;
 	ifp->if_start = sja_start;
 	ifp->if_ioctl = sja_ioctl;
-	
-	sjad = device_get_ivar(dev);
-	sja->sja_port = sjad->sjad_port;
-	sja->sja_res = sjad->sjad_res;
-	sja->sja_shift = sjad->sjad_shift;
-	sja->sja_cdr = sjad->sjad_cdr;
-	sja->sja_ocr = sjad->sjad_ocr;
 	
 	can_ifattach(ifp, &sja_set_link_timings, sjad->sjad_freq);
 	
