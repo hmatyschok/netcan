@@ -585,11 +585,11 @@ plx_pci_attach(device_t dev)
 		if (res->plx_cnt == 0) {
 			sjad->sjad_res = bus_alloc_resource_any(dev, 
 				sjad->sjad_res_type, &sjad->sjad_res_id, 
-					RF_ACTIVE | RF_SHAREABLE);
+					RF_ACTIVE);
 		} else {
 			sjad->sjad_res = bus_alloc_resource_anywhere(dev, 
 				sjad->sjad_res_type, &sjad->sjad_res_id, 
-					res->plx_cnt, RF_ACTIVE | RF_SHAREABLE);
+					res->plx_cnt, RF_ACTIVE);
 		}
 		
 		if (sjad->sjad_res == NULL) {

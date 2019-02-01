@@ -189,10 +189,11 @@ peak_pci_attach(device_t dev)
 		sjad->sjad_port = i;
 
 		sjad->sjad_res_id = PCIR_BAR(1) + i * PEAK_CHAN_SIZE;
-		sjad->sjad_res_type = SYS_RES_IRQ;
+		sjad->sjad_res_type = SYS_RES_IOPORT;
 		sjad->sjad_res = bus_alloc_resource_anywhere(dev, 
 			sjad->sjad_res_type, &sjad->sjad_res_id, 
 				PEAK_CHAN_SIZE, RF_ACTIVE | RF_SHAREABLE);
+		
 		if (sjad->sjad_res == NULL) {
 			device_printf(dev, "couldn't map port %d\n", i);
 			error = ENXIO;
