@@ -72,14 +72,17 @@ struct peak_type {
  */ 
 
 #define PEAK_ICR		0x00		/* interrupt control register */
-#define PEAK_ICCR		0x02		/*   clear command register */
-#define PEAK_ICCR_MASK0		0x0002		/* channel 1 */
-#define PEAK_ICCR_MASK1		0x0001		/* channel 2 */
-#define PEAK_ICCR_MASK2		0x0040		/* channel 3 */
-#define PEAK_ICCR_MASK0		0x0080		/* channel 4 */
+#define PEAK_ICR_INT_GP		0x02		/*   GPIO internal register */
+#define PEAK_ICR_INT_GP0		0x0002		/* channel 1 */
+#define PEAK_ICR_INT_GP1		0x0001		/* channel 2 */
+#define PEAK_ICR_INT_GP2		0x0040		/* channel 3 */
+#define PEAK_ICR_INT_GP3		0x0080		/* channel 4 */
 
 #define PEAK_GPIO_ICR		0x18	/* GPIO interface control register */
-#define PEAK_GPIO_ICCR		0x1a	/*   clear command register */
+#define PEAK_GPIO_ICR_ENB		0x00
+#define PEAK_GPIO_ICR_IO		0x1a	/*   clear command register */
+#define PEAK_GPIO_ICR_IO_ENB		0x0005
+
 
 #define PEAK_MISC		0x1c		/* miscellaneous register */
 #define PEAK_MISC_CR		0x1f	/*   command register */
@@ -97,8 +100,7 @@ struct peak_type {
  * ...
  */
 
-#define PEAK_GPIO_ICCR_INIT		0x0005
-#define PEAK_GPIO_ICCR_START		0x00
+
 
 #define PEAK_MISC_CR_TOG_RST		0x05
 

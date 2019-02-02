@@ -208,20 +208,20 @@ peak_pci_attach(device_t dev)
 		sjad->sjad_freq = PEAK_CLK_FREQ;
 		
 		if (i == 0)
-			sc->pk_chan[i].pkc_flags = PEAK_ICR_MASK0;
+			sc->pk_chan[i].pkc_flags = PEAK_ICR_INT_GP0;
 		else if (i == 1) 
-			sc->pk_chan[i].pkc_flags = PEAK_ICR_MASK1;
+			sc->pk_chan[i].pkc_flags = PEAK_ICR_INT_GP1;
 		else if (i == 2)
-			sc->pk_chan[i].pkc_flags = PEAK_ICR_MASK2;
+			sc->pk_chan[i].pkc_flags = PEAK_ICR_INT_GP2;
 		else 
-			sc->pk_chan[i].pkc_flags = PEAK_ICR_MASK3;
+			sc->pk_chan[i].pkc_flags = PEAK_ICR_INT_GP3;
 	}	
 	
 	/* set-up GPIO control register, if any */
-	bus_write_2(sc->pk_res, PEAK_GPIO_ICCR, PEAK_GPIO_ICCR_INIT);
+	bus_write_2(sc->pk_res, PEAK_GPIO_ICR_IO, PEAK_GPIO_ICR_IO_ENB);
 	
 	/* enable all channels, if any */
-	bus_write_1(sc->pk_res, PEAK_GPIO_ICR, PEAK_GPIO_ICCR_START);
+	bus_write_1(sc->pk_res, PEAK_GPIO_ICR, PEAK_GPIO_ICR_ENB);
 	
 	/* toggle reset */
 	bus_write_1(sc->pk_res, PEAK_MISC_CR, PEAK_MISC_CR_TOG_RST);
@@ -229,7 +229,7 @@ peak_pci_attach(device_t dev)
 	
 	/* leave parport mux mode */
 	bus_write_1(sc->pk_res, PEAK_MISC_CR, PEAK_MISC_CR_PP_EPP);
-	status = bus_read_2(sc->pk_res, PEAK_ICCR);
+	status = bus_read_2(sc->pk_res, PEAK_ICR_INT_GP);
 
 	/* attach set of sja(4) controller as its children */		
 	for (i = 0; i < sc->pk_chan_cnt; i++) { 
@@ -253,7 +253,7 @@ peak_pci_attach(device_t dev)
 	}
 	
 	/* enable interrupts */
-	bus_write_2(sc->pk_res, PEAK_ICCR, status);
+	bus_write_2(sc->pk_res, PEAK_ICR_INT_GP, status);
 out:	
 	return (error);
 fail:
