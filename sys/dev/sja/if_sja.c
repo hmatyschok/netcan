@@ -308,7 +308,7 @@ sja_attach(device_t dev)
 	}
 
 	/* hook interrupts */
-	error = bus_setup_intr(dev, sja->sja_res, 
+	error = bus_setup_intr(dev, sja->sja_irq, 
 		INTR_TYPE_NET | INTR_MPSAFE, sja_intr, 
 			NULL, sja, &sja->sja_intr);
 
@@ -343,7 +343,7 @@ sja_detach(device_t dev)
 	}
 	
 	if (sja->sja_intr != NULL) {
-		(void)bus_teardown_intr(dev, sja->sja_res, sja->sja_intr);
+		(void)bus_teardown_intr(dev, sja->sja_irq, sja->sja_intr);
 		sja->sja_intr = NULL;
 	}
 	

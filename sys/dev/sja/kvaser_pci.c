@@ -144,7 +144,11 @@ kvaser_pci_attach(device_t dev)
 	}
 	
 	sc->pk_res_id = PCIR_BAR(2); 
-	sc->pk_res_type = SYS_RES_MEMORY;
+	
+	status = pci_read_config(dev, sc->pk_res_id, 4);
+	sc->pk_res_type = (PCI_BAR_IO(status) != 0) ? 
+		SYS_RES_IOPORT : SYS_RES_MEMORY;
+	
 	sc->pk_res = bus_alloc_resource_anywhere(dev, 
 		sc->pk_res_type, &sc->pk_res_id, 
 			KVASER_PCI_RES_SIZE, RF_ACTIVE);
@@ -162,7 +166,8 @@ kvaser_pci_attach(device_t dev)
 		sjad = &sjac->sjac_var;
 
 		sjad->sjad_res_id = PCIR_BAR(1) + i * KVASER_CHAN_SIZE;
-		sjad->sjad_res_type = SYS_RES_IRQ;
+		sjad->sjad_res_type = SYS_RES_IOPORT;
+		
 		sjad->sjad_res = bus_alloc_resource_anywhere(dev, 
 			sjad->sjad_res_type, &sjad->sjad_res_id, 
 				KVASER_CHAN_SIZE, RF_ACTIVE | RF_SHAREABLE);

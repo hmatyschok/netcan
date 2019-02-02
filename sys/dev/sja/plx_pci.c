@@ -577,10 +577,7 @@ plx_pci_attach(device_t dev)
 		sjad = &sjac->sjac_var;
 
 		sjad->sjad_res_id = res->plx_bar + res->plx_off;
-		
-		status = pci_read_config(dev, res->plx_bar, 4);
-		sjad->sjad_res_type = (PCI_BAR_IO(status) != 0) ? 
-			SYS_RES_IOPORT : SYS_RES_MEMORY;
+		sjad->sjad_res_type = SYS_RES_IOPORT;
 		
 		if (res->plx_cnt == 0) {
 			sjad->sjad_res = bus_alloc_resource_any(dev, 

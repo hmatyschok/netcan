@@ -173,6 +173,7 @@ peak_pci_attach(device_t dev)
 	/* allocate resources for control registers and ports */
 	sc->pk_res_id = PCIR_BAR(0); 
 	sc->pk_res_type = SYS_RES_MEMORY;
+	
 	sc->pk_res = bus_alloc_resource_anywhere(dev, sc->pk_res_type, 
 		&sc->pk_res_id, PEAK_CFG_SIZE, RF_ACTIVE);
 	
@@ -190,6 +191,7 @@ peak_pci_attach(device_t dev)
 
 		sjad->sjad_res_id = PCIR_BAR(1) + i * PEAK_CHAN_SIZE;
 		sjad->sjad_res_type = SYS_RES_IOPORT;
+		
 		sjad->sjad_res = bus_alloc_resource_anywhere(dev, 
 			sjad->sjad_res_type, &sjad->sjad_res_id, 
 				PEAK_CHAN_SIZE, RF_ACTIVE | RF_SHAREABLE);
