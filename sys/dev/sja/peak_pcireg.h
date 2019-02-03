@@ -61,16 +61,8 @@ struct peak_type {
 #define PEAK_QUAD_CHAN		4
 
 /*
- * Default values.
- */
-#define PEAK_OCR_DFLT		(SJA_OCR_TX0_PSHP)
-#define PEAK_CDR_DFLT		(SJA_CDR_CBP | SJA_CDR_CLK_OUT)
-#define PEAK_CLK_FREQ		(16000000 / 2)
-
-/*
- * XXX: work on progress ...
+ * Important register.
  */ 
-
 #define PEAK_ICR		0x00		/* interrupt control register */
 #define PEAK_ICR_INT_GP		0x02		/*   GPIO internal register */
 #define PEAK_ICR_INT_GP0		0x0002		/* channel 1 */
@@ -87,24 +79,20 @@ struct peak_type {
 #define PEAK_MISC		0x1c		/* miscellaneous register */
 #define PEAK_MISC_CR		0x1f	/*   command register */
 
-#define PEAK_CSID		0x2e	
+#define PEAK_MISC_CR_TOG_RST		0x05
+#define PEAK_MISC_CR_PP_EPP		0x04
+
+#define PEAK_CSID		0x2e
 
 /*
- * ...
+ * Default values.
  */
+#define PEAK_OCR_DFLT		(SJA_OCR_TX0_PSHP)
+#define PEAK_CDR_DFLT		(SJA_CDR_CBP | SJA_CDR_CLK_OUT)
+#define PEAK_CLK_FREQ		(16000000 / 2)
 
 #define PEAK_CFG_SIZE		0x1000	/* Size of the config PCI bar */
 #define PEAK_CHAN_SIZE		0x0400	/* Size used by the channel */
-
-/*
- * ...
- */
-
-
-
-#define PEAK_MISC_CR_TOG_RST		0x05
-
-#define PEAK_MISC_CR_PP_EPP		0x04
 
 struct peak_chan {
 	struct sja_chan	pkc_chan;
