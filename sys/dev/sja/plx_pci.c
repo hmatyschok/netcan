@@ -455,6 +455,14 @@ static const struct plx_type *	plx_pci_match(device_t dev);
 /* 
  * Hooks for the operating system.
  */
+static uint8_t	plx_pci_read_1(device_t, sja_data_t, int);
+static uint16_t	plx_pci_read_2(device_t, sja_data_t, int);
+static uint32_t	plx_pci_read_4(device_t, sja_data_t, int);
+
+static void	plx_pci_write_1(device_t, sja_data_t, uint8_t);
+static void	plx_pci_write_2(device_t, sja_data_t, uint16_t);
+static void	plx_pci_write_4(device_t, sja_data_t, uint32_t); 
+ 
 static int	plx_pci_probe(device_t dev);
 static int	plx_pci_detach(device_t dev);
 static int	plx_pci_attach(device_t dev);
@@ -463,10 +471,19 @@ static int	plx_pci_attach(device_t dev);
  * kobj(9) method-table
  */
 static device_method_t plx_pci_methods[] = {
-	/* Device interface */
+	/* device(9) interface */
 	DEVMETHOD(device_probe, 	plx_pci_probe),
 	DEVMETHOD(device_attach,	plx_pci_attach),
 	DEVMETHOD(device_detach,	plx_pci_detach),
+
+	/* sja(4) interface */
+	DEVMETHOD(sja_read_1,	plx_pci_read_1),
+	DEVMETHOD(sja_read_2,	plx_pci_read_2),
+	DEVMETHOD(sja_read_4,	plx_pci_read_4),
+	
+	DEVMETHOD(sja_write_1,	plx_pci_write_1),
+	DEVMETHOD(sja_write_2,	plx_pci_write_2),
+	DEVMETHOD(sja_write_4,	plx_pci_write_4),
 		
 	DEVMETHOD_END
 };
@@ -528,8 +545,8 @@ plx_pci_attach(device_t dev)
 	const struct plx_type	*t;
 	struct plx_softc *sc;
 	struct plx_desc *res;	
-	struct sja_chan *sjac;
-	struct sja_data *sjad;
+	struct sja_chan *chan;
+	struct sja_data *var;
 	int i, error = 0;
 	uint32_t status;
 
@@ -573,45 +590,50 @@ plx_pci_attach(device_t dev)
 	
 	for (i = 0; i < PLX_CHAN_MAX; i++) { 
 		res = &sc->plx_id->plx_chan[i]; 
-		sjac = &sc->plx_chan[i];
-		sjad = &sjac->sjac_var;
+		chan = &sc->plx_chan[i];
+		var = &chan->sja_var;
 
-		sjad->sjad_res_id = res->plx_bar + res->plx_off;
-		sjad->sjad_res_type = SYS_RES_IOPORT;
+		chan->sja_res_id = res->plx_bar + res->plx_off;
+		
+		status = pci_read_config(dev, chan->sja_res_id, 4);
+		chan->sja_res_type = (PCI_BAR_IO(status) != 0) ? 
+			SYS_RES_IOPORT : SYS_RES_MEMORY;
 		
 		if (res->plx_cnt == 0) {
-			sjad->sjad_res = bus_alloc_resource_any(dev, 
-				sjad->sjad_res_type, &sjad->sjad_res_id, 
+			chan->sja_res = bus_alloc_resource_any(dev, 
+				chan->sja_res_type, &chan->sja_res_id, 
 					RF_ACTIVE);
 		} else {
-			sjad->sjad_res = bus_alloc_resource_anywhere(dev, 
-				sjad->sjad_res_type, &sjad->sjad_res_id, 
+			chan->sja_res = bus_alloc_resource_anywhere(dev, 
+				chan->sja_res_type, &chan->sja_res_id, 
 					res->plx_cnt, RF_ACTIVE);
 		}
 		
-		if (sjad->sjad_res == NULL) {
+		if (chan->sja_res == NULL) {
 			device_printf(dev, "couldn't map port %i\n", i);
 			error = ENXIO;
 			goto fail;
 		}
 		
-		sjad->sjad_cdr = PLX_CDR_DFLT;
-		sjad->sjad_ocr = PLX_OCR_DFLT;
-		sjad->sjad_freq = PLX_CLK_FREQ;
+		var->var_port = i;
+		
+		var->var_cdr = PLX_CDR_DFLT;
+		var->var_ocr = PLX_OCR_DFLT;
+		var->var_freq = PLX_CLK_FREQ;
 	}	
 	
 	/* attach set of sja(4) controller as its children */		
 	for (i = 0; i < PLX_CHAN_MAX; i++) { 
-		sjac = &sc->plx_chan[i];
-		sjad = &sjac->sjac_var;
+		chan = &sc->plx_chan[i];
+		var = &chan->sja_var;
 				
-		sjac->sjac_dev = device_add_child(dev, "sja", -1); 
-		if (sjad->sjad_dev == NULL) {
+		chan->sja_dev = device_add_child(dev, "sja", -1); 
+		if (var->var_dev == NULL) {
 			device_printf(dev, "couldn't map channels");
 			error = ENXIO;
 			goto fail;
 		}
-		device_set_ivars(sjac->sjac_dev, sjad);
+		device_set_ivars(chan->sja_dev, var);
 	}
 	
 	if ((error = bus_generic_attach(dev)) != 0) {
@@ -637,8 +659,8 @@ static int
 plx_pci_detach(device_t dev)
 {
 	struct plx_softc *sc;
-	struct sja_chan *sjac;
-	struct sja_data *sjad;
+	struct sja_chan *chan;
+	struct sja_data *var;
 	uint32_t status;
 	int i;
  
@@ -673,21 +695,21 @@ plx_pci_detach(device_t dev)
 	
 	/* detach each channel, if any */
 	for (i = 0; i < PLX_CHAN_MAX; i++) {
-		sjac = &sc->plx_chan[i];
+		chan = &sc->plx_chan[i];
 		
-		if (sjac->sjac_dev != NULL)
-			(void)device_delete_child(dev, sjac->sjac_dev);
+		if (chan->sja_dev != NULL)
+			(void)device_delete_child(dev, chan->sja_dev);
 	}
 	(void)bus_generic_detach(dev);
  
 	/* release bound resources */
 	for (i = 0; i < PLX_CHAN_MAX; i++) {
-		sjac = &sc->plx_chan[i];
-		sjad = &sjac->sjac_var;
+		chan = &sc->plx_chan[i];
+		var = &chan->sja_var;
 			
-		if (sjad->sjad_res != NULL) {
-			(void)bus_release_resource(dev, sjad->sjad_res_type, 
-				sjad->sjad_res);
+		if (chan->sja_res != NULL) {
+			(void)bus_release_resource(dev, chan->sja_res_type, 
+				chan->sja_res);
 		}
 	}
 	
@@ -695,6 +717,82 @@ plx_pci_detach(device_t dev)
 		(void)bus_release_resource(dev, sc->plx_res_type, sc->plx_res);
 
 	return (0);
+}
+
+/*
+ * Common I/O subr.
+ */
+
+static uint8_t
+plx_read_1(device_t dev, sja_data_t sjad, int port)
+{
+	struct plx_softc *sc;
+	struct sja_chan *chan;
+	
+	sc = device_get_softc(dev);
+	chan = &sc->pk_chan[var->sja_port];
+	
+	return (bus_read_1(chan->sja_res, port));
+}
+
+static uint16_t
+plx_read_2(device_t dev, sja_data_t var, int port)
+{
+	struct plx_softc *sc;
+	struct sja_chan *chan;
+	
+	sc = device_get_softc(dev);
+	chan = &sc->pk_chan[var->sja_port];
+	
+	return (bus_read_2(chan->sja_res, port));
+}
+
+static uint32_t
+plx_read_4(device_t dev, sja_data_t var, int port)
+{
+	struct plx_softc *sc;
+	struct sja_chan *chan;
+	
+	sc = device_get_softc(dev);
+	chan = &sc->pk_chan[var->sja_port];
+	
+	return (bus_read_4(chan->sja_res, port));
+}
+
+static void
+plx_pci_write_1(device_t dev, sja_data_t var, int port, uint8_t val)
+{
+	struct plx_softc *sc;
+	struct sja_chan *chan;
+	
+	sc = device_get_softc(dev);
+	chan = &sc->pk_chan[var->sja_port];
+	
+	bus_write_1(chan->sja_res, port, val));
+}
+
+static void
+plx_pci_write_2(device_t dev, sja_data_t var, int port, uint16_t val)
+{
+	struct plx_softc *sc;
+	struct sja_chan *chan;
+	
+	sc = device_get_softc(dev);
+	chan = &sc->pk_chan[var->sja_port];
+	
+	bus_write_2(chan->sja_res, port, val));
+}
+
+static void
+plx_pci_write_4(device_t dev, sja_data_t var, int port, uint32_t val)
+{
+	struct plx_softc *sc;
+	struct sja_chan *chan;
+	
+	sc = device_get_softc(dev);
+	chan = &sc->pk_chan[var->sja_port];
+	
+	bus_write_4(chan->sja_res, port, val));	
 }
 
 MODULE_DEPEND(plx_pci, pci, 1, 1, 1);
