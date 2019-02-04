@@ -38,6 +38,14 @@
 #define C_CAN_DEVICEID_STMICRO_CAN			0xcc11
 #define C_CAN_DEVICEID_PCH_CAN			0x8818
 
+struct c_can_pci_data c_can_pch = {
+
+/*
+ * ...
+ */
+
+};
+
 struct c_can_pci_type {
 	uint16_t 	ccp_vid;
 	uint16_t 	ccp_did;
