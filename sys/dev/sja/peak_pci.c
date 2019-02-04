@@ -199,12 +199,15 @@ peak_pci_attach(device_t dev)
 		goto fail;
 	}
 	
+	status = pci_read_config(dev, PCIR_BAR(1), 4);
+	
 	for (i = 0; i < sc->pk_chan_cnt; i++) { 
 		chan = &sc->pk_chan[i];
 		var = &chan->sja_var;
 
 		chan->sja_res_id = PCIR_BAR(1) + i * PEAK_CHAN_SIZE;
-		chan->sja_res_type = SYS_RES_IOPORT;
+		chan->sja_res_type = (PCI_BAR_IO(status) != 0) ? 
+			SYS_RES_IOPORT : SYS_RES_MEMORY;
 		
 		chan->sja_res = bus_alloc_resource_anywhere(dev, 
 			chan->sja_res_type, &chan->sja_res_id, 

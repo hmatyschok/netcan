@@ -593,11 +593,13 @@ plx_pci_attach(device_t dev)
 		chan = &sc->plx_chan[i];
 		var = &chan->sja_var;
 
-		chan->sja_res_id = res->plx_bar + res->plx_off;
-		
+		chan->sja_res_id = res->plx_bar;
 		status = pci_read_config(dev, chan->sja_res_id, 4);
+		
 		chan->sja_res_type = (PCI_BAR_IO(status) != 0) ? 
 			SYS_RES_IOPORT : SYS_RES_MEMORY;
+		
+		chan->sja_res_id += res->plx_off;
 		
 		if (res->plx_cnt == 0) {
 			chan->sja_res = bus_alloc_resource_any(dev, 

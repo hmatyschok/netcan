@@ -179,13 +179,13 @@ kvaser_pci_attach(device_t dev)
 	sc->kv_vers_id = bus_read_1(sc->kv_res, KVASER_VERS_ID);
 	sc->kv_vers_id >>= 4;
 	
+	status = pci_read_config(dev, PCIR_BAR(1), 4);
+	
 	for (i = 0; i < KVASER_CHAN_MAX; i++) { 
 		chan = &sc->kv_chan[i];
 		var = &chan->sja_var;
 
 		chan->sja_res_id = PCIR_BAR(1) + i * KVASER_CHAN_SIZE;
-		
-		status = pci_read_config(dev, chan->sja_res_id, 4);
 		chan->sja_res_type = (PCI_BAR_IO(status) != 0) ? 
 			SYS_RES_IOPORT : SYS_RES_MEMORY;
 		
