@@ -363,7 +363,7 @@ peak_pci_write_1(device_t dev, sja_data_t var, int port, uint8_t val)
 	sc = device_get_softc(dev);
 	chan = &sc->pk_chan[var->sja_port];
 	
-	bus_write_1(chan->sja_res, port, val));
+	bus_write_1(chan->sja_res, (port << chan->sja_shift), val));
 }
 
 static void
@@ -375,7 +375,7 @@ peak_pci_write_2(device_t dev, sja_data_t var, int port, uint16_t val)
 	sc = device_get_softc(dev);
 	chan = &sc->pk_chan[var->sja_port];
 	
-	bus_write_2(chan->sja_res, port, val));
+	bus_write_2(chan->sja_res, (port << chan->sja_shift), val));
 }
 
 static void
@@ -387,7 +387,7 @@ peak_pci_write_4(device_t dev, sja_data_t var, int port, uint32_t val)
 	sc = device_get_softc(dev);
 	chan = &sc->pk_chan[var->sja_port];
 	
-	bus_write_4(chan->sja_res, port, val));	
+	bus_write_4(chan->sja_res, (port << chan->sja_shift), val));	
 }
 
 static void
