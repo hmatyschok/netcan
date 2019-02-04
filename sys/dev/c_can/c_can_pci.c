@@ -62,16 +62,18 @@
 static const struct c_can_pci_type c_can_pci_devs[] = {
 	{ C_CAN_VENDORID_STMICRO, C_CAN_DEVICEID_STMICRO_CAN,
 		"STA2X11, Bosch C_CAN / D_CAN",
-		PCIR_BAR(0), 1, C_CAN_STA2X11_CLK_FREQ },
+		PCIR_BAR(0), 1, 0, C_CAN_STA2X11_CLK_FREQ },
 	{ C_CAN_VENDORID_INTEL, C_CAN_DEVICEID_PCH_CAN,
 		"Platform Controller Hub, Bosch [CD]_CAN.",
-		PCIR_BAR(1), 1, C_CAN_PCH_CLK_FREQ },
+		PCIR_BAR(1), 1, 1, C_CAN_PCH_CLK_FREQ },
 	{ 0, 0, NULL, 0, 0, 0}	
 };
 
 static const struct c_can_pci_type *	c_can_pci_match(device_t dev);
+
 static uint32_t	c_can_pci_readreg(device_t dev, uint32_t port);
 static void	c_can_pci_writereg(device_t dev, uint32_t port, uint32_t val);
+static void	c_can_pci_reset(device_t dev, uint32_t rswitch);
 
 /* 
  * Hooks for the operating system.
@@ -92,6 +94,7 @@ static device_method_t c_can_pci_methods[] = {
 	/* c_can(4) interface */
 	DEVMETHOD(c_can_readreg,	c_can_pci_readreg),
 	DEVMETHOD(c_can_writereg,	c_can_pci_writereg),
+	DEVMETHOD(c_can_reset,		c_can_pci_reset),
 
 	DEVMETHOD_END
 };
@@ -190,6 +193,7 @@ c_can_pci_attach(device_t dev)
 	}
 	
 	sc->ccp_shift = t->ccp_shift;
+	sc->ccp_rst = t->ccp_rst;
 	sc->ccp_freq = t->ccp_freq;
 /*
  * ...
@@ -225,7 +229,7 @@ c_can_pci_readreg(device_t dev, uint32_t port)
 	
 	sc = device_get_softc(dev);
 	
-	return (bus_read_4(dev, (port << sc->ccp_shift)));
+	return (bus_read_4(sc->ccp_res, (port << sc->ccp_shift)));
 }
 
 static void
@@ -235,8 +239,22 @@ c_can_pci_writereg(device_t dev, uint32_t port, uint32_t val)
 	
 	sc = device_get_softc(dev);
 	
-	bus_write_4(dev, (port << sc->ccp_shift), val);
+	bus_write_4(sc->ccp_res, (port << sc->ccp_shift), val);
 }
+
+static void
+c_can_pci_reset(device_t dev, uint32_t rswitch)
+{
+	struct c_can_pci_softc *sc;
+	
+	sc = device_get_softc(dev);
+	
+	if (rswitch != 0 && sc->ccp_rst != 0) {
+		bus_write_4(sc->ccp_res, sc->ccp_rst, 0x00000001);
+		bus_write_4(sc->ccp_res, sc->ccp_rst, 0x00000000);
+	}
+}
+
 
 MODULE_DEPEND(c_can_pci, pci, 1, 1, 1);
 MODULE_DEPEND(c_can_pci, c_can, 1, 1, 1); 
