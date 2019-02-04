@@ -170,8 +170,7 @@ peak_pci_attach(device_t dev)
 	pci_write_config(dev, PCIR_COMMAND, 4, 2);
 	pci_write_config(dev, PCIR_PCCARDIF_2, 4, 0);	
 
-	/* allocate resources for control registers and ports */
-	sc->pk_res_id = PCIR_BAR(0); 
+	/* allocate resources for control registers and ports */ 
 	sc->pk_res_type = SYS_RES_MEMORY;
 	
 	sc->pk_res = bus_alloc_resource_anywhere(dev, sc->pk_res_type, 

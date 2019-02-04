@@ -38,24 +38,20 @@
 #define C_CAN_DEVICEID_STMICRO_CAN			0xcc11
 #define C_CAN_DEVICEID_PCH_CAN			0x8818
 
-struct c_can_pci_data c_can_pch = {
-
-/*
- * ...
- */
-
-};
-
 struct c_can_pci_type {
 	uint16_t 	ccp_vid;
 	uint16_t 	ccp_did;
-	struct c_can_pci_data		*ccp_id;
 	const char 	*ccp_name;
+	int		ccp_bar;
+	uint32_t		ccp_freq;
+	int		ccp_shift;
 };
 
 /*
  * Default values.
  */
+#define C_CAN_STA2X11_CLK_FREQ		52000000	/* 52 MHz */
+#define C_CAN_PCH_CLK_FREQ		50000000		/* 50 MHz */
 
 /*
  * Important register.
@@ -65,12 +61,9 @@ struct c_can_pci_type {
 
 struct c_can_pci_softc {
 	device_t 	ccp_dev;
-
-	struct c_can_pci_data		*ccp_id;
-
-	/* ICR / TCR */
 	struct resource		*ccp_res;
-	int			ccp_res_id;
 	int			ccp_res_type;
- 
+	uint32_t		ccp_freq;		
+	int		ccp_shift;
+	device_t		ccp_chan;
 };

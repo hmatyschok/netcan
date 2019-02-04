@@ -59,36 +59,19 @@
 #include <dev/c_can/if_c_canreg.h>
 #include <dev/c_can/c_can_pcireg.h>
 
-/* 
- * STMicroelectronics STA2X11,  Bosch [CD]_CAN.
- */ 
-static struct c_can_pci_data c_can_sta2x11 = {
-
-/*
- * ...
- */
-};
-
-/*
- * Platform Controller Hub, Bosch [CD]_CAN.
- */
-static struct c_can_pci_data c_can_pch = {
-
-/*
- * ...
- */
-
-};
-
 static const struct c_can_pci_type c_can_pci_devs[] = {
 	{ C_CAN_VENDORID_STMICRO, C_CAN_DEVICEID_STMICRO_CAN,
-		&c_can_sta2x11, "STA2X11, Bosch C_CAN / D_CAN" },
+		"STA2X11, Bosch C_CAN / D_CAN",
+		PCIR_BAR(0), C_CAN_STA2X11_CLK_FREQ, 1 },
 	{ C_CAN_VENDORID_INTEL, C_CAN_DEVICEID_PCH_CAN,
-		&c_can_pch, "Platform Controller Hub, Bosch [CD]_CAN." },
+		"Platform Controller Hub, Bosch [CD]_CAN.",
+		PCIR_BAR(1), C_CAN_PCH_CLK_FREQ, 1 },
 	{ 0, 0, NULL, NULL}	
 };
 
 static const struct c_can_pci_type *	c_can_pci_match(device_t dev);
+static uint32_t	c_can_pci_read_reg(device_t dev, uint32_t reg);
+static void	c_can_pci_write_reg(device_t dev, uint32_t reg, uint32_t val);
 
 /* 
  * Hooks for the operating system.
@@ -107,6 +90,9 @@ static device_method_t c_can_pci_methods[] = {
 	DEVMETHOD(device_detach,	c_can_pci_detach),
 		
 	/* c_can(4) interface */
+	DEVMETHOD(c_can_read_reg,	c_can_pci_read_reg),
+	DEVMETHOD(c_can_write_reg,	c_can_pci_writie_reg),
+	
 	DEVMETHOD_END
 };
 
@@ -121,7 +107,7 @@ static devclass_t c_can_pci_devclass;
 DRIVER_MODULE(c_can_pci, pci, c_can_pci_driver, c_can_pci_devclass, 0, 0);
 DRIVER_MODULE(c_can, c_can_pci, sja_driver, c_can_devclass, 0, 0);
 
-static const struct c_can_type *
+static const struct c_can_pci_type *
 c_can_pci_match(device_t dev)
 {
 	const struct c_can_type	*t;
@@ -131,7 +117,6 @@ c_can_pci_match(device_t dev)
 	vid = pci_get_vendor(dev);
 	did = pci_get_device(dev);
 
-	
 	for (t = c_can_pci_devs, i = 0; i < nitems(c_can_pci_devs); i++, t++) {
 		if ((t->ccp_vid == vid) && (t->ccp_did == did)) {
 			return (t);
@@ -160,7 +145,6 @@ c_can_pci_attach(device_t dev)
 {
 	const struct c_can_pci_type	*t;
 	struct c_can_pci_softc *sc;
-	struct c_can_pci_data *res;	
 	int msir, msir, error = 0;
 	uint32_t status;
 
@@ -175,14 +159,21 @@ c_can_pci_attach(device_t dev)
 		error = ENXIO;
 		goto fail;
 	}
-
-	sc->ccp_id = t->ccp_id;
 		
 	/* allocate resources for control registers and ports */
+	status = pci_read_config(dev, t->ccp_bar, 4);
+	sc->ccp_res_type = (PCI_BAR_IO(status) != 0) ? 
+		SYS_RES_IOPORT : SYS_RES_MEMORY;
+		
+	sc->ccp_res = bus_alloc_resource(dev, sc->ccp_res_type, 
+		&t->ccp_bar, RF_ACTIVE);	
+	if (erro != 0) {
+		device_printf(dev, "cloudn't allocate %s resources\n",
+			(PCI_BAR_IO(status) != 0) ? "I/O" : "memory") ;	
+		error = ENXIO;
+		goto fail;
+	}	
 	
-/*
- * ...
- */	
 	/* Allocate interrupt resources. */
 	msic = pci_msi_count(dev);
 	if (bootverbose != 0)
@@ -197,6 +188,13 @@ c_can_pci_attach(device_t dev)
 			goto fail;
 		}
 	}
+	
+	sc->ccp_freq = t->ccp_freq;
+	sc->ccp_shift = t->ccp_shift;
+	
+/*
+ * ...
+ */
 out:	
 	return (error);
 fail:
@@ -208,13 +206,37 @@ static int
 c_can_pci_detach(device_t dev)
 {
 	struct c_can_pci_softc *sc;
-	struct c_can_pci_data *res;
+	struct c_can_pci_desc *res;
 
 /*
  * ,,,
  */
 
 	return (0);
+}
+
+/*
+ * ,,,
+ */
+
+static uint32_t
+c_can_pci_read_reg(device_t dev, uint32_t reg)
+{
+	struct c_can_pci_softc *sc;
+	
+	sc = device_get_softc(dev);
+	
+	return (bus_read_4(dev, (reg << sc->ccp_shift)));
+}
+
+static void
+c_can_pci_write_reg(device_t dev, uint32_t reg, uint32_t val)
+{
+	struct c_can_pci_softc *sc;
+	
+	sc = device_get_softc(dev);
+	
+	bus_write_4(dev, (reg << sc->ccp_shift), val);
 }
 
 MODULE_DEPEND(c_can_pci, pci, 1, 1, 1);
