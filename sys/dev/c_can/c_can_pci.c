@@ -176,7 +176,7 @@ c_can_pci_attach(device_t dev)
 		goto fail;
 	}
 
-	sc->c_can_id = t->c_can_id;
+	sc->ccp_id = t->ccp_id;
 		
 	/* allocate resources for control registers and ports */
 	
