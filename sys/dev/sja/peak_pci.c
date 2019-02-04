@@ -186,8 +186,6 @@ peak_pci_attach(device_t dev)
 		sjac = &sc->pk_chan[i].pkc_chan;
 		sjad = &sjac->sjac_var;
 
-		sjad->sjad_port = i;
-
 		sjad->sjad_res_id = PCIR_BAR(1) + i * PEAK_CHAN_SIZE;
 		sjad->sjad_res_type = SYS_RES_IOPORT;
 		
@@ -201,19 +199,21 @@ peak_pci_attach(device_t dev)
 			goto fail;
 		}
 		
-		sjad->sjad_shift = 2;
+		sjac->sjac_shift = 2;
+		
+		if (i == 0)
+			sjac->sjac_flags = PEAK_ICR_INT_GP0;
+		else if (i == 1) 
+			sjac->sjac_flags = PEAK_ICR_INT_GP1;
+		else if (i == 2)
+			sjac->sjac_flags = PEAK_ICR_INT_GP2;
+		else 
+			sjac->sjac_flags = PEAK_ICR_INT_GP3;
+		
+		sjad->sjad_port = i;
 		sjad->sjad_cdr = PEAK_CDR_DFLT;
 		sjad->sjad_ocr = PEAK_OCR_DFLT;
 		sjad->sjad_freq = PEAK_CLK_FREQ;
-		
-		if (i == 0)
-			sc->pk_chan[i].pkc_flags = PEAK_ICR_INT_GP0;
-		else if (i == 1) 
-			sc->pk_chan[i].pkc_flags = PEAK_ICR_INT_GP1;
-		else if (i == 2)
-			sc->pk_chan[i].pkc_flags = PEAK_ICR_INT_GP2;
-		else 
-			sc->pk_chan[i].pkc_flags = PEAK_ICR_INT_GP3;
 	}	
 	
 	/* set-up GPIO control register, if any */

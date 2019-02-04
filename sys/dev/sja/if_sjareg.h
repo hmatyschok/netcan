@@ -371,11 +371,6 @@
 struct sja_data {
 	int			sjad_port;
 	
-	/* allocated resources */
-	struct resource		*sjad_res;
-	int			sjad_res_id;
-	int			sjad_res_type;
-	
 	/* default parameter */ 
 	uint8_t		sjad_shift;
 	uint8_t		sjad_cdr;
@@ -385,44 +380,30 @@ struct sja_data {
 
 struct sja_chan {
 	device_t 	sjac_dev;	
+	
+	/* allocated resources */
+	struct resource		*sjad_res;
+	int		sjac_res_id;	
+	int		sjac_res_type;
+	
+	uint32_t	sjac_shift;
+	uint32_t	sjac_flags;
+	
+	/* instance variables */
 	struct sja_data		sjac_var;
 };
 
 struct sja_softc {
 	struct ifnet	*sja_ifp;		/* generic ifnet(9) glue */
 	device_t	sja_dev;
-	int		sja_port;
+	struct sja_data		sjac_var;
 	struct resource 	*sja_irq;
-	struct resource		*sja_res;
-	uint8_t		sja_shift;
-	uint8_t		sja_cdr;
-	uint8_t		sja_ocr;
-	struct mtx	sja_mtx;
 	void	*sja_intr;
+	struct mtx	sja_mtx;
 };
 #define	SJA_LOCK(sja)		mtx_lock(&(sja)->sja_mtx)
 #define	SJA_UNLOCK(sja)		mtx_unlock(&(sja)->sja_mtx)
 #define	SJA_LOCK_ASSERT(sja)	mtx_assert(&(sja)->sja_mtx, MA_OWNED)
-
-/* accessor-macros */
-#define CSR_WRITE_1(sja, reg, val) \
-	bus_write_1((sja)->sja_res, (reg << (sja)->sja_shift), val)
-#define CSR_READ_1(sja, reg) \
-	bus_read_1((sja)->sja_res, (reg << (sja)->sja_shift))
-#define SJA_SETBIT(sja, reg, x) \
-	CSR_WRITE_1(sja, reg, CSR_READ_1(sja, reg) | (x))
-#define SJA_CLRBIT(sja, reg, x) \
-	CSR_WRITE_1(sja, reg, CSR_READ_1(sja, reg) & ~(x))
-
-#define CSR_WRITE_2(sja, reg, val) \
-	bus_write_2((sja)->sja_res, (reg << (sja)->sja_shift), val)
-#define CSR_READ_2(sja, reg) \
-	bus_read_2((sja)->sja_res, (reg << (sja)->sja_shift))
-
-#define CSR_WRITE_4(sja, reg, val) \
-	bus_write_4((sja)->sja_res, (reg << (sja)->sja_shift), val)
-#define CSR_READ_4(sja, reg) \
-	bus_read_4((sja)->sja_res, (reg << (sja)->sja_shift))
 
 /* utility-macros */
 #define	sja_timercmp(tvp, uvp, val)	\

@@ -33,45 +33,45 @@ INTERFACE sja;
 # Read register.
 #
 METHOD uint8_t read_1 {
-	device_t		dev;
-	uint32_t		port;
+	device_t	dev;
+	int		port;
 };
 
 METHOD uint16_t read_2 {
-	device_t		dev;
-	uint32_t		port;
+	device_t	dev;
+	int		port;
 };
 
 METHOD uint32_t read_4 {
-	device_t		dev;
-	uint32_t		port;
+	device_t	dev;
+	int		port;
 };
 
 #
 # Write register.
 #
 METHOD uint8_t write_1 {
-	device_t		dev;
-	uint32_t		port;
-	uint32_t		val;
+	device_t	dev;
+	int		port;
+	uint8_t		val;
 };
 
 METHOD uint16_t write_2 {
-	device_t		dev;
-	uint32_t		port;
-	uint32_t		val;
+	device_t	dev;
+	int		port;
+	uint16_t	val;
 };
 
 METHOD uint32_t write_4 {
-	device_t		dev;
-	uint32_t		port;
-	uint32_t		val;
+	device_t	dev;
+	int		port;
+	uint32_t	val;
 };
 
 #
-# Post interrupt handling.
+# Post interrupt processing.
 #
 METHOD void clear_intr {
-	device_t		dev;
-	uint32_t 	port;
+	device_t	dev;
+	int		port;
 };

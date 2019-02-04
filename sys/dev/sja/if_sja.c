@@ -48,11 +48,19 @@
 /* 
  * Hooks for the operating system.
  */
+static uint8_t	sja_read_1(device_t, int);
+static uint16_t	sja_read_2(device_t, int);
+static uint32_t	sja_read_4(device_t, int);
+
+static void	sja_write_1(device_t, int, uint8_t);
+static void	sja_write_2(device_t, int, uint16_t);
+static void	sja_write_4(device_t, int, uint32_t);
+
+static void	sja_clear_intr(device_t, int);
+
 static int	sja_probe(device_t);
 static int	sja_attach(device_t);
 static int	sja_detach(device_t);
-
-static void	sja_clear_intr(device_t, int);
 
 /*
  * Subr.
@@ -95,7 +103,15 @@ static device_method_t sja_methods[] = {
 	DEVMETHOD(device_detach,	sja_detach),
 	
 	/* sja(4) interface */
-	DEVMETHOD(sja_clear_intr,	sja_clear_intr),	
+	DEVMETHOD(sja_read_1,	sja_read_1),
+	DEVMETHOD(sja_read_2,	sja_read_2),
+	DEVMETHOD(sja_read_4,	sja_read_4),
+	
+	DEVMETHOD(sja_write_1,	sja_write_1),
+	DEVMETHOD(sja_write_2,	sja_write_2),
+	DEVMETHOD(sja_write_4,	sja_write_4),
+	
+	DEVMETHOD(sja_clear_intr,	sja_clear_intr),
 	
 	DEVMETHOD_END
 };
@@ -127,10 +143,10 @@ sja_reset(struct sja_softc *sja)
 	getmicrotime(&tv);
 
 	/* disable interrupts, if any */
-	CSR_WRITE_1(sja, SJA_IER, SJA_IER_OFF);
+	SJA_WRITE_1(sja, SJA_IER, SJA_IER_OFF);
 
 	/* fetch contents of status register */
-	status = CSR_READ_1(sja, SJA_MOD);
+	status = SJA_READ_1(sja, SJA_MOD);
 	
 	/* set reset mode, until break-condition takes place */
 	for (error = EIO; sja_timercmp(&tv0, &tv, 100); ) {
@@ -141,10 +157,10 @@ sja_reset(struct sja_softc *sja)
 			break;
 		}
 
-		CSR_WRITE_1(sja, SJA_MOD, SJA_MOD_RM);
+		SJA_WRITE_1(sja, SJA_MOD, SJA_MOD_RM);
 		DELAY(10);
 		
-		status = CSR_READ_1(sja, SJA_MOD);
+		status = SJA_READ_1(sja, SJA_MOD);
 		getmicrotime(&tv);
 	}
 	
@@ -167,19 +183,19 @@ sja_normal_mode(struct sja_softc *sja)
 	csc = ifp->if_l2com;
 
 	/* flush error counters and error code capture */
-	CSR_WRITE_1(sja, SJA_TEC, 0x00);
-	CSR_WRITE_1(sja, SJA_REC, 0x00);
+	SJA_WRITE_1(sja, SJA_TEC, 0x00);
+	SJA_WRITE_1(sja, SJA_REC, 0x00);
 	
-	status = CSR_READ_1(sja, SJA_ECC);
+	status = SJA_READ_1(sja, SJA_ECC);
 	
 	/* clear interrupt flags */
-	status = CSR_READ_1(sja, SJA_IR);
+	status = SJA_READ_1(sja, SJA_IR);
 	
 	getmicrotime(&tv0);
 	getmicrotime(&tv);
 	
 	/* fetch contents of status register */
-	status = CSR_READ_1(sja, SJA_MOD);
+	status = SJA_READ_1(sja, SJA_MOD);
 	
 	/* set normal mode and enable interrupts, if any */
 	for (error = EIO; sja_timercmp(&tv0, &tv, 100); ) {
@@ -191,7 +207,7 @@ sja_normal_mode(struct sja_softc *sja)
 			if ((csc->csc_linkmodes & 0x10) == 0)
 				status &= ~SJA_IER_BE;
 #endif			
-			CSR_WRITE_1(sja, SJA_IER, status);
+			SJA_WRITE_1(sja, SJA_IER, status);
 			
 			csc->csc_flags = CAN_STATE_ERROR_ACTIVE;
 			error = 0;
@@ -206,10 +222,10 @@ sja_normal_mode(struct sja_softc *sja)
 		if (csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK)
 			status |= SJA_MOD_STM;
 		
-		CSR_WRITE_1(sja, SJA_MOD, status);
+		SJA_WRITE_1(sja, SJA_MOD, status);
 		DELAY(10);
 		
-		status = CSR_READ_1(sja, SJA_MOD);
+		status = SJA_READ_1(sja, SJA_MOD);
 		getmicrotime(&tv);
 	}
 	
@@ -230,19 +246,14 @@ sja_attach(device_t dev)
 {
 	struct sja_softc *sja;
 	struct ifnet *ifp;
-	struct sja_data *sjad;
+	struct sja_data *var;
 	int rid, error;
 	uint8_t addr;
 		
 	sja = device_get_softc(dev);
 	sja->sja_dev = dev; 
 	
-	sjad = device_get_ivar(dev);
-	sja->sja_port = sjad->sjad_port;
-	sja->sja_res = sjad->sjad_res;
-	sja->sja_shift = sjad->sjad_shift;
-	sja->sja_cdr = sjad->sjad_cdr;
-	sja->sja_ocr = sjad->sjad_ocr;
+	sja->sja_var = device_get_ivar(dev);
 	
 	/* allocate interrupt */
 	rid = 0;
@@ -274,7 +285,7 @@ sja_attach(device_t dev)
 	ifp->if_start = sja_start;
 	ifp->if_ioctl = sja_ioctl;
 	
-	can_ifattach(ifp, &sja_set_link_timings, sjad->sjad_freq);
+	can_ifattach(ifp, &sja_set_link_timings, sja->sja_var.freq);
 	
 	IFQ_SET_MAXLEN(&ifp->if_snd, SJA_IFQ_MAXLEN);
 	ifp->if_snd.ifq_drv_maxlen = SJA_IFQ_MAXLEN;
@@ -287,19 +298,19 @@ sja_attach(device_t dev)
 	}
 	
 	/* set clock divider */
-	sja->sja_cdr |= SJA_CDR_PELICAN;
-	CSR_WRITE_1(sja, SJA_CDR, sja->sja_cdr);
+	sja->sja_var.sjad_cdr |= SJA_CDR_PELICAN;
+	SJA_WRITE_1(sja, SJA_CDR, sja->sja_var.sjad_cdr);
 
 	/* set acceptance filter (accept all) */
 	for (addr = SJA_AC0; addr < SJA_AM0; addr++)
-		CSR_WRITE_1(sja, addr, 0x00);
+		SJA_WRITE_1(sja, addr, 0x00);
 
 	for (addr = SJA_AM0; addr <= SJA_AM3; addr++)
-		CSR_WRITE_1(sja, addr, 0xff);
+		SJA_WRITE_1(sja, addr, 0xff);
 
 	/* set output control register */
-	sja->sja_ocr |= SJA_OCR_MOD_NORM;
-	CSR_WRITE_1(sja, SJA_OCR, sja->sja_ocr);
+	sja->sja_var.sjad_ocr |= SJA_OCR_MOD_NORM;
+	SJA_WRITE_1(sja, SJA_OCR, sja->sja_var.sjad_ocr);
 
 	/* set normal mode */
 	if ((error = sja_normal_mode(sja)) != 0) {
@@ -383,15 +394,15 @@ again:
 	cf = mtod(m, struct can_frame *);
 
 	/* fetch frame information */	
-	status = CSR_READ_1(sja, SJA_FI);
+	status = SJA_READ_1(sja, SJA_FI);
 
 	/* map id */
 	if (status & SJA_FI_FF) {
 		cf->can_id = CAN_EFF_FLAG;
-		cf->can_id |= CSR_READ_4(sja, SJA_ID) >> 3;
+		cf->can_id |= SJA_READ_4(sja, SJA_ID) >> 3;
 		addr = SJA_DATA_EFF;
 	} else {
-		cf->can_id |= CSR_READ_2(sja, SJA_ID) >> 5;
+		cf->can_id |= SJA_READ_2(sja, SJA_ID) >> 5;
 		addr = SJA_DATA_SFF;
 	}	
 
@@ -406,7 +417,7 @@ again:
 		maddr = addr + cf->can_dlc;
 	
 	for (i = 0; addr < maddr; addr++, i++) 
-		cf->can_data[i] = CSR_READ_1(sja, addr);
+		cf->can_data[i] = SJA_READ_1(sja, addr);
 
 	m->m_len = m->m_pkthdr.len = sizeof(*cf);
 	m->m_pkthdr.rcvif = ifp;
@@ -417,8 +428,8 @@ again:
 	SJA_LOCK(sja);
 	
 done:	/* SJA1000, 6.4.4, note 4 */
-	CSR_WRITE_1(sja, SJA_CMR, SJA_CMR_RRB);
-	status = CSR_READ_1(sja, SJA_SR);
+	SJA_WRITE_1(sja, SJA_CMR, SJA_CMR_RRB);
+	status = SJA_READ_1(sja, SJA_SR);
 	
 	if (status & SJA_SR_RBS)
 		goto again;
@@ -439,7 +450,7 @@ sja_txeof(struct sja_softc *sja)
 	ifp = sja->sja_ifp;
 	csc = ifp->if_l2com;
 	
-	status = CSR_READ_1(sja, SJA_SR);
+	status = SJA_READ_1(sja, SJA_SR);
 	
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 		
@@ -448,7 +459,7 @@ sja_txeof(struct sja_softc *sja)
 		if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
 		(*ifp->if_start)(ifp);
 	} else {
-		status = CSR_READ_1(sja, SJA_FI) & SJA_FI_DLC; 
+		status = SJA_READ_1(sja, SJA_FI) & SJA_FI_DLC; 
 		if_inc_counter(ifp, IFCOUNTER_OBYTES, status);
 		if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
 	}
@@ -474,7 +485,7 @@ sja_intr(void *arg)
 	if (ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
 		goto bad;
 	
-	status = CSR_READ_1(sja, SJA_IR);
+	status = SJA_READ_1(sja, SJA_IR);
 
 	if (status == SJA_IR_OFF)
 		goto bad;
@@ -491,7 +502,7 @@ sja_intr(void *arg)
 			if (sja_error(sja, status) != 0)
 				break;
 		}
-		intr = CSR_READ_1(sja, SJA_IR);	
+		intr = SJA_READ_1(sja, SJA_IR);	
 	}
 	error = FILTER_HANDLED;	
 done:
@@ -532,7 +543,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	cf->can_id |= CAN_ERR_FLAG;
 
 	/* fetch status information */	
-	status = CSR_READ_1(sja, SJA_SR);	
+	status = SJA_READ_1(sja, SJA_SR);	
 	
 	/*  error passive / warning condition */
 	if (intr & (SJA_IR_EP | SJA_IR_EW)) {	
@@ -563,15 +574,15 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 		cf->can_id |= CAN_ERR_DEV;
 		cf->can_data[CAN_ERR_DEV_DF] |= CAN_ERR_DEV_RX_OVF; 
 	
-		CSR_WRITE_1(sja, SJA_CMR, SJA_CMR_CDO);
-		status = CSR_READ_1(sja, SJA_SR);
+		SJA_WRITE_1(sja, SJA_CMR, SJA_CMR_CDO);
+		status = SJA_READ_1(sja, SJA_SR);
 	}
 	
 	/* bus error condition */
 	if (intr & SJA_IR_BE) {
 		if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
 		
-		flags = CSR_READ_1(sja, SJA_ECC);
+		flags = SJA_READ_1(sja, SJA_ECC);
 
 		cf->can_id |= (CAN_ERR_PROTO | CAN_ERR_BE);
 
@@ -595,15 +606,15 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	if (intr & SJA_IR_AL) {
 		if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
 		
-		flags = CSR_READ_1(sja, SJA_ALC);
+		flags = SJA_READ_1(sja, SJA_ALC);
 
 		cf->can_id |= CAN_ERR_AL;
 		cf->can_data[CAN_ERR_AL_DF] |= flags & SJA_ALC_MASK;
 	} 
 	
 	/* map error count */
-	cf->can_data[CAN_ERR_RX_DF] = CSR_READ_1(sja, SJA_REC);
-	cf->can_data[CAN_ERR_TX_DF] = CSR_READ_1(sja, SJA_TEC);
+	cf->can_data[CAN_ERR_RX_DF] = SJA_READ_1(sja, SJA_REC);
+	cf->can_data[CAN_ERR_TX_DF] = SJA_READ_1(sja, SJA_TEC);
 
 	m->m_len = m->m_pkthdr.len = sizeof(*cf);
 	m->m_pkthdr.rcvif = ifp;
@@ -614,15 +625,6 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	SJA_LOCK(sja);
 done:
 	return (error);
-}
-
-static void
-sja_clear_intr(device_t dev, int port)
-{
-	device_t parent;
-	
-	if ((parent = device_get_parent(dev)) != NULL)
-		SJA_CLEAR_INTR(parent, port);	
 }
 
 /*
@@ -664,21 +666,21 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 
 	status |= cf->can_dlc & SJA_FI_DLC;
 
-	CSR_WRITE_1(sja, SJA_FI, status);
+	SJA_WRITE_1(sja, SJA_FI, status);
 	
 	/* map id */
 	if (cf->can_id & CAN_EFF_FLAG) { 
 		cf->can_id &= CAN_EFF_MASK;
 		cf->can_id <<= 3;
 		
-		CSR_WRITE_4(sja, SJA_ID, cf->can_id);
+		SJA_WRITE_4(sja, SJA_ID, cf->can_id);
 		
 		addr = SJA_DATA_EFF;
 	} else {
 		cf->can_id &= CAN_SFF_MASK;
 		cf->can_id <<= 5;
 		
-		CSR_WRITE_2(sja, SJA_ID, cf->can_id);
+		SJA_WRITE_2(sja, SJA_ID, cf->can_id);
 		
 		addr = SJA_DATA_SFF;
 	}
@@ -686,7 +688,7 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 	maddr = addr + cf->can_dlc;
 	
 	for (i = 0; addr < maddr; addr++, i++) 
-		CSR_WRITE_1(sja, addr, cf->can_data[i]);
+		SJA_WRITE_1(sja, addr, cf->can_data[i]);
 
 	m_freem(m); /* XXX */
 	*mp = NULL;
@@ -753,8 +755,8 @@ sja_start_locked(struct ifnet *ifp)
 		else
 			ststus |= SJA_CMR_TR;
 
-		CSR_WRITE_1(sja, SJA_CMR, status);
-		status = CSR_READ_1(sja, SJA_SR);
+		SJA_WRITE_1(sja, SJA_CMR, status);
+		status = SJA_READ_1(sja, SJA_SR);
 	}						
 }
 
@@ -796,10 +798,10 @@ sja_init_locked(struct sja_softc *sja)
 	getmicrotime(&tv);
 	
 	for (; sja_timercmp(&tv0, &tv, 100);) {
-		CSR_WRITE_1(sja, SJA_MOD, SJA_MOD_RM);
+		SJA_WRITE_1(sja, SJA_MOD, SJA_MOD_RM);
 		DELAY(10);
 		
-		status = CSR_READ_1(sja, SJA_MOD);
+		status = SJA_READ_1(sja, SJA_MOD);
 		getmicrotime(&tv);
 	}
 	
@@ -807,28 +809,28 @@ sja_init_locked(struct sja_softc *sja)
 		csc->csc_flags = CAN_STATE_SUSPENDED;
 	
 		/* set clock divider */
-		sja->sja_cdr |= SJA_CDR_PELICAN;
-		CSR_WRITE_1(sja, SJA_CDR, sja->sja_cdr);
+		sja->sja_var.sjad_cdr |= SJA_CDR_PELICAN;
+		SJA_WRITE_1(sja, SJA_CDR, sja->sja_var.sjad_cdr);
 
 		/* set acceptance filter (accept all) */
 		for (addr = SJA_AC0; addr < SJA_AM0; addr++)
-			CSR_WRITE_1(sja, addr, 0x00);
+			SJA_WRITE_1(sja, addr, 0x00);
 
 		for (addr = SJA_AM0; addr <= SJA_AM3; addr++)
-			CSR_WRITE_1(sja, addr, 0xff);
+			SJA_WRITE_1(sja, addr, 0xff);
 
 		/* set output control register */
-		sja->sja_ocr |= SJA_OCR_MOD_NORM;
-		CSR_WRITE_1(sja, SJA_OCR, sja->sja_ocr);
+		sja->sja_var.sjad_ocr |= SJA_OCR_MOD_NORM;
+		SJA_WRITE_1(sja, SJA_OCR, sja->sja_var.sjad_ocr);
 
 		/* flush error counters and error code capture */
-		CSR_WRITE_1(sja, SJA_TEC, 0x00);
-		CSR_WRITE_1(sja, SJA_REC, 0x00);
+		SJA_WRITE_1(sja, SJA_TEC, 0x00);
+		SJA_WRITE_1(sja, SJA_REC, 0x00);
 	
-		status = CSR_READ_1(sja, SJA_ECC);
+		status = SJA_READ_1(sja, SJA_ECC);
 		
 		/* clear interrupt flags */
-		status = CSR_READ_1(sja, SJA_IR);
+		status = SJA_READ_1(sja, SJA_IR);
 
 		/* leave reset mode */
 		getmicrotime(&tv0);
@@ -844,10 +846,10 @@ sja_init_locked(struct sja_softc *sja)
 			if (csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK)
 				status |= SJA_MOD_STM;
 		
-			CSR_WRITE_1(sja, SJA_MOD, status);
+			SJA_WRITE_1(sja, SJA_MOD, status);
 			DELAY(10);
 		
-			status = CSR_READ_1(sja, SJA_MOD);
+			status = SJA_READ_1(sja, SJA_MOD);
 			getmicrotime(&tv);
 		}
 	}
@@ -860,7 +862,7 @@ sja_init_locked(struct sja_softc *sja)
 		if ((csc->csc_linkmodes & 0x10) == 0)
 			status &= ~SJA_IER_BE;
 #endif			
-		CSR_WRITE_1(sja, SJA_IER, status);
+		SJA_WRITE_1(sja, SJA_IER, status);
 			
 		csc->csc_flags = CAN_STATE_ERROR_ACTIVE;
 	
@@ -882,8 +884,8 @@ sja_stop(struct sja_softc *sja)
 
 	ifp->if_drv_flags |= ~(IFF_DRV_RUNNNING | IFF_DRV_OACTIVE);
 
-	CSR_WRITE_1(sja, SJA_IER, SJA_IER_OFF);
-	CSR_WRITE_1(sja, SJA_CMR, SJA_CMR_AT);
+	SJA_WRITE_1(sja, SJA_IER, SJA_IER_OFF);
+	SJA_WRITE_1(sja, SJA_CMR, SJA_CMR_AT);
 }
 
 
@@ -939,7 +941,7 @@ sja_set_link_timings(struct can_ifsoftc *csc)
 	btr0 = ((clt->clt_brp - 1) & SJA_BTR0_BRP_MASK);
 	btr0 |= (((clt->clt_sjw - 1) & SJA_BTR0_CLT_MASK) << 6);
 	
-	CSR_WRITE_1(sja, SJA_BTR0, btr0);
+	SJA_WRITE_1(sja, SJA_BTR0, btr0);
 	
 	/* time segments and sampling, if any */
 	btr1 = ((clt->clt_prop + clt->clt_ps1 - 1) & 0x0f);
@@ -948,9 +950,64 @@ sja_set_link_timings(struct can_ifsoftc *csc)
 	if (csc->csc_linkmodes & CAN_CTRLMODE_3_SAMPLES)
 		btr1 |= SJA_BTR1_SAM;
 	
-	CSR_WRITE_1(sja, SJA_BTR1, btr1);
+	SJA_WRITE_1(sja, SJA_BTR1, btr1);
 
 	return (0);
+}
+
+/*
+ * I/O subr.
+ */
+
+static uint8_t
+sja_read_1(device_t dev, int port)
+{
+	
+	return (SJA_READ_1(device_get_parent(dev), port));	
+}
+
+static uint16_t
+sja_read_2(device_t dev, int port)
+{
+	
+	return (SJA_READ_2(device_get_parent(dev), port));	
+}
+
+static uint32_t
+sja_read_4(device_t dev, int port)
+{
+	
+	return (SJA_READ_4(device_get_parent(dev), port));	
+}
+
+static void
+sja_write_1(device_t dev, int port, uint8_t val)
+{
+	
+	SJA_WRITE_1(device_get_parent(dev), port, val));	
+}
+
+static void
+sja_write_2(device_t dev, int port, uint16_t val)
+{
+	
+	SJA_WRITE_2(device_get_parent(dev), port, val));	
+}
+
+static void
+sja_write_4(device_t dev, int port, uint32_t val)
+{
+	
+	SJA_WRITE_4(device_get_parent(dev), port, val));	
+}
+
+static void
+sja_clear_intr(device_t dev, int port)
+{
+	device_t parent;
+	
+	if ((parent = device_get_parent(dev)) != NULL)
+		SJA_READ_1(parent, port);	
 }
 
 MODULE_VERSION(sja, 1);

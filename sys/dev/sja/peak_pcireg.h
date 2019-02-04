@@ -94,16 +94,11 @@ struct peak_type {
 #define PEAK_CFG_SIZE		0x1000	/* Size of the config PCI bar */
 #define PEAK_CHAN_SIZE		0x0400	/* Size used by the channel */
 
-struct peak_chan {
-	struct sja_chan	pkc_chan;
-	uint16_t	pkc_flags;
-};
-
 struct peak_softc {
 	device_t 	pk_dev;
 	struct resource		*pk_res;
 	int			pk_res_id;
 	int			pk_res_type;
 	uint32_t	pk_chan_cnt;
-	struct peak_chan	pk_chan[PEAK_QUAD_CHAN];
+	struct sja_chan	pk_chan[PEAK_QUAD_CHAN];
 };
