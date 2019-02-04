@@ -106,7 +106,7 @@ static device_method_t c_can_pci_methods[] = {
 	DEVMETHOD(device_attach,	c_can_pci_attach),
 	DEVMETHOD(device_detach,	c_can_pci_detach),
 		
-	/* c_can(9) interface */
+	/* c_can(4) interface */
 	DEVMETHOD_END
 };
 
@@ -132,8 +132,8 @@ c_can_pci_match(device_t dev)
 	did = pci_get_device(dev);
 
 	
-	for (t = c_can_devs, i = 0; i < nitems(c_can_pci_devs); i++, t++) {
-		if ((t->c_can_vid == vid) && (t->c_can_did == did)) {
+	for (t = c_can_pci_devs, i = 0; i < nitems(c_can_pci_devs); i++, t++) {
+		if ((t->ccp_vid == vid) && (t->ccp_did == did)) {
 			return (t);
 		}
 	}
