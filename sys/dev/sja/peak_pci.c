@@ -281,7 +281,7 @@ static int
 peak_pci_detach(device_t dev)
 {
 	struct peak_softc *sc;
-	struct sja_chan *sjac;
+	struct sja_chan *chan;
 	int i;
  
 	sc = device_get_softc(dev);
@@ -291,7 +291,7 @@ peak_pci_detach(device_t dev)
  
 	/* detach each channel, if any */
 	for (i = 0; i < sc->pk_chan_cnt; i++) {
-		sjac = &sc->pk_chan[i];
+		chan = &sc->pk_chan[i];
 		
 		if (chan->sja_dev != NULL)
 			(void)device_delete_child(dev, chan->sja_dev);
@@ -300,7 +300,7 @@ peak_pci_detach(device_t dev)
 	
 	/* release bound resources */
 	for (i = 0; i < sc->pk_chan_cnt; i++) {
-		sjac = &sc->pk_chan[i];
+		chan = &sc->pk_chan[i];
 			
 		if (chan->sja_res != NULL) {
 			(void)bus_release_resource(dev, chan->sja_res_type, 
@@ -319,7 +319,7 @@ peak_pci_detach(device_t dev)
  */
 
 static uint8_t
-sja_read_1(device_t dev, sja_data_t sjad, int port)
+peak_read_1(device_t dev, sja_data_t sjad, int port)
 {
 	struct peak_softc *sc;
 	struct sja_chan *chan;
@@ -331,7 +331,7 @@ sja_read_1(device_t dev, sja_data_t sjad, int port)
 }
 
 static uint16_t
-sja_read_2(device_t dev, sja_data_t var, int port)
+peak_read_2(device_t dev, sja_data_t var, int port)
 {
 	struct peak_softc *sc;
 	struct sja_chan *chan;
@@ -343,7 +343,7 @@ sja_read_2(device_t dev, sja_data_t var, int port)
 }
 
 static uint32_t
-sja_read_4(device_t dev, sja_data_t var, int port)
+peak_read_4(device_t dev, sja_data_t var, int port)
 {
 	struct peak_softc *sc;
 	struct sja_chan *chan;
