@@ -132,12 +132,14 @@ sja_reset(struct sja_softc *sja)
 {
 	struct ifnet *ifp;
 	struct can_ifsoftc *csc;
+	struct sja_data *var;
 	struct timeval tv0, tv;
 	uint8_t status;
 	int error;
 
 	ifp = sja->sja_ifp;
 	csc = ifp->if_l2com;
+	var = &sja->sja_var;
 
 	getmicrotime(&tv0);
 	getmicrotime(&tv);
@@ -175,12 +177,14 @@ sja_normal_mode(struct sja_softc *sja)
 {
 	struct ifnet *ifp;
 	struct can_ifsoftc *csc;
+	struct sja_data *var;
 	struct timeval tv0, tv;
 	uint8_t status;
 	int error;
 
 	ifp = sja->sja_ifp;
 	csc = ifp->if_l2com;
+	var = &sja->sja_var;
 
 	/* flush error counters and error code capture */
 	SJA_WRITE_1(sja, var, SJA_TEC, 0x00);
