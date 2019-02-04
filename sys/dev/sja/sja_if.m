@@ -34,19 +34,19 @@ INTERFACE sja;
 #
 METHOD uint8_t read_1 {
 	device_t	dev;
-	sja_data_t	sjad;	
+	sja_data_t	var;	
 	int		port;
 };
 
 METHOD uint16_t read_2 {
 	device_t	dev;
-	sja_data_t	sjad;
+	sja_data_t	var;
 	int		port;
 };
 
 METHOD uint32_t read_4 {
 	device_t	dev;
-	sja_data_t	sjad;	
+	sja_data_t	var;	
 	int		port;
 };
 
@@ -55,21 +55,21 @@ METHOD uint32_t read_4 {
 #
 METHOD uint8_t write_1 {
 	device_t	dev;
-	sja_data_t	sjad;	
+	sja_data_t	var;	
 	int		port;
 	uint8_t		val;
 };
 
 METHOD uint16_t write_2 {
 	device_t	dev;
-	sja_data_t	sjad;	
+	sja_data_t	var;	
 	int		port;
 	uint16_t	val;
 };
 
 METHOD uint32_t write_4 {
 	device_t	dev;
-	sja_data_t	sjad;
+	sja_data_t	var;
 	int		port;
 	uint32_t	val;
 };
@@ -79,5 +79,5 @@ METHOD uint32_t write_4 {
 #
 METHOD void clear_intr {
 	device_t	dev;
-	sja_data_t	sjad;
+	sja_data_t	var;
 };
