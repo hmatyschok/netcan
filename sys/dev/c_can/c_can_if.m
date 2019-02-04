@@ -45,3 +45,11 @@ METHOD void writereg {
 	uint32_t 	port;
 	uint32_t	val;
 };
+
+#
+# Reset/
+#
+METHOD void reset {
+	device_t		dev;
+	int		rswitch;
+};
