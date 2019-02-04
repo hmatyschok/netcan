@@ -956,7 +956,7 @@ sja_set_link_timings(struct can_ifsoftc *csc)
 }
 
 /*
- * I/O subr.
+ * Common I/O subr.
  */
 
 static uint8_t
@@ -1004,10 +1004,8 @@ sja_write_4(device_t dev, int port, uint32_t val)
 static void
 sja_clear_intr(device_t dev, int port)
 {
-	device_t parent;
 	
-	if ((parent = device_get_parent(dev)) != NULL)
-		SJA_READ_1(parent, port);	
+	SJA_CLEAR_INTR(device_get_parent(dev), port);	
 }
 
 MODULE_VERSION(sja, 1);
