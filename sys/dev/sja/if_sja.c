@@ -48,15 +48,15 @@
 /* 
  * Hooks for the operating system.
  */
-static uint8_t	sja_read_1(device_t, sjad_t, int);
-static uint16_t	sja_read_2(device_t, sjad_t, int);
-static uint32_t	sja_read_4(device_t, sjad_t, int);
+static uint8_t	sja_read_1(device_t, sja_data_t, int);
+static uint16_t	sja_read_2(device_t, sja_data_t, int);
+static uint32_t	sja_read_4(device_t, sja_data_t, int);
 
-static void	sja_write_1(device_t, sjad_t, uint8_t);
-static void	sja_write_2(device_t, sjad_t, uint16_t);
-static void	sja_write_4(device_t, sjad_t, uint32_t);
+static void	sja_write_1(device_t, sja_data_t, uint8_t);
+static void	sja_write_2(device_t, sja_data_t, uint16_t);
+static void	sja_write_4(device_t, sja_data_t, uint32_t);
 
-static void	sja_clear_intr(device_t, sjad_t);
+static void	sja_clear_intr(device_t, sja_data_t);
 
 static int	sja_probe(device_t);
 static int	sja_attach(device_t);
@@ -974,52 +974,52 @@ sja_set_link_timings(struct can_ifsoftc *csc)
  */
 
 static uint8_t
-sja_read_1(device_t dev, sjad_t sjad, int port)
+sja_read_1(device_t dev, sja_data_t var, int port)
 {
 	
-	return (SJA_READ_1(device_get_parent(dev), sjad, port));	
+	return (SJA_READ_1(device_get_parent(dev), var, port));	
 }
 
 static uint16_t
-sja_read_2(device_t dev, sjad_t sjad, int port)
+sja_read_2(device_t dev, sja_data_t var, int port)
 {
 	
-	return (SJA_READ_2(device_get_parent(dev), sjad, port));	
+	return (SJA_READ_2(device_get_parent(dev), var, port));	
 }
 
 static uint32_t
-sja_read_4(device_t dev, sjad_t sjad, int port)
+sja_read_4(device_t dev, sja_data_t var, int port)
 {
 	
-	return (SJA_READ_4(device_get_parent(dev), sjad, port));	
+	return (SJA_READ_4(device_get_parent(dev), var, port));	
 }
 
 static void
-sja_write_1(device_t dev, sjad_t sjad, int port, uint8_t val)
+sja_write_1(device_t dev, sja_data_t var, int port, uint8_t val)
 {
 	
-	SJA_WRITE_1(device_get_parent(dev), sjad, port, val));	
+	SJA_WRITE_1(device_get_parent(dev), var, port, val));	
 }
 
 static void
-sja_write_2(device_t dev, sjad_t sjad, int port, uint16_t val)
+sja_write_2(device_t dev, sja_data_t var, int port, uint16_t val)
 {
 	
-	SJA_WRITE_2(device_get_parent(dev), sjad, port, val));	
+	SJA_WRITE_2(device_get_parent(dev), var, port, val));	
 }
 
 static void
-sja_write_4(device_t dev, sjad_t sjad, int port, uint32_t val)
+sja_write_4(device_t dev, sja_data_t var, int port, uint32_t val)
 {
 	
-	SJA_WRITE_4(device_get_parent(dev), sjad, port, val));	
+	SJA_WRITE_4(device_get_parent(dev), var, port, val));	
 }
 
 static void
-sja_clear_intr(device_t dev, sjad_t sjad)
+sja_clear_intr(device_t dev, sja_data_t var)
 {
 	
-	SJA_CLEAR_INTR(device_get_parent(dev), sjad);	
+	SJA_CLEAR_INTR(device_get_parent(dev), var);	
 }
 
 MODULE_VERSION(sja, 1);

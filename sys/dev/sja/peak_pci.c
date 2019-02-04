@@ -88,11 +88,20 @@ static const struct peak_type pk_devs[] = {
 /* 
  * Hooks for the operating system.
  */
+
+static uint8_t	peak_pci_read_1(device_t, sja_data_t, int);
+static uint16_t	peak_pci_read_2(device_t, sja_data_t, int);
+static uint32_t	peak_pci_read_4(device_t, sja_data_t, int);
+
+static void	peak_pci_write_1(device_t, sja_data_t, uint8_t);
+static void	peak_pci_write_2(device_t, sja_data_t, uint16_t);
+static void	peak_pci_write_4(device_t, sja_data_t, uint32_t);
+
+static void	peak_pci_clear_intr(device_t, sja_data_t); 
+ 
 static int	peak_pci_probe(device_t);
 static int	peak_pci_detach(device_t);
 static int	peak_pci_attach(device_t);
-
-static void	peak_pci_clear_intr(device_t, int);
 
 /*
  * kobj(9) method-table
@@ -104,7 +113,15 @@ static device_method_t peak_pci_methods[] = {
 	DEVMETHOD(device_detach,	peak_pci_detach),
 	
 	/* sja(4) interface */
-	DEVMETHOD(sja_clear_intr,		peak_pci_clear_intr),
+	DEVMETHOD(sja_read_1,	peak_pci_read_1),
+	DEVMETHOD(sja_read_2,	peak_pci_read_2),
+	DEVMETHOD(sja_read_4,	peak_pci_read_4),
+	
+	DEVMETHOD(sja_write_1,	peak_pci_write_1),
+	DEVMETHOD(sja_write_2,	peak_pci_write_2),
+	DEVMETHOD(sja_write_4,	peak_pci_write_4),
+	
+	DEVMETHOD(sja_clear_intr,	peak_pci_clear_intr),
 	
 	DEVMETHOD_END
 };
@@ -302,58 +319,90 @@ peak_pci_detach(device_t dev)
  */
 
 static uint8_t
-sja_read_1(device_t dev, sjad_t sjad, int port)
+sja_read_1(device_t dev, sja_data_t sjad, int port)
 {
+	struct peak_softc *sc;
+	struct sja_chan *chan;
 	
+	sc = device_get_softc(dev);
+	chan = &sc->pk_chan[var->sja_port];
 	
-	return (SJA_READ_1(, port));	
+	return (bus_read_1(chan->sja_res, port));
 }
 
 static uint16_t
-sja_read_2(device_t dev, int port)
+sja_read_2(device_t dev, sja_data_t var, int port)
 {
+	struct peak_softc *sc;
+	struct sja_chan *chan;
 	
-	return (SJA_READ_2(device_get_parent(dev), port));	
+	sc = device_get_softc(dev);
+	chan = &sc->pk_chan[var->sja_port];
+	
+	return (bus_read_2(chan->sja_res, port));
 }
 
 static uint32_t
-sja_read_4(device_t dev, int port)
-{
-	
-	return (SJA_READ_4(device_get_parent(dev), port));	
-}
-
-static void
-peak_pci_write_1(device_t dev, int port, uint8_t val)
-{
-	
-	SJA_WRITE_1(device_get_parent(dev), port, val));	
-}
-
-static void
-peak_pci_write_2(device_t dev, int port, uint16_t val)
-{
-	
-	SJA_WRITE_2(device_get_parent(dev), port, val));	
-}
-
-static void
-peak_pci_write_4(device_t dev, int port, uint32_t val)
-{
-	
-	SJA_WRITE_4(device_get_parent(dev), port, val));	
-}
-
-static void
-peak_pci_clear_intr(device_t dev, int port)
+sja_read_4(device_t dev, sja_data_t var, int port)
 {
 	struct peak_softc *sc;
+	struct sja_chan *chan;
+	
+	sc = device_get_softc(dev);
+	chan = &sc->pk_chan[var->sja_port];
+	
+	return (bus_read_4(chan->sja_res, port));
+}
+
+static void
+peak_pci_write_1(device_t dev, sja_data_t var, int port, uint8_t val)
+{
+	struct peak_softc *sc;
+	struct sja_chan *chan;
+	
+	sc = device_get_softc(dev);
+	chan = &sc->pk_chan[var->sja_port];
+	
+	bus_write_1(chan->sja_res, port, val));
+}
+
+static void
+peak_pci_write_2(device_t dev, sja_data_t var, int port, uint16_t val)
+{
+	struct peak_softc *sc;
+	struct sja_chan *chan;
+	
+	sc = device_get_softc(dev);
+	chan = &sc->pk_chan[var->sja_port];
+	
+	bus_write_2(chan->sja_res, port, val));
+}
+
+static void
+peak_pci_write_4(device_t dev, sja_data_t var, int port, uint32_t val)
+{
+	struct peak_softc *sc;
+	struct sja_chan *chan;
+	
+	sc = device_get_softc(dev);
+	chan = &sc->pk_chan[var->sja_port];
+	
+	bus_write_4(chan->sja_res, port, val));	
+}
+
+static void
+peak_pci_clear_intr(device_t dev, sja_data_t var)
+{
+	struct peak_softc *sc;
+	struct sja_chan *chan;
 	uint16_t flags, status;
 
 	sc = device_get_softc(dev);
 	
-	if (port < sc->pk_chan_cnt) {
-		flags = sc->pk_chan[port].pkc_flags;
+	if (var->sja_port < sc->pk_chan_cnt) {
+		chan = &sc->pk_chan[var->sja_port];
+		
+		flags = chan->sja_flags;
 	
 		status = bus_read_2(sc->pk_res, PEAK_ICR);
 	
