@@ -66,7 +66,7 @@ static const struct c_can_pci_type c_can_pci_devs[] = {
 	{ C_CAN_VENDORID_INTEL, C_CAN_DEVICEID_PCH_CAN,
 		"Platform Controller Hub, Bosch [CD]_CAN.",
 		PCIR_BAR(1), C_CAN_PCH_CLK_FREQ, 1 },
-	{ 0, 0, NULL, NULL}	
+	{ 0, 0, NULL, 0, 0, 0}	
 };
 
 static const struct c_can_pci_type *	c_can_pci_match(device_t dev);
