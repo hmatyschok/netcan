@@ -36,3 +36,12 @@ METHOD uint32_t readreg {
 	device_t		dev;
 	uint32_t 	port;
 };
+
+#
+# Write register.
+#
+METHOD void writereg {
+	device_t		dev;
+	uint32_t 	port;
+	uint32_t	val;
+};

@@ -70,8 +70,8 @@ static const struct c_can_pci_type c_can_pci_devs[] = {
 };
 
 static const struct c_can_pci_type *	c_can_pci_match(device_t dev);
-static uint32_t	c_can_pci_read_reg(device_t dev, uint32_t reg);
-static void	c_can_pci_write_reg(device_t dev, uint32_t reg, uint32_t val);
+static uint32_t	c_can_pci_readreg(device_t dev, uint32_t port);
+static void	c_can_pci_writereg(device_t dev, uint32_t port, uint32_t val);
 
 /* 
  * Hooks for the operating system.
@@ -90,9 +90,9 @@ static device_method_t c_can_pci_methods[] = {
 	DEVMETHOD(device_detach,	c_can_pci_detach),
 		
 	/* c_can(4) interface */
-	DEVMETHOD(c_can_read_reg,	c_can_pci_read_reg),
-	DEVMETHOD(c_can_write_reg,	c_can_pci_writie_reg),
-	
+	DEVMETHOD(c_can_readreg,	c_can_pci_readreg),
+	DEVMETHOD(c_can_writereg,	c_can_pci_writereg),
+
 	DEVMETHOD_END
 };
 
@@ -220,23 +220,23 @@ c_can_pci_detach(device_t dev)
  */
 
 static uint32_t
-c_can_pci_read_reg(device_t dev, uint32_t reg)
+c_can_pci_readreg(device_t dev, uint32_t port)
 {
 	struct c_can_pci_softc *sc;
 	
 	sc = device_get_softc(dev);
 	
-	return (bus_read_4(dev, (reg << sc->ccp_shift)));
+	return (bus_read_4(dev, (port << sc->ccp_shift)));
 }
 
 static void
-c_can_pci_write_reg(device_t dev, uint32_t reg, uint32_t val)
+c_can_pci_writereg(device_t dev, uint32_t port, uint32_t val)
 {
 	struct c_can_pci_softc *sc;
 	
 	sc = device_get_softc(dev);
 	
-	bus_write_4(dev, (reg << sc->ccp_shift), val);
+	bus_write_4(dev, (port << sc->ccp_shift), val);
 }
 
 MODULE_DEPEND(c_can_pci, pci, 1, 1, 1);
