@@ -62,10 +62,10 @@
 static const struct c_can_pci_type c_can_pci_devs[] = {
 	{ C_CAN_VENDORID_STMICRO, C_CAN_DEVICEID_STMICRO_CAN,
 		"STA2X11, Bosch C_CAN / D_CAN",
-		PCIR_BAR(0), C_CAN_STA2X11_CLK_FREQ, 1 },
+		PCIR_BAR(0), 1, C_CAN_STA2X11_CLK_FREQ },
 	{ C_CAN_VENDORID_INTEL, C_CAN_DEVICEID_PCH_CAN,
 		"Platform Controller Hub, Bosch [CD]_CAN.",
-		PCIR_BAR(1), C_CAN_PCH_CLK_FREQ, 1 },
+		PCIR_BAR(1), 1, C_CAN_PCH_CLK_FREQ },
 	{ 0, 0, NULL, 0, 0, 0}	
 };
 
@@ -189,9 +189,8 @@ c_can_pci_attach(device_t dev)
 		}
 	}
 	
-	sc->ccp_freq = t->ccp_freq;
 	sc->ccp_shift = t->ccp_shift;
-	
+	sc->ccp_freq = t->ccp_freq;
 /*
  * ...
  */

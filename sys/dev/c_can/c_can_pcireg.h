@@ -43,8 +43,8 @@ struct c_can_pci_type {
 	uint16_t 	ccp_did;
 	const char 	*ccp_name;
 	int		ccp_bar;
-	uint32_t		ccp_freq;
 	int		ccp_shift;
+	uint32_t		ccp_freq;
 };
 
 /*
@@ -62,8 +62,8 @@ struct c_can_pci_type {
 struct c_can_pci_softc {
 	device_t 	ccp_dev;
 	struct resource		*ccp_res;
-	int			ccp_res_type;
-	uint32_t		ccp_freq;		
+	int			ccp_res_type;		
 	int		ccp_shift;
-	device_t		ccp_chan;
+	uint32_t		ccp_freq;
+	device_t		ccp_can;
 };
