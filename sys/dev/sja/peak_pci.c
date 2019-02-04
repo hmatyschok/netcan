@@ -183,17 +183,17 @@ peak_pci_attach(device_t dev)
 	}
 	
 	for (i = 0; i < sc->pk_chan_cnt; i++) { 
-		sjac = &sc->pk_chan[i].pkc_chan;
+		sjac = &sc->pk_chan[i];
 		sjad = &sjac->sjac_var;
 
-		sjad->sjad_res_id = PCIR_BAR(1) + i * PEAK_CHAN_SIZE;
-		sjad->sjad_res_type = SYS_RES_IOPORT;
+		sjac->sjac_res_id = PCIR_BAR(1) + i * PEAK_CHAN_SIZE;
+		sjac->sjac_res_type = SYS_RES_IOPORT;
 		
-		sjad->sjad_res = bus_alloc_resource_anywhere(dev, 
-			sjad->sjad_res_type, &sjad->sjad_res_id, 
+		sjac->sjac_res = bus_alloc_resource_anywhere(dev, 
+			sjac->sjac_res_type, &sjac->sjac_res_id, 
 				PEAK_CHAN_SIZE, RF_ACTIVE | RF_SHAREABLE);
 		
-		if (sjad->sjad_res == NULL) {
+		if (sjac->sjac_res == NULL) {
 			device_printf(dev, "couldn't map port %d\n", i);
 			error = ENXIO;
 			goto fail;
@@ -232,7 +232,7 @@ peak_pci_attach(device_t dev)
 
 	/* attach set of sja(4) controller as its children */		
 	for (i = 0; i < sc->pk_chan_cnt; i++) { 
-		sjac = &sc->pk_chan[i].pkc_chan;
+		sjac = &sc->pk_chan[i];
 		sjad = &sjac->sjac_var;
 				
 		sjac->sjac_dev = device_add_child(dev, "sja", -1); 
@@ -243,7 +243,7 @@ peak_pci_attach(device_t dev)
 		}
 		device_set_ivars(sjac->sjac_dev, sjad);
 		
-		status |= sc->pk_chan[i].pkc_flags;
+		status |= sjac->sjac_flags;
 	}
 	
 	if ((error = bus_generic_attach(dev)) != 0) {
@@ -265,7 +265,6 @@ peak_pci_detach(device_t dev)
 {
 	struct peak_softc *sc;
 	struct sja_chan *sjac;
-	struct sja_data *sjad;
 	int i;
  
 	sc = device_get_softc(dev);
@@ -284,12 +283,11 @@ peak_pci_detach(device_t dev)
 	
 	/* release bound resources */
 	for (i = 0; i < sc->pk_chan_cnt; i++) {
-		sjac = &sc->pk_chan[i].pkc_chan;
-		sjad = &sjac->sjac_var;
+		sjac = &sc->pk_chan[i];
 			
-		if (sjad->sjad_res != NULL) {
-			(void)bus_release_resource(dev, sjad->sjad_res_type, 
-				sjad->sjad_res);
+		if (sjac->sjac_res != NULL) {
+			(void)bus_release_resource(dev, sjac->sjac_res_type, 
+				sjac->sjac_res);
 		}
 	}
 	
@@ -297,6 +295,53 @@ peak_pci_detach(device_t dev)
 		(void)bus_release_resource(dev, sc->pk_res_type, sc->pk_res);
 	
 	return (0);
+}
+
+/*
+ * Common I/O subr.
+ */
+
+static uint8_t
+sja_read_1(device_t dev, sjad_t sjad, int port)
+{
+	
+	
+	return (SJA_READ_1(, port));	
+}
+
+static uint16_t
+sja_read_2(device_t dev, int port)
+{
+	
+	return (SJA_READ_2(device_get_parent(dev), port));	
+}
+
+static uint32_t
+sja_read_4(device_t dev, int port)
+{
+	
+	return (SJA_READ_4(device_get_parent(dev), port));	
+}
+
+static void
+peak_pci_write_1(device_t dev, int port, uint8_t val)
+{
+	
+	SJA_WRITE_1(device_get_parent(dev), port, val));	
+}
+
+static void
+peak_pci_write_2(device_t dev, int port, uint16_t val)
+{
+	
+	SJA_WRITE_2(device_get_parent(dev), port, val));	
+}
+
+static void
+peak_pci_write_4(device_t dev, int port, uint32_t val)
+{
+	
+	SJA_WRITE_4(device_get_parent(dev), port, val));	
 }
 
 static void

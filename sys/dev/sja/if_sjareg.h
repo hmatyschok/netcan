@@ -367,15 +367,16 @@
 /*
  * XXX: work in progress..
  */
+
+typedef struct sja_data *sja_data_t;
  
 struct sja_data {
-	int			sjad_port;
+	int			sja_port;
 	
 	/* default parameter */ 
-	uint8_t		sjad_shift;
-	uint8_t		sjad_cdr;
-	uint8_t		sjad_ocr;
-	uint32_t		sjad_freq;
+	uint8_t		sja_cdr;
+	uint8_t		sja_ocr;
+	uint32_t		sja_freq;
 };
 
 struct sja_chan {
