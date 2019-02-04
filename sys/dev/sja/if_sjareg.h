@@ -380,24 +380,24 @@ struct sja_data {
 };
 
 struct sja_chan {
-	device_t 	sjac_dev;	
+	device_t 	sja_dev;	
 	
 	/* allocated resources */
-	struct resource		*sjad_res;
-	int		sjac_res_id;	
-	int		sjac_res_type;
+	struct resource		*sja_res;
+	int		sja_res_id;	
+	int		sja_res_type;
 	
-	uint32_t	sjac_shift;
-	uint32_t	sjac_flags;
+	uint32_t	sja_shift;
+	uint32_t	sja_flags;
 	
 	/* instance variables */
-	struct sja_data		sjac_var;
+	struct sja_data		sja_var;
 };
 
 struct sja_softc {
 	struct ifnet	*sja_ifp;		/* generic ifnet(9) glue */
 	device_t	sja_dev;
-	struct sja_data		sjac_var;
+	struct sja_data		sja_var;
 	struct resource 	*sja_irq;
 	void	*sja_intr;
 	struct mtx	sja_mtx;

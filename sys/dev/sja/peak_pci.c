@@ -144,8 +144,8 @@ static int
 peak_pci_attach(device_t dev)
 {
 	struct peak_softc *sc;
-	struct sja_chan *sjac;
-	struct sja_data *sjad;
+	struct sja_chan *chan;
+	struct sja_data *var;
 	uint32_t csid, cnt;
 	uint16_t status;
 	int i, error = 0;
@@ -183,37 +183,37 @@ peak_pci_attach(device_t dev)
 	}
 	
 	for (i = 0; i < sc->pk_chan_cnt; i++) { 
-		sjac = &sc->pk_chan[i];
-		sjad = &sjac->sjac_var;
+		chan = &sc->pk_chan[i];
+		var = &chan->sja_var;
 
-		sjac->sjac_res_id = PCIR_BAR(1) + i * PEAK_CHAN_SIZE;
-		sjac->sjac_res_type = SYS_RES_IOPORT;
+		chan->sja_res_id = PCIR_BAR(1) + i * PEAK_CHAN_SIZE;
+		chan->sja_res_type = SYS_RES_IOPORT;
 		
-		sjac->sjac_res = bus_alloc_resource_anywhere(dev, 
-			sjac->sjac_res_type, &sjac->sjac_res_id, 
+		chan->sja_res = bus_alloc_resource_anywhere(dev, 
+			chan->sja_res_type, &chan->sja_res_id, 
 				PEAK_CHAN_SIZE, RF_ACTIVE | RF_SHAREABLE);
 		
-		if (sjac->sjac_res == NULL) {
+		if (chan->sja_res == NULL) {
 			device_printf(dev, "couldn't map port %d\n", i);
 			error = ENXIO;
 			goto fail;
 		}
 		
-		sjac->sjac_shift = 2;
+		chan->sja_shift = 2;
 		
 		if (i == 0)
-			sjac->sjac_flags = PEAK_ICR_INT_GP0;
+			chan->sja_flags = PEAK_ICR_INT_GP0;
 		else if (i == 1) 
-			sjac->sjac_flags = PEAK_ICR_INT_GP1;
+			chan->sja_flags = PEAK_ICR_INT_GP1;
 		else if (i == 2)
-			sjac->sjac_flags = PEAK_ICR_INT_GP2;
+			chan->sja_flags = PEAK_ICR_INT_GP2;
 		else 
-			sjac->sjac_flags = PEAK_ICR_INT_GP3;
+			chan->sja_flags = PEAK_ICR_INT_GP3;
 		
-		sjad->sjad_port = i;
-		sjad->sjad_cdr = PEAK_CDR_DFLT;
-		sjad->sjad_ocr = PEAK_OCR_DFLT;
-		sjad->sjad_freq = PEAK_CLK_FREQ;
+		var->sja_port = i;
+		var->sja_cdr = PEAK_CDR_DFLT;
+		var->sja_ocr = PEAK_OCR_DFLT;
+		var->sja_freq = PEAK_CLK_FREQ;
 	}	
 	
 	/* set-up GPIO control register, if any */
@@ -232,18 +232,18 @@ peak_pci_attach(device_t dev)
 
 	/* attach set of sja(4) controller as its children */		
 	for (i = 0; i < sc->pk_chan_cnt; i++) { 
-		sjac = &sc->pk_chan[i];
-		sjad = &sjac->sjac_var;
+		chan = &sc->pk_chan[i];
+		var = &chan->sja_var;
 				
-		sjac->sjac_dev = device_add_child(dev, "sja", -1); 
-		if (sjad->sjad_dev == NULL) {
+		chan->sja_dev = device_add_child(dev, "sja", -1); 
+		if (chan->sja_dev == NULL) {
 			device_printf(dev, "couldn't map channels");
 			error = ENXIO;
 			goto fail;
 		}
-		device_set_ivars(sjac->sjac_dev, sjad);
+		device_set_ivars(chan->sja_dev, var);
 		
-		status |= sjac->sjac_flags;
+		status |= chan->sja_flags;
 	}
 	
 	if ((error = bus_generic_attach(dev)) != 0) {
@@ -276,8 +276,8 @@ peak_pci_detach(device_t dev)
 	for (i = 0; i < sc->pk_chan_cnt; i++) {
 		sjac = &sc->pk_chan[i];
 		
-		if (sjac->sjac_dev != NULL)
-			(void)device_delete_child(dev, sjac->sjac_dev);
+		if (chan->sja_dev != NULL)
+			(void)device_delete_child(dev, chan->sja_dev);
 	}
 	(void)bus_generic_detach(dev);
 	
@@ -285,9 +285,9 @@ peak_pci_detach(device_t dev)
 	for (i = 0; i < sc->pk_chan_cnt; i++) {
 		sjac = &sc->pk_chan[i];
 			
-		if (sjac->sjac_res != NULL) {
-			(void)bus_release_resource(dev, sjac->sjac_res_type, 
-				sjac->sjac_res);
+		if (chan->sja_res != NULL) {
+			(void)bus_release_resource(dev, chan->sja_res_type, 
+				chan->sja_res);
 		}
 	}
 	
