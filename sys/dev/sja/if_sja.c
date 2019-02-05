@@ -533,6 +533,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 {
 	struct ifnet *ifp;
 	struct can_ifsoftc *csc;
+	struct sja_data *var;S
  	struct mbuf *m;
  	struct can_frame *cf;
  	int error;
@@ -542,6 +543,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	SJA_LOCK_ASSERT(sja);
 	ifp = sja->sja_ifp;
 	csc = ifp->if_l2com;
+	var = &sja->sja_var;
 	
 	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL)) {
 		error = ENOBUFS;
