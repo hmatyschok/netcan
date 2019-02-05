@@ -402,16 +402,12 @@ peak_pci_clear_intr(device_t dev, sja_data_t var)
 
 	sc = device_get_softc(dev);
 	
-	if (var->sja_port < sc->pk_chan_cnt) {
-		chan = &sc->pk_chan[var->sja_port];
-		
-		flags = chan->sja_flags;
+	chan = &sc->pk_chan[var->sja_port];	
+	flags = chan->sja_flags;
+	status = bus_read_2(sc->pk_res, PEAK_ICR);
 	
-		status = bus_read_2(sc->pk_res, PEAK_ICR);
-	
-		if (status & flags)
-			bus_write_2(sc->pk_res, PEAK_ICR, flags);
-	}
+	if (status & flags)
+		bus_write_2(sc->pk_res, PEAK_ICR, flags);
 }
 
 MODULE_DEPEND(peak_pci, pci, 1, 1, 1);
