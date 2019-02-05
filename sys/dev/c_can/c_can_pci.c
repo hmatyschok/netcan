@@ -242,6 +242,23 @@ c_can_pci_writereg(device_t dev, uint32_t port, uint32_t val)
 	bus_write_4(sc->ccp_res, (port << sc->ccp_shift), val);
 }
 
+static uint32_t
+c_can_pci_read_4((device_t dev, uint32_t port)
+{
+	
+		
+	return (status)
+}
+
+static uint32_t
+c_can_pci_write_4((device_t dev, uint32_t port, uint32_t val)
+{
+	
+		
+	return (status)
+}
+
+
 static void
 c_can_pci_reset(device_t dev, uint32_t rswitch)
 {
@@ -249,6 +266,7 @@ c_can_pci_reset(device_t dev, uint32_t rswitch)
 	
 	sc = device_get_softc(dev);
 	
+	/* XXX: e. g. C_CAN_CR_INIT	0x0001 ... */
 	if (rswitch != 0 && sc->ccp_rst != 0) {
 		bus_write_4(sc->ccp_res, sc->ccp_rst, 0x00000001);
 		bus_write_4(sc->ccp_res, sc->ccp_rst, 0x00000000);

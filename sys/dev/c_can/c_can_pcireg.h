@@ -43,7 +43,7 @@ struct c_can_pci_type {
 	uint16_t 	ccp_did;
 	const char 	*ccp_name;
 	int		ccp_bar;		/* pci(4) BAR */
-	int		ccp_shift;		/* aligenment */ 
+	int		ccp_shift;		/* alignement */ 
 	uint32_t		ccp_rst;	/* port for reset */
 	uint32_t		ccp_freq;		/* CLK frequency */
 };

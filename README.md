@@ -15,9 +15,11 @@ can(4) - Controller Area Network protocol domain(9) for FreeBSD
   
   (c) Operational Line-discipline based on if_slc(4). 
   
-  (d) Device-driver for Adapter with Philips SJA1000 controller.
+  (d) Device driver(9) for Adapter with Philips SJA1000 controller.
   
-  (e)  ...   
+  (d) Device driver(9) for Adapter with Bosh C_CAN controller.
+  
+  (f)  ...   
  
 Legal Notice: 
 -------------
@@ -28,7 +30,9 @@ Legal Notice:
   
   (c) PHILIPS is a registered trademark of Koninklijke Philips N.V.
   
-  (d) Don't use this software on production systems!
+  (d) BOSCH is a registered trademark of Robert Bosch GmbH.
+  
+  (e) Don't use this software on production systems!
   
 Additional information about contacting
 ---------------------------------------
