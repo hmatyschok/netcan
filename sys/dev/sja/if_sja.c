@@ -533,7 +533,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 {
 	struct ifnet *ifp;
 	struct can_ifsoftc *csc;
-	struct sja_data *var;S
+	struct sja_data *var;
  	struct mbuf *m;
  	struct can_frame *cf;
  	int error;
