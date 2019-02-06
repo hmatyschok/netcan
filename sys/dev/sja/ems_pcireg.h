@@ -58,7 +58,7 @@ struct ems_data {
 	
 	int		ems_chan_cnt;
 	
-	uint32_t		ems_shift;
+	uint32_t		ems_aln;
 	
 	uint32_t 		ems_icr_addr;
 	uint32_t 		ems_icr_rst;

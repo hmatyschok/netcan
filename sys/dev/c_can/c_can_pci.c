@@ -96,8 +96,10 @@ static device_method_t c_can_pci_methods[] = {
 	DEVMETHOD(device_detach,	c_can_pci_detach),
 		
 	/* c_can(4) interface */
-	DEVMETHOD(c_can_readreg,	c_can_pci_read_2),
-	DEVMETHOD(c_can_writereg,	c_can_pci_write_2),
+	DEVMETHOD(c_can_read_2,		c_can_pci_read_2),
+	DEVMETHOD(c_can_read_4,		c_can_pci_read_4),	
+	DEVMETHOD(c_can_write_2,		c_can_pci_write_2),
+	DEVMETHOD(c_can_write_4,		c_can_pci_write_4),
 	DEVMETHOD(c_can_reset,		c_can_pci_reset),
 
 	DEVMETHOD_END
@@ -196,7 +198,7 @@ c_can_pci_attach(device_t dev)
 		}
 	}
 	
-	sc->ccp_shift = t->ccp_shift;
+	sc->ccp_aln = t->ccp_aln;
 	sc->ccp_rst = t->ccp_rst;
 	sc->ccp_freq = t->ccp_freq;
 /*
@@ -233,7 +235,7 @@ c_can_pci_read_2(device_t dev, int port)
 	
 	sc = device_get_softc(dev);
 	
-	return (bus_read_2(sc->ccp_res, (port << sc->ccp_shift)));
+	return (bus_read_2(sc->ccp_res, (port << sc->ccp_aln)));
 }
 
 static uint32_t
@@ -243,7 +245,7 @@ c_can_pci_read_4(device_t dev, int port)
 	
 	sc = device_get_softc(dev);
 	
-	return (bus_read_4(sc->ccp_res, (port << sc->ccp_shift)));
+	return (bus_read_4(sc->ccp_res, (port << sc->ccp_aln)));
 }
 
 static void
@@ -253,7 +255,7 @@ c_can_pci_write_2(device_t dev, int port, uint16_t val)
 	
 	sc = device_get_softc(dev);
 	
-	bus_write_2(sc->ccp_res, (port << sc->ccp_shift), val);
+	bus_write_2(sc->ccp_res, (port << sc->ccp_aln), val);
 }
 
 static void
@@ -263,7 +265,7 @@ c_can_pci_write_4(device_t dev, int port, uint32_t val)
 	
 	sc = device_get_softc(dev);
 	
-	bus_write_4(sc->ccp_res, (port << sc->ccp_shift), val);
+	bus_write_4(sc->ccp_res, (port << sc->ccp_aln), val);
 }
 
 /*

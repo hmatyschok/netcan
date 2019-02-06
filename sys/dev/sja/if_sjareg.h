@@ -387,7 +387,7 @@ struct sja_chan {
 	int		sja_res_id;	
 	int		sja_res_type;
 	
-	uint32_t	sja_shift;
+	uint32_t	sja_aln;
 	uint32_t	sja_flags;
 	
 	/* instance variables */
