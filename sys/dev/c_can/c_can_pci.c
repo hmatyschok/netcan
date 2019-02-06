@@ -219,11 +219,21 @@ c_can_pci_detach(device_t dev)
 }
 
 /*
- * ,,,
+ * COmmon I/O subr.
  */
 
 static uint16_t
 c_can_pci_read_2(device_t dev, int port)
+{
+	struct c_can_pci_softc *sc;
+	
+	sc = device_get_softc(dev);
+	
+	return (bus_read_2(sc->ccp_res, (port << sc->ccp_shift)));
+}
+
+static uint32_t
+c_can_pci_read_4(device_t dev, int port)
 {
 	struct c_can_pci_softc *sc;
 	
@@ -242,10 +252,19 @@ c_can_pci_write_2(device_t dev, int port, uint16_t val)
 	bus_write_2(sc->ccp_res, (port << sc->ccp_shift), val);
 }
 
+static void
+c_can_pci_write_4(device_t dev, int port, uint32_t val)
+{
+	struct c_can_pci_softc *sc;
+	
+	sc = device_get_softc(dev);
+	
+	bus_write_4(sc->ccp_res, (port << sc->ccp_shift), val);
+}
+
 /*
- * ... 
- */
- 
+ * SOftware reset.
+ */ 
 static void
 c_can_pci_reset(device_t dev, int rswitch)
 {
