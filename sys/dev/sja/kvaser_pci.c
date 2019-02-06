@@ -251,7 +251,7 @@ kvaser_pci_detach(device_t dev)
 {
 	struct kvaser_softc *sc;
 	struct sja_chan *chan;
-	uint32_t stauts;
+	uint32_t status;
 	int i;
  
 	sc = device_get_softc(dev);

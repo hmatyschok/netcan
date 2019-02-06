@@ -219,7 +219,7 @@ c_can_pci_attach(device_t dev)
 		device_printf(dev, "failed to attach c_can(4) controller\n");
 		goto fail;
 	}
-
+	
 out:	
 	return (error);
 fail:
@@ -231,12 +231,20 @@ static int
 c_can_pci_detach(device_t dev)
 {
 	struct c_can_pci_softc *sc;
-	struct c_can_pci_desc *res;
+	uint32_t status;
+ 
+	sc = device_get_softc(dev);
+	
+	/* detach c_can(4) controller, if any */
+	if (sc->ccp_can != NULL)
+		(void)device_delete_child(dev, sc->ccp_can);
 
-/*
- * ,,,
- */
-
+	(void)bus_generic_detach(dev);
+	
+	/* release bound resources */
+	if (sc->kv_res != NULL)
+		(void)bus_release_resource(dev, sc->ccp_res_type, sc->ccp_res);
+	
 	return (0);
 }
 
