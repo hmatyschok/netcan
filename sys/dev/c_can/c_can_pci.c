@@ -71,13 +71,17 @@ static const struct c_can_pci_type c_can_pci_devs[] = {
 
 static const struct c_can_pci_type *	c_can_pci_match(device_t dev);
 
-static uint32_t	c_can_pci_read_2(device_t dev, uint32_t port);
-static void	c_can_pci_write_2(device_t dev, uint32_t port, uint32_t val);
-static void	c_can_pci_reset(device_t dev, uint32_t rswitch);
-
 /* 
  * Hooks for the operating system.
  */
+static uint16_t	c_can_read_2(device_t, int);
+static uint32_t	c_can_read_4(device_t, int);
+
+static void	c_can_write_2(device_t, uint16_t);
+static void	c_can_write_4(device_t, uint32_t); 
+
+static void	c_can_pci_reset(device_t dev, int rswitch);
+ 
 static int	c_can_pci_probe(device_t dev);
 static int	c_can_pci_detach(device_t dev);
 static int	c_can_pci_attach(device_t dev);
@@ -108,7 +112,7 @@ static driver_t c_can_pci_driver = {
 static devclass_t c_can_pci_devclass;
 
 DRIVER_MODULE(c_can_pci, pci, c_can_pci_driver, c_can_pci_devclass, 0, 0);
-DRIVER_MODULE(c_can, c_can_pci, sja_driver, c_can_devclass, 0, 0);
+DRIVER_MODULE(c_can, c_can_pci, c_can_driver, c_can_devclass, 0, 0);
 
 static const struct c_can_pci_type *
 c_can_pci_match(device_t dev)
