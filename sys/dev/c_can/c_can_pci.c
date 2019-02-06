@@ -242,7 +242,7 @@ c_can_pci_detach(device_t dev)
 	(void)bus_generic_detach(dev);
 	
 	/* release bound resources */
-	if (sc->kv_res != NULL)
+	if (sc->ccp_res != NULL)
 		(void)bus_release_resource(dev, sc->ccp_res_type, sc->ccp_res);
 	
 	return (0);
