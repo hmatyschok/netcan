@@ -81,8 +81,34 @@
 #define C_CAN_MSG_VAL1		0xb2		/* message valid 2 */
 	/* 0xb4 - 0xbe	reserved */
 
+/* 
+ * C_CAN, 3.2.1 can(4) Control Register [CR] 
+ */
+#define C_CAN_CR_INIT	0x0001	/* initializiation (rw) */
+#define C_CAN_CR_IE		0x0002		/* interrupt enable (rw) */
+#define C_CAN_CR_SIE	0x0004	/* status change interrupt enable (rw) */
+#define C_CAN_CR_EIE	0x0008		/* error interrupt enable (rw) */
+#define C_CAN_CR_DAR	0x0020	/* disable automatic retransmission (rw) */	
+#define C_CAN_CR_CCE	0x0040	/* configuration change enable (rw) */
+#define C_CAN_CR_TEST	0x0080		/* test mode (rw) */
+#define C_CAN_CR_INTR_MASK \
+	(C_CAN_CR_IE|C_CAN_CR_SIE|C_CAN_CR_EIE)
+
+/* 
+ * C_CAN, 3.2.2 Status Register [SR] 
+ */ 
+#define C_CAN_SR_LEC_MASK	0x0007	/* lost error code mask (rw) */
+#define C_CAN_SR_TX_OK		0x0008	/* tx'd message successfully (rw) */
+#define C_CAN_SR_RX_OK		0x0010	/* rx'd message successfully (rw) */
+#define C_CAN_SR_PE		0x0020	/* error passive status (r) */
+#define C_CAN_SR_EW		0x0040	/* error warning status (r) */
+#define C_CAN_SR_BO		0x0080	/* bus-off status (r) */
+
+#define C_CAN_SR_LEC(reg) \
+	((reg) & C_CAN_SR_LEC_MASK)
+
 /*
- * ...
+ * Work in progress..
  */
 
 struct c_can_softc {
