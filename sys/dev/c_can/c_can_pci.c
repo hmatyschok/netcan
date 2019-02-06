@@ -185,7 +185,7 @@ c_can_pci_attach(device_t dev)
 		goto fail;
 	}	
 	
-	/* Allocate interrupt resources. */
+	/* allocate interrupt resources */
 	msic = pci_msi_count(dev);
 	if (bootverbose != 0)
 		device_printf(dev, "MSI count: %d\n", msic);
@@ -200,12 +200,26 @@ c_can_pci_attach(device_t dev)
 		}
 	}
 	
+	/* map default params, e. g. for register alignement */
 	sc->ccp_aln = t->ccp_aln;
 	sc->ccp_rst = t->ccp_rst;
 	sc->ccp_freq = t->ccp_freq;
-/*
- * ...
- */
+
+	/* attach c_can(4) controller as child */		
+	sc->ccp_can = device_add_child(dev, "c_can", -1); 
+	if (var->var_dev == NULL) {
+		device_printf(dev, "couldn't map c_can(4) controller");
+			error = ENXIO;
+			goto fail;
+		}
+		device_set_ivars(sc->ccp_can, &sc->ccp_freq); /* XXX */
+	}
+	
+	if ((error = bus_generic_attach(dev)) != 0) {
+		device_printf(dev, "failed to attach c_can(4) controller\n");
+		goto fail;
+	}
+
 out:	
 	return (error);
 fail:

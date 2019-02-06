@@ -193,7 +193,7 @@ kvaser_pci_attach(device_t dev)
 			chan->sja_res_type, &chan->sja_res_id, 
 				KVASER_CHAN_SIZE, RF_ACTIVE);
 	
-		if (var->sja_res == NULL) {
+		if (chan->sja_res == NULL) {
 			device_printf(dev, "couldn't map port %i\n", i);
 			break;
 		}
