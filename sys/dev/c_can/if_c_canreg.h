@@ -98,15 +98,32 @@
  * C_CAN, 3.2.2 Status Register [SR] 
  */ 
 #define C_CAN_SR_LEC_MASK	0x0007	/* lost error code mask (rw) */
+
+#define C_CAN_SR_LEC(reg) \
+	((reg) & C_CAN_SR_LEC_MASK)
+
+#define C_CAN_SR_NO_ERR(reg) 		(C_CAN_SR_LEC(reg) == 0x00) 	
+#define C_CAN_SR_STUFF_ERR(reg)		(C_CAN_SR_LEC(reg) == 0x01)
+#define C_CAN_SR_FORM_ERR(reg)		(C_CAN_SR_LEC(reg) == 0x02)
+#define C_CAN_SR_ACK_ERR(reg) 		(C_CAN_SR_LEC(reg) == 0x03)
+#define C_CAN_SR_BIT1_ERR(reg)		(C_CAN_SR_LEC(reg) == 0x04)
+#define C_CAN_SR_BIT0_ERR(reg)		(C_CAN_SR_LEC(reg) == 0x05)
+#define C_CAN_SR_CRC_ERR(reg)		(C_CAN_SR_LEC(reg) == 0x06)
+#define C_CAN_SR_UNUSED_ERR(reg)	(C_CAN_SR_LEC(reg) == 0x07)
+
 #define C_CAN_SR_TX_OK		0x0008	/* tx'd message successfully (rw) */
 #define C_CAN_SR_RX_OK		0x0010	/* rx'd message successfully (rw) */
 #define C_CAN_SR_PE		0x0020	/* error passive status (r) */
 #define C_CAN_SR_EW		0x0040	/* error warning status (r) */
 #define C_CAN_SR_BO		0x0080	/* bus-off status (r) */
 
-#define C_CAN_SR_LEC(reg) \
-	((reg) & C_CAN_SR_LEC_MASK)
-
+/* 
+ * C_CAN, 3.2.3 Error Counter [ECR] 
+ */ 
+#define C_CAN_ECR_TEC_MASK		0x00ff		/* tx error counter (r) */
+#define C_CAN_ECR_REC_MASK		0xef00		/* rx error counter (r) */
+#define C_CAN_ECR_RR		0x8000		/* rx error passive (r) */
+		
 /*
  * Work in progress..
  */
