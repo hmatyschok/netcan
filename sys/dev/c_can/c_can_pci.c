@@ -71,8 +71,8 @@ static const struct c_can_pci_type c_can_pci_devs[] = {
 
 static const struct c_can_pci_type *	c_can_pci_match(device_t dev);
 
-static uint32_t	c_can_pci_readreg(device_t dev, uint32_t port);
-static void	c_can_pci_writereg(device_t dev, uint32_t port, uint32_t val);
+static uint32_t	c_can_pci_read_2(device_t dev, uint32_t port);
+static void	c_can_pci_write_2(device_t dev, uint32_t port, uint32_t val);
 static void	c_can_pci_reset(device_t dev, uint32_t rswitch);
 
 /* 
@@ -92,8 +92,8 @@ static device_method_t c_can_pci_methods[] = {
 	DEVMETHOD(device_detach,	c_can_pci_detach),
 		
 	/* c_can(4) interface */
-	DEVMETHOD(c_can_readreg,	c_can_pci_readreg),
-	DEVMETHOD(c_can_writereg,	c_can_pci_writereg),
+	DEVMETHOD(c_can_readreg,	c_can_pci_read_2),
+	DEVMETHOD(c_can_writereg,	c_can_pci_write_2),
 	DEVMETHOD(c_can_reset,		c_can_pci_reset),
 
 	DEVMETHOD_END
@@ -222,8 +222,8 @@ c_can_pci_detach(device_t dev)
  * ,,,
  */
 
-static uint32_t
-c_can_pci_readreg(device_t dev, uint32_t port)
+static uint16_t
+c_can_pci_read_2(device_t dev, int port)
 {
 	struct c_can_pci_softc *sc;
 	
@@ -233,34 +233,21 @@ c_can_pci_readreg(device_t dev, uint32_t port)
 }
 
 static void
-c_can_pci_writereg(device_t dev, uint32_t port, uint32_t val)
+c_can_pci_write_2(device_t dev, int port, uint16_t val)
 {
 	struct c_can_pci_softc *sc;
 	
 	sc = device_get_softc(dev);
 	
-	bus_write_4(sc->ccp_res, (port << sc->ccp_shift), val);
+	bus_write_2(sc->ccp_res, (port << sc->ccp_shift), val);
 }
 
-static uint32_t
-c_can_pci_read_4((device_t dev, uint32_t port)
-{
-	
-		
-	return (status)
-}
-
-static uint32_t
-c_can_pci_write_4((device_t dev, uint32_t port, uint32_t val)
-{
-	
-		
-	return (status)
-}
-
-
+/*
+ * ... 
+ */
+ 
 static void
-c_can_pci_reset(device_t dev, uint32_t rswitch)
+c_can_pci_reset(device_t dev, int rswitch)
 {
 	struct c_can_pci_softc *sc;
 	

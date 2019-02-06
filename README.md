@@ -37,7 +37,7 @@ Legal Notice:
 Additional information about contacting
 ---------------------------------------
       
-If someone wants to contact me by electronic mail, please use encryption!
+If someone wants to contact me by electronic mail, use encryption!
 
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 Version: GnuPG v2

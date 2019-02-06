@@ -53,21 +53,21 @@ METHOD uint32_t read_4 {
 #
 # Write register.
 #
-METHOD uint8_t write_1 {
+METHOD void write_1 {
 	device_t	dev;
 	sja_data_t	var;	
 	int		port;
 	uint8_t		val;
 };
 
-METHOD uint16_t write_2 {
+METHOD void write_2 {
 	device_t	dev;
 	sja_data_t	var;	
 	int		port;
 	uint16_t	val;
 };
 
-METHOD uint32_t write_4 {
+METHOD void write_4 {
 	device_t	dev;
 	sja_data_t	var;
 	int		port;

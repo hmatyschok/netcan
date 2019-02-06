@@ -32,24 +32,35 @@ INTERFACE c_can;
 #
 # Read register.
 #
-METHOD uint32_t readreg {
-	device_t		dev;
-	uint32_t 	port;
+METHOD uint16_t read_2 {
+	device_t	dev;
+	int		port;
+};
+
+METHOD uint32_t read_4 {
+	device_t	dev;
+	int		port;
 };
 
 #
 # Write register.
 #
-METHOD void writereg {
-	device_t		dev;
-	uint32_t 	port;
+METHOD void write_2 {
+	device_t	dev;	
+	int		port;
+	uint16_t	val;
+};
+
+METHOD void write_4 {
+	device_t	dev;
+	int		port;
 	uint32_t	val;
 };
 
 #
-# Reset/
+# Software reset.
 #
 METHOD void reset {
-	device_t		dev;
+	device_t	dev;
 	int		rswitch;
 };
