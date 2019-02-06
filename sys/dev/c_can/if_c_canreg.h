@@ -86,19 +86,20 @@
  */
 
 struct c_can_softc {
-	struct ifnet	*c_can_ifp;		/* generic ifnet(9) glue */
-	device_t	c_can_dev;
-	int		c_can_port;
-	struct resource 	*c_can_irq;
-	struct resource		*c_can_res;
-	uint8_t		c_can_cdr;
-	uint8_t		c_can_ocr;
-	struct mtx	c_can_mtx;
-	void	*c_can_intr;
+	struct ifnet	*cc_ifp;		/* generic ifnet(9) glue */
+	device_t	cc_dev;
+	int		cc_port;
+	struct resource 	*cc_irq;
+	struct resource		*cc_res;
+	uint8_t		cc_cdr;
+	uint8_t		cc_ocr;
+	struct mtx	cc_mtx;
+	struct task		cc_intr_task;
+	void	*cc_intr;
 };
-#define	C_CAN_LOCK(c_can)		mtx_lock(&(c_can)->c_can_mtx)
-#define	C_CAN_UNLOCK(c_can)		mtx_unlock(&(c_can)->c_can_mtx)
-#define	C_CAN_LOCK_ASSERT(c_can)	mtx_assert(&(c_can)->c_can_mtx, MA_OWNED)
+#define	C_CAN_LOCK(cc)		mtx_lock(&(c_can)->cc_mtx)
+#define	C_CAN_UNLOCK(cc)		mtx_unlock(&(c_can)->cc_mtx)
+#define	C_CAN_LOCK_ASSERT(cc)	mtx_assert(&(cc)->cc_mtx, MA_OWNED)
 
 /* utility-macros */
 #define	c_can_timercmp(tvp, uvp, val)	\

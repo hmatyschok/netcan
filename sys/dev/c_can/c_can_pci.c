@@ -219,7 +219,7 @@ c_can_pci_detach(device_t dev)
 }
 
 /*
- * COmmon I/O subr.
+ * Common I/O subr.
  */
 
 static uint16_t
@@ -263,7 +263,7 @@ c_can_pci_write_4(device_t dev, int port, uint32_t val)
 }
 
 /*
- * SOftware reset.
+ * Software reset.
  */ 
 static void
 c_can_pci_reset(device_t dev, int rswitch)
@@ -278,7 +278,6 @@ c_can_pci_reset(device_t dev, int rswitch)
 		bus_write_4(sc->ccp_res, sc->ccp_rst, 0x00000000);
 	}
 }
-
 
 MODULE_DEPEND(c_can_pci, pci, 1, 1, 1);
 MODULE_DEPEND(c_can_pci, c_can, 1, 1, 1); 
