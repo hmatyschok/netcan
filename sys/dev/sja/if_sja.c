@@ -406,10 +406,10 @@ again:
 	/* map id */
 	if (status & SJA_FI_FF) {
 		cf->can_id = CAN_EFF_FLAG;
-		cf->can_id |= SJA_READ_4(sja, var, SJA_ID) >> 3;
+		cf->can_id |= SJA_READ_4(sja, var, SJA_ID + 4) >> 3;
 		addr = SJA_DATA_EFF;
 	} else {
-		cf->can_id |= SJA_READ_2(sja, var, SJA_ID) >> 5;
+		cf->can_id |= SJA_READ_2(sja, var, SJA_ID + 2) >> 5;
 		addr = SJA_DATA_SFF;
 	}	
 
@@ -688,14 +688,14 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 		cf->can_id &= CAN_EFF_MASK;
 		cf->can_id <<= 3;
 		
-		SJA_WRITE_4(sja, var, SJA_ID, cf->can_id);
+		SJA_WRITE_4(sja, var, SJA_ID + 4, cf->can_id);
 		
 		addr = SJA_DATA_EFF;
 	} else {
 		cf->can_id &= CAN_SFF_MASK;
 		cf->can_id <<= 5;
 		
-		SJA_WRITE_2(sja, var, SJA_ID, cf->can_id);
+		SJA_WRITE_2(sja, var, SJA_ID + 2, cf->can_id);
 		
 		addr = SJA_DATA_SFF;
 	}
