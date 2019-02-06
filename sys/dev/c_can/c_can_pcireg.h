@@ -64,7 +64,7 @@ struct c_can_pci_softc {
 	device_t 	ccp_dev;
 	struct resource		*ccp_res;
 	int			ccp_res_type;		
-	int		ccp_shift;
+	int		ccp_aln;
 	uint32_t		ccp_rst;
 	uint32_t		ccp_freq;
 	device_t		ccp_can;

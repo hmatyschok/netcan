@@ -98,8 +98,10 @@ static device_method_t c_can_pci_methods[] = {
 	/* c_can(4) interface */
 	DEVMETHOD(c_can_read_2,		c_can_pci_read_2),
 	DEVMETHOD(c_can_read_4,		c_can_pci_read_4),	
+	
 	DEVMETHOD(c_can_write_2,		c_can_pci_write_2),
 	DEVMETHOD(c_can_write_4,		c_can_pci_write_4),
+	
 	DEVMETHOD(c_can_reset,		c_can_pci_reset),
 
 	DEVMETHOD_END
