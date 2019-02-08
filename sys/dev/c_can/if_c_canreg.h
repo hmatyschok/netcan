@@ -131,17 +131,14 @@
 struct c_can_softc {
 	struct ifnet	*cc_ifp;		/* generic ifnet(9) glue */
 	device_t	cc_dev;
-	int		cc_port;
+	uint32_t	cc_freq;
 	struct resource 	*cc_irq;
-	struct resource		*cc_res;
-	uint8_t		cc_cdr;
-	uint8_t		cc_ocr;
-	struct mtx	cc_mtx;
 	struct task		cc_intr_task;
 	void	*cc_intr;
+	struct mtx	cc_mtx;
 };
-#define	C_CAN_LOCK(cc)		mtx_lock(&(c_can)->cc_mtx)
-#define	C_CAN_UNLOCK(cc)		mtx_unlock(&(c_can)->cc_mtx)
+#define	C_CAN_LOCK(cc)		mtx_lock(&(cc)->cc_mtx)
+#define	C_CAN_UNLOCK(cc)		mtx_unlock(&(cc)->cc_mtx)
 #define	C_CAN_LOCK_ASSERT(cc)	mtx_assert(&(cc)->cc_mtx, MA_OWNED)
 
 /* utility-macros */

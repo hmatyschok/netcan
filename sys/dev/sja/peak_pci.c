@@ -393,6 +393,9 @@ peak_pci_write_4(device_t dev, sja_data_t var, int port, uint32_t val)
 	bus_write_4(chan->sja_res, (port << chan->sja_aln), val));	
 }
 
+/*
+ * Clear interrupt status. 
+ */
 static void
 peak_pci_clear_intr(device_t dev, sja_data_t var)
 {

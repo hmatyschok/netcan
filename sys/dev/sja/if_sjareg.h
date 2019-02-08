@@ -397,7 +397,7 @@ struct sja_chan {
 struct sja_softc {
 	struct ifnet	*sja_ifp;		/* generic ifnet(9) glue */
 	device_t	sja_dev;
-	struct sja_data		sja_var;
+	struct sja_data		*sja_var;
 	struct resource 	*sja_irq;
 	void	*sja_intr;
 	struct mtx	sja_mtx;

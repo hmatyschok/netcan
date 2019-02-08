@@ -59,13 +59,15 @@
 #include <dev/c_can/if_c_canreg.h>
 #include <dev/c_can/c_can_pcireg.h>
 
+#include "c_can_if.h"
+
 static const struct c_can_pci_type c_can_pci_devs[] = {
 	{ C_CAN_VENDORID_STMICRO, C_CAN_DEVICEID_STMICRO_CAN,
 		"STA2X11, Bosch C_CAN / D_CAN",
 		PCIR_BAR(0), 1, 0, C_CAN_STA2X11_CLK_FREQ },
 	{ C_CAN_VENDORID_INTEL, C_CAN_DEVICEID_PCH_CAN,
 		"Platform Controller Hub, Bosch [CD]_CAN.",
-		PCIR_BAR(1), 1, 1, C_CAN_PCH_CLK_FREQ },
+		PCIR_BAR(1), 1, 0x01fc, C_CAN_PCH_CLK_FREQ },
 	{ 0, 0, NULL, 0, 0, 0}	
 };
 
@@ -80,7 +82,7 @@ static uint32_t	c_can_read_4(device_t, int);
 static void	c_can_write_2(device_t, uint16_t);
 static void	c_can_write_4(device_t, uint32_t); 
 
-static void	c_can_pci_reset(device_t dev, int rswitch);
+static void	c_can_pci_reset(device_t dev, int);
  
 static int	c_can_pci_probe(device_t dev);
 static int	c_can_pci_detach(device_t dev);

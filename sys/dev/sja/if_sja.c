@@ -44,7 +44,6 @@
 
 #include "sja_if.h"
 
-
 /* 
  * Hooks for the operating system.
  */
@@ -72,7 +71,7 @@ static int	sja_intr(void *);
 static void	sja_start(struct ifnet *);
 static void	sja_start_locked(struct ifnet *);
 static void	sja_encap(struct sja_softc *, struct mbuf **); 
-static int	sja_ioctl(struct ifnet *, u_long, caddr_t data);
+static int	sja_ioctl(struct ifnet *, u_long, caddr_t);
 static void	sja_init(void *);
 static void	sja_init_locked(struct sja_softc *);
 static int	sja_reset(struct sja_softc *);
@@ -257,8 +256,8 @@ sja_attach(device_t dev)
 	sja = device_get_softc(dev);
 	sja->sja_dev = dev; 
 	
-	sja->sja_var = device_get_ivar(dev);
-	var = &sja->sja_var;
+	var = device_get_ivar(dev);
+	sja->sja_var = *var;
 	
 	/* allocate interrupt */
 	rid = 0;
