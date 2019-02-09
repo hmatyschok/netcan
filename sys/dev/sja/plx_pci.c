@@ -452,53 +452,6 @@ static const struct plx_type plx_devs[] = {
 
 static const struct plx_type *	plx_pci_match(device_t dev);
 
-/* 
- * Hooks for the operating system.
- */
-static uint8_t	plx_pci_read_1(device_t, sja_data_t, int);
-static uint16_t	plx_pci_read_2(device_t, sja_data_t, int);
-static uint32_t	plx_pci_read_4(device_t, sja_data_t, int);
-
-static void	plx_pci_write_1(device_t, sja_data_t, uint8_t);
-static void	plx_pci_write_2(device_t, sja_data_t, uint16_t);
-static void	plx_pci_write_4(device_t, sja_data_t, uint32_t); 
- 
-static int	plx_pci_probe(device_t dev);
-static int	plx_pci_detach(device_t dev);
-static int	plx_pci_attach(device_t dev);
-
-/*
- * kobj(9) method-table
- */
-static device_method_t plx_pci_methods[] = {
-	/* device(9) interface */
-	DEVMETHOD(device_probe, 	plx_pci_probe),
-	DEVMETHOD(device_attach,	plx_pci_attach),
-	DEVMETHOD(device_detach,	plx_pci_detach),
-
-	/* sja(4) interface */
-	DEVMETHOD(sja_read_1,	plx_pci_read_1),
-	DEVMETHOD(sja_read_2,	plx_pci_read_2),
-	DEVMETHOD(sja_read_4,	plx_pci_read_4),
-	
-	DEVMETHOD(sja_write_1,	plx_pci_write_1),
-	DEVMETHOD(sja_write_2,	plx_pci_write_2),
-	DEVMETHOD(sja_write_4,	plx_pci_write_4),
-		
-	DEVMETHOD_END
-};
-
-static driver_t plx_pci_driver = {
-	"plx_pci",
-	plx_pci_methods,
-	sizeof(struct plx_softc)
-};
-
-static devclass_t plx_pci_devclass;
-
-DRIVER_MODULE(plx_pci, pci, plx_pci_driver, plx_pci_devclass, 0, 0);
-DRIVER_MODULE(sja, plx_pci, sja_driver, sja_devclass, 0, 0);
-
 static const struct plx_type *
 plx_pci_match(device_t dev)
 {
@@ -796,6 +749,38 @@ plx_pci_write_4(device_t dev, sja_data_t var, int port, uint32_t val)
 	
 	bus_write_4(chan->sja_res, port, val));	
 }
+
+/* 
+ * Hooks for the operating system.
+ */
+static device_method_t plx_pci_methods[] = {
+	/* device(9) interface */
+	DEVMETHOD(device_probe, 	plx_pci_probe),
+	DEVMETHOD(device_attach,	plx_pci_attach),
+	DEVMETHOD(device_detach,	plx_pci_detach),
+
+	/* sja(4) interface */
+	DEVMETHOD(sja_read_1,	plx_pci_read_1),
+	DEVMETHOD(sja_read_2,	plx_pci_read_2),
+	DEVMETHOD(sja_read_4,	plx_pci_read_4),
+	
+	DEVMETHOD(sja_write_1,	plx_pci_write_1),
+	DEVMETHOD(sja_write_2,	plx_pci_write_2),
+	DEVMETHOD(sja_write_4,	plx_pci_write_4),
+		
+	DEVMETHOD_END
+};
+
+static driver_t plx_pci_driver = {
+	"plx_pci",
+	plx_pci_methods,
+	sizeof(struct plx_softc)
+};
+
+static devclass_t plx_pci_devclass;
+
+DRIVER_MODULE(plx_pci, pci, plx_pci_driver, plx_pci_devclass, 0, 0);
+DRIVER_MODULE(sja, plx_pci, sja_driver, sja_devclass, 0, 0);
 
 MODULE_DEPEND(plx_pci, pci, 1, 1, 1);
 MODULE_DEPEND(plx_pci, sja, 1, 1, 1); 

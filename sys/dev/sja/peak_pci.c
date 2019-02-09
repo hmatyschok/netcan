@@ -85,58 +85,6 @@ static const struct peak_type pk_devs[] = {
 	{ 0, 0, NULL }	
 };
 
-/* 
- * Hooks for the operating system.
- */
-
-static uint8_t	peak_pci_read_1(device_t, sja_data_t, int);
-static uint16_t	peak_pci_read_2(device_t, sja_data_t, int);
-static uint32_t	peak_pci_read_4(device_t, sja_data_t, int);
-
-static void	peak_pci_write_1(device_t, sja_data_t, uint8_t);
-static void	peak_pci_write_2(device_t, sja_data_t, uint16_t);
-static void	peak_pci_write_4(device_t, sja_data_t, uint32_t);
-
-static void	peak_pci_clear_intr(device_t, sja_data_t); 
- 
-static int	peak_pci_probe(device_t);
-static int	peak_pci_detach(device_t);
-static int	peak_pci_attach(device_t);
-
-/*
- * kobj(9) method-table
- */
-static device_method_t peak_pci_methods[] = {
-	/* device(9) interface */
-	DEVMETHOD(device_probe, 	peak_pci_probe),
-	DEVMETHOD(device_attach,	peak_pci_attach),
-	DEVMETHOD(device_detach,	peak_pci_detach),
-	
-	/* sja(4) interface */
-	DEVMETHOD(sja_read_1,	peak_pci_read_1),
-	DEVMETHOD(sja_read_2,	peak_pci_read_2),
-	DEVMETHOD(sja_read_4,	peak_pci_read_4),
-	
-	DEVMETHOD(sja_write_1,	peak_pci_write_1),
-	DEVMETHOD(sja_write_2,	peak_pci_write_2),
-	DEVMETHOD(sja_write_4,	peak_pci_write_4),
-	
-	DEVMETHOD(sja_clear_intr,	peak_pci_clear_intr),
-	
-	DEVMETHOD_END
-};
-
-static driver_t peak_pci_driver = {
-	"peak_pci",
-	peak_pci_methods,
-	sizeof(struct peak_softc)
-};
-
-static devclass_t peak_pci_devclass;
-
-DRIVER_MODULE(peak_pci, pci, peak_pci_driver, peak_pci_devclass, 0, 0);
-DRIVER_MODULE(sja, peak_pci, sja_driver, sja_devclass, 0, 0);
-
 static int
 peak_pci_probe(device_t dev)
 {
@@ -412,6 +360,40 @@ peak_pci_clear_intr(device_t dev, sja_data_t var)
 	if (status & flags)
 		bus_write_2(sc->pk_res, PEAK_ICR, flags);
 }
+
+/* 
+ * Hooks for the operating system.
+ */
+static device_method_t peak_pci_methods[] = {
+	/* device(9) interface */
+	DEVMETHOD(device_probe, 	peak_pci_probe),
+	DEVMETHOD(device_attach,	peak_pci_attach),
+	DEVMETHOD(device_detach,	peak_pci_detach),
+	
+	/* sja(4) interface */
+	DEVMETHOD(sja_read_1,	peak_pci_read_1),
+	DEVMETHOD(sja_read_2,	peak_pci_read_2),
+	DEVMETHOD(sja_read_4,	peak_pci_read_4),
+	
+	DEVMETHOD(sja_write_1,	peak_pci_write_1),
+	DEVMETHOD(sja_write_2,	peak_pci_write_2),
+	DEVMETHOD(sja_write_4,	peak_pci_write_4),
+	
+	DEVMETHOD(sja_clear_intr,	peak_pci_clear_intr),
+	
+	DEVMETHOD_END
+};
+
+static driver_t peak_pci_driver = {
+	"peak_pci",
+	peak_pci_methods,
+	sizeof(struct peak_softc)
+};
+
+static devclass_t peak_pci_devclass;
+
+DRIVER_MODULE(peak_pci, pci, peak_pci_driver, peak_pci_devclass, 0, 0);
+DRIVER_MODULE(sja, peak_pci, sja_driver, sja_devclass, 0, 0);
 
 MODULE_DEPEND(peak_pci, pci, 1, 1, 1);
 MODULE_DEPEND(peak_pci, sja, 1, 1, 1); 

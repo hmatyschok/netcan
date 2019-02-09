@@ -39,11 +39,11 @@
 
 /* interface regiser set 1 */
 #define C_CAN_IF1_CMR		0x10	/* IF1 command request */
-#define C_CAN_IF1_CMR_MASK		0x12	/* IF1 command mask */
+#define C_CAN_IF1_CMMR		0x12	/* IF1 command mask */
 #define C_CAN_IF1_MASK0		0x14		/* IF1 mask 1 */
 #define C_CAN_IF1_MASK1		0x16		/* IF1 mask 2 */
-#define C_CAN_IF1_AR0		0x18		/* IF1 arbitriation 1 */
-#define C_CAN_IF1_AR1		0x1a		/* IF1 arbitriation 2 */
+#define C_CAN_IF1_ID0		0x18		/* IF1 arbitriation 1 */
+#define C_CAN_IF1_ID1		0x1a		/* IF1 arbitriation 2 */
 #define C_CAN_IF1_MCR		0x1c		/* IF1 message control */
 #define C_CAN_IF1_DATA0		0x1e		/* IF1 data register 1 */
 #define C_CAN_IF1_DATA1		0x20		/* IF1 data register 2 */
@@ -56,8 +56,8 @@
 #define C_CAN_IF2_CMR_MASK		0x42
 #define C_CAN_IF2_MASK0		0x44
 #define C_CAN_IF2_MASK1		0x46
-#define C_CAN_IF2_AR0		0x48
-#define C_CAN_IF2_AR1		0x4a
+#define C_CAN_IF2_ID0		0x48
+#define C_CAN_IF2_ID1		0x4a
 #define C_CAN_IF2_MCR		0x4c
 #define C_CAN_IF2_DATA0		0x4e
 #define C_CAN_IF2_DATA1		0x50
@@ -65,8 +65,8 @@
 #define C_CAN_IF2_DATA3		0x54
 	/* 0x56 - 0x7e	reserved */
 	
-#define C_CAN_TX1_REQ		0x80		/* TX request 1 */
-#define C_CAN_TX2_REQ       0x82		/* TX request 2 */
+#define C_CAN_TX1_RQST		0x80		/* TX request 1 */
+#define C_CAN_TX2_RQST       0x82		/* TX request 2 */
 	/* 0x84 - 0x8e	reserved */
 
 #define C_CAN_NEW_DAT0		0x90		/* new data 1 */
@@ -123,18 +123,81 @@
 #define C_CAN_ECR_TEC_MASK		0x00ff		/* tx error counter (r) */
 #define C_CAN_ECR_REC_MASK		0xef00		/* rx error counter (r) */
 #define C_CAN_ECR_RR		0x8000		/* rx error passive (r) */
+
+/*
+ * ...
+ */
+
+#define C_CAN_IFX_CMR_MESG_NUM_MASK		0x002f	 
+
+#define C_CAN_IFX_CMR_MESG_NUM(reg) \		/* index for message (r) */
+	((reg) & C_CAN_IFX_CMR_MESG_NUM_MASK)
+
+#define C_CAN_IFX_CMR_BUSY		0x8000		/* busy flag (r) */
+
+/*
+ * ...
+ */
+#define C_CAN_IFX_CMMR_DATA_B		0x01
+#define C_CAN_IFX_CMMR_DATA_A		0x02 	
+#define C_CAN_IFX_CMMR_TX_RQST		0x04
+#define C_CAN_IFX_CMMR_NEW_DAT		C_CAN_IFX_CMMR_TX_RQST
+#define C_CAN_IFX_CMMR_CLR_INT_PND		0x08	
+#define C_CAN_IFX_CMMR_CONTROL		0x10
+#define C_CAN_IFX_CMMR_ARB		0x20
+#define C_CAN_IFX_CMMR_MASK		0x40
+#define C_CAN_IFX_CMMR_WR_RD		0x08	/* write / read (rw) */
+
+/* initialize tx buffer */
+#define C_CAN_IFX_CMMR_TX_INIT \
+	(C_CAN_IFX_CMMR_DATA_B|C_CAN_IFX_CMMR_DATA_A| \
+	C_CAN_IFX_CMMR_TX_RQST|C_CAN_IFX_CMMR_CONTROL| \
+	C_CAN_IFX_CMMR_ARB)
+
+/* invalidate message object */
+#define C_CAN_IFX_CMMR_MO_INVAL	\
+	(C_CAN_IFX_CMMR_CONTROL|C_CAN_IFX_CMMR_ARB)
+
+/* initialize rx buffer */
+#define C_CAN_IFX_CMMR_RX_INIT \
+	(C_CAN_IFX_CMMRL_MO_INVAL|C_CAN_IFX_CMMR_MASK)
+
+/* clear interrupt, but keep new data */
+#define C_CAN_IFX_CMMR_RX_LOW \
+	(C_CAN_IFX_CMMR_DATA_B|C_CAN_IFX_CMMR_DATA_A| \
+	C_CAN_IFX_CMMR_CLR_INT_PND|C_CAN_IFX_CMMR_RX_INIT)
+
+/* clear interrupt bit and new data */
+#define C_CAN_IFX_CMMR_RX_HIGH \
+	(C_CAN_IFX_CMMR_RCV_LOW|C_CAN_IFX_CMMR_CLR_NEWDAT)
+
+/*
+ * ...
+ */
+
+#define C_CAN_IFX_MCR_DLC_MASK		0x0007	/* data length code (rw) */
+#define C_CAN_IFX_MCR_EOB		0x0008		/* end of buffer (rw) */
+#define C_CAN_IFX_MCR_TX_RQST		0x0010		/* tx request (rw) */
+#define C_CAN_IFX_MCR_RMT_EN		0x0020		/* remote enable (rw) */
+#define C_CAN_IFX_MCR_RX_IE		0x0040		/* rx intr enable (rw) */
+#define C_CAN_IFX_MCR_TX_IE		0x0080		/* tx intr enable (rw) */
+#define C_CAN_IFX_MCR_UMASK		0x0100		/* use acceptance mask (rw) */
+#define C_CAN_IFX_MCR_INT_PND		0x0200	/* interrupt pending (rw) */
+#define C_CAN_IFX_MCR_MSG_LST		0x0400	/* message lost (rw) */
+#define C_CAN_IFX_MCR_NEW_DAT		0x0800	/* new data (rw) */
+
 		
 /*
  * Work in progress..
  */
-
+ 
 struct c_can_softc {
 	struct ifnet	*cc_ifp;		/* generic ifnet(9) glue */
 	device_t	cc_dev;
-	uint32_t	cc_freq;
 	struct resource 	*cc_irq;
 	struct task		cc_intr_task;
 	void	*cc_intr;
+	uint32_t	cc_freq;
 	struct mtx	cc_mtx;
 };
 #define	C_CAN_LOCK(cc)		mtx_lock(&(cc)->cc_mtx)

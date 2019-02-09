@@ -62,5 +62,4 @@ METHOD void write_4 {
 #
 METHOD void reset {
 	device_t	dev;
-	int		rswitch;
 };

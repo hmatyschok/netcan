@@ -44,23 +44,6 @@
 
 #include "sja_if.h"
 
-/* 
- * Hooks for the operating system.
- */
-static uint8_t	sja_read_1(device_t, sja_data_t, int);
-static uint16_t	sja_read_2(device_t, sja_data_t, int);
-static uint32_t	sja_read_4(device_t, sja_data_t, int);
-
-static void	sja_write_1(device_t, sja_data_t, uint8_t);
-static void	sja_write_2(device_t, sja_data_t, uint16_t);
-static void	sja_write_4(device_t, sja_data_t, uint32_t);
-
-static void	sja_clear_intr(device_t, sja_data_t);
-
-static int	sja_probe(device_t);
-static int	sja_attach(device_t);
-static int	sja_detach(device_t);
-
 /*
  * Subr.
  */
@@ -93,37 +76,6 @@ static const struct can_link_timecaps sja_timecaps = {
 };
 
 /*
- * kobj(9) method-table
- */
-static device_method_t sja_methods[] = {
-	/* device(9) interface */
-	DEVMETHOD(device_probe, 	sja_probe),
-	DEVMETHOD(device_attach,	sja_attach),
-	DEVMETHOD(device_detach,	sja_detach),
-	
-	/* sja(4) interface */
-	DEVMETHOD(sja_read_1,	sja_read_1),
-	DEVMETHOD(sja_read_2,	sja_read_2),
-	DEVMETHOD(sja_read_4,	sja_read_4),
-	
-	DEVMETHOD(sja_write_1,	sja_write_1),
-	DEVMETHOD(sja_write_2,	sja_write_2),
-	DEVMETHOD(sja_write_4,	sja_write_4),
-	
-	DEVMETHOD(sja_clear_intr,	sja_clear_intr),
-	
-	DEVMETHOD_END
-};
-
-static driver_t sja_driver = {
-	"sja",
-	sja_methods,
-	sizeof(struct sja_softc)
-};
-
-static devclass_t sja_devclass;
-
-/*
  * Force controller into reset mode.
  */
 static int 
@@ -138,7 +90,7 @@ sja_reset(struct sja_softc *sja)
 
 	ifp = sja->sja_ifp;
 	csc = ifp->if_l2com;
-	var = &sja->sja_var;
+	var = sja->sja_var;
 
 	getmicrotime(&tv0);
 	getmicrotime(&tv);
@@ -183,7 +135,7 @@ sja_normal_mode(struct sja_softc *sja)
 
 	ifp = sja->sja_ifp;
 	csc = ifp->if_l2com;
-	var = &sja->sja_var;
+	var = sja->sja_var;
 
 	/* flush error counters and error code capture */
 	SJA_WRITE_1(sja, var, SJA_TEC, 0x00);
@@ -256,8 +208,8 @@ sja_attach(device_t dev)
 	sja = device_get_softc(dev);
 	sja->sja_dev = dev; 
 	
-	var = device_get_ivar(dev);
-	sja->sja_var = *var;
+	sja->sja_var = device_get_ivar(dev);
+	var = sja->sja_var;
 	
 	/* allocate interrupt */
 	rid = 0;
@@ -353,7 +305,6 @@ sja_detach(device_t dev)
 		SJA_LOCK(sja);
 		sja_stop(sja);
 		SJA_UNLOCK(sja);
-		mtx_destroy(&sja->sja_mtx);
 		can_ifdetach(ifp);
 	}
 	
@@ -367,6 +318,8 @@ sja_detach(device_t dev)
 	
 	if (ifp != NULL)
 		if_free(ifp);
+	
+	mtx_destroy(&sja->sja_mtx);
 	
 	return (0);
 }
@@ -388,7 +341,7 @@ sja_rxeof(struct sja_softc *sja)
 	
 	SJA_LOCK_ASSERT(sja);
 	ifp = sja->sja_ifp;
-	var = &sja->sja_var;
+	var = sja->sja_var;
 	
 again:	
 	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL)) {
@@ -456,7 +409,7 @@ sja_txeof(struct sja_softc *sja)
 
 	ifp = sja->sja_ifp;
 	csc = ifp->if_l2com;
-	var = &sja->sja_var;
+	var = sja->sja_var;
 	
 	status = SJA_READ_1(sja, var, SJA_SR);
 	
@@ -486,7 +439,7 @@ sja_intr(void *arg)
 	int n, error;
 	
 	sja = (struct sja_softc *)arg;
-	var = &sja->sja_var;
+	var = sja->sja_var;
 
 	SJA_LOCK(sja);
 
@@ -542,7 +495,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	SJA_LOCK_ASSERT(sja);
 	ifp = sja->sja_ifp;
 	csc = ifp->if_l2com;
-	var = &sja->sja_var;
+	var = sja->sja_var;
 	
 	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL)) {
 		error = ENOBUFS;
@@ -654,7 +607,7 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 	int i, error = 0;
 	
 	SJA_LOCK_ASSERT(sja);
-	var = &sja->sja_var;
+	var = sja->sja_var;
 	
 	/* get a writable copy, if any */
 	if (M_WRITABLE(*mp) == 0) {
@@ -735,7 +688,7 @@ sja_start_locked(struct ifnet *ifp)
 	
 	sja = ifp->if_softc;	
 	SJA_LOCK_ASSERT(sja);
-	var = &sja->sja_var;	
+	var = sja->sja_var;	
 	csc = ifp->if_l2com;
 			
 	if ((ifp->if_drv_flags & (IFF_DRV_RUNNING | IFF_DRV_OACTIVE)) !=
@@ -802,7 +755,7 @@ sja_init_locked(struct sja_softc *sja)
 	SJA_LOCK_ASSERT(sja);
 	ifp = sja->sja_ifp;
 	csc = ifp->if_l2com;
-	var = &sja->sja_var;
+	var = sja->sja_var;
 
 	if (ifp->if_drv_flags & IFF_DRV_RUNNING)
 		return;
@@ -905,8 +858,6 @@ sja_stop(struct sja_softc *sja)
 	SJA_WRITE_1(sja, &sja->sja_var, SJA_CMR, SJA_CMR_AT);
 }
 
-
-
 /*
  * ...
  */
@@ -953,7 +904,7 @@ sja_set_link_timings(struct can_ifsoftc *csc)
 	uint8_t btr0, btr1;
 	
 	sja = csc->csc_ifp->if_softc;
-	var = &sja->sja_var;
+	var = sja->sja_var;
 	clt = &csc->csc_timings;
 	
 	/* baud rate prescalar and synchroniziation jump */
@@ -1026,5 +977,36 @@ sja_clear_intr(device_t dev, sja_data_t var)
 	
 	SJA_CLEAR_INTR(device_get_parent(dev), var);	
 }
+
+/*
+ * Hooks for the operating system.
+ */
+static device_method_t sja_methods[] = {
+	/* device(9) interface */
+	DEVMETHOD(device_probe, 	sja_probe),
+	DEVMETHOD(device_attach,	sja_attach),
+	DEVMETHOD(device_detach,	sja_detach),
+	
+	/* sja(4) interface */
+	DEVMETHOD(sja_read_1,	sja_read_1),
+	DEVMETHOD(sja_read_2,	sja_read_2),
+	DEVMETHOD(sja_read_4,	sja_read_4),
+	
+	DEVMETHOD(sja_write_1,	sja_write_1),
+	DEVMETHOD(sja_write_2,	sja_write_2),
+	DEVMETHOD(sja_write_4,	sja_write_4),
+	
+	DEVMETHOD(sja_clear_intr,	sja_clear_intr),
+	
+	DEVMETHOD_END
+};
+
+static driver_t sja_driver = {
+	"sja",
+	sja_methods,
+	sizeof(struct sja_softc)
+};
+
+devclass_t sja_devclass; 
 
 MODULE_VERSION(sja, 1);

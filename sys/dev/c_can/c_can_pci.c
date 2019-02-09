@@ -73,53 +73,6 @@ static const struct c_can_pci_type c_can_pci_devs[] = {
 
 static const struct c_can_pci_type *	c_can_pci_match(device_t dev);
 
-/* 
- * Hooks for the operating system.
- */
-static uint16_t	c_can_read_2(device_t, int);
-static uint32_t	c_can_read_4(device_t, int);
-
-static void	c_can_write_2(device_t, uint16_t);
-static void	c_can_write_4(device_t, uint32_t); 
-
-static void	c_can_pci_reset(device_t dev, int);
- 
-static int	c_can_pci_probe(device_t dev);
-static int	c_can_pci_detach(device_t dev);
-static int	c_can_pci_attach(device_t dev);
-
-/*
- * kobj(9) method-table
- */
-static device_method_t c_can_pci_methods[] = {
-	/* device(9) interface */
-	DEVMETHOD(device_probe, 	c_can_pci_probe),
-	DEVMETHOD(device_attach,	c_can_pci_attach),
-	DEVMETHOD(device_detach,	c_can_pci_detach),
-		
-	/* c_can(4) interface */
-	DEVMETHOD(c_can_read_2,		c_can_pci_read_2),
-	DEVMETHOD(c_can_read_4,		c_can_pci_read_4),	
-	
-	DEVMETHOD(c_can_write_2,		c_can_pci_write_2),
-	DEVMETHOD(c_can_write_4,		c_can_pci_write_4),
-	
-	DEVMETHOD(c_can_reset,		c_can_pci_reset),
-
-	DEVMETHOD_END
-};
-
-static driver_t c_can_pci_driver = {
-	"c_can_pci",
-	c_can_pci_methods,
-	sizeof(struct c_can_pci_softc)
-};
-
-static devclass_t c_can_pci_devclass;
-
-DRIVER_MODULE(c_can_pci, pci, c_can_pci_driver, c_can_pci_devclass, 0, 0);
-DRIVER_MODULE(c_can, c_can_pci, c_can_driver, c_can_devclass, 0, 0);
-
 static const struct c_can_pci_type *
 c_can_pci_match(device_t dev)
 {
@@ -204,7 +157,7 @@ c_can_pci_attach(device_t dev)
 	
 	/* map default params, e. g. for register alignement */
 	sc->ccp_aln = t->ccp_aln;
-	sc->ccp_rst = t->ccp_rst;
+	sc->ccp_srst = t->ccp_srst;
 	sc->ccp_freq = t->ccp_freq;
 
 	/* attach c_can(4) controller as child */		
@@ -233,7 +186,6 @@ static int
 c_can_pci_detach(device_t dev)
 {
 	struct c_can_pci_softc *sc;
-	uint32_t status;
  
 	sc = device_get_softc(dev);
 	
@@ -298,18 +250,49 @@ c_can_pci_write_4(device_t dev, int port, uint32_t val)
  * Software reset.
  */ 
 static void
-c_can_pci_reset(device_t dev, int rswitch)
+c_can_pci_reset(device_t dev)
 {
 	struct c_can_pci_softc *sc;
 	
 	sc = device_get_softc(dev);
 	
-	/* XXX: e. g. C_CAN_CR_INIT	0x0001 ... */
-	if (rswitch != 0 && sc->ccp_rst != 0) {
-		bus_write_4(sc->ccp_res, sc->ccp_rst, 0x00000001);
-		bus_write_4(sc->ccp_res, sc->ccp_rst, 0x00000000);
+	if (sc->ccp_srst != 0) {
+		bus_write_4(sc->ccp_res, sc->ccp_srst, 0x00000001);
+		bus_write_4(sc->ccp_res, sc->ccp_srst, 0x00000000);
 	}
 }
+
+/* 
+ * Hooks for the operating system.
+ */
+static device_method_t c_can_pci_methods[] = {
+	/* device(9) interface */
+	DEVMETHOD(device_probe, 	c_can_pci_probe),
+	DEVMETHOD(device_attach,	c_can_pci_attach),
+	DEVMETHOD(device_detach,	c_can_pci_detach),
+		
+	/* c_can(4) interface */
+	DEVMETHOD(c_can_read_2,		c_can_pci_read_2),
+	DEVMETHOD(c_can_read_4,		c_can_pci_read_4),	
+	
+	DEVMETHOD(c_can_write_2,		c_can_pci_write_2),
+	DEVMETHOD(c_can_write_4,		c_can_pci_write_4),
+	
+	DEVMETHOD(c_can_reset,		c_can_pci_reset),
+
+	DEVMETHOD_END
+};
+
+static driver_t c_can_pci_driver = {
+	"c_can_pci",
+	c_can_pci_methods,
+	sizeof(struct c_can_pci_softc)
+};
+
+static devclass_t c_can_pci_devclass;
+
+DRIVER_MODULE(c_can_pci, pci, c_can_pci_driver, c_can_pci_devclass, 0, 0);
+DRIVER_MODULE(c_can, c_can_pci, c_can_driver, c_can_devclass, 0, 0);
 
 MODULE_DEPEND(c_can_pci, pci, 1, 1, 1);
 MODULE_DEPEND(c_can_pci, c_can, 1, 1, 1); 
