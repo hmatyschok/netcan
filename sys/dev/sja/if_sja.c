@@ -96,10 +96,10 @@ sja_reset(struct sja_softc *sja)
 	getmicrotime(&tv);
 
 	/* disable interrupts, if any */
-	SJA_WRITE_1(sja, var, SJA_IER, SJA_IER_OFF);
+	SJA_WRITE_1(sja->sja_dev, var, SJA_IER, SJA_IER_OFF);
 
 	/* fetch contents of status register */
-	status = SJA_READ_1(sja, var, SJA_MOD);
+	status = SJA_READ_1(sja->sja_dev, var, SJA_MOD);
 	
 	/* set reset mode, until break-condition takes place */
 	for (error = EIO; sja_timercmp(&tv0, &tv, 100); ) {
@@ -110,10 +110,10 @@ sja_reset(struct sja_softc *sja)
 			break;
 		}
 
-		SJA_WRITE_1(sja, var, SJA_MOD, SJA_MOD_RM);
+		SJA_WRITE_1(sja->sja_dev, var, SJA_MOD, SJA_MOD_RM);
 		DELAY(10);
 		
-		status = SJA_READ_1(sja, var, SJA_MOD);
+		status = SJA_READ_1(sja->sja_dev, var, SJA_MOD);
 		getmicrotime(&tv);
 	}
 	
@@ -138,19 +138,19 @@ sja_normal_mode(struct sja_softc *sja)
 	var = sja->sja_var;
 
 	/* flush error counters and error code capture */
-	SJA_WRITE_1(sja, var, SJA_TEC, 0x00);
-	SJA_WRITE_1(sja, var, SJA_REC, 0x00);
+	SJA_WRITE_1(sja->sja_dev, var, SJA_TEC, 0x00);
+	SJA_WRITE_1(sja->sja_dev, var, SJA_REC, 0x00);
 	
-	status = SJA_READ_1(sja, var, SJA_ECC);
+	status = SJA_READ_1(sja->sja_dev, var, SJA_ECC);
 	
 	/* clear interrupt flags */
-	status = SJA_READ_1(sja, var, SJA_IR);
+	status = SJA_READ_1(sja->sja_dev, var, SJA_IR);
 	
 	getmicrotime(&tv0);
 	getmicrotime(&tv);
 	
 	/* fetch contents of status register */
-	status = SJA_READ_1(sja, var, SJA_MOD);
+	status = SJA_READ_1(sja->sja_dev, var, SJA_MOD);
 	
 	/* set normal mode and enable interrupts, if any */
 	for (error = EIO; sja_timercmp(&tv0, &tv, 100); ) {
@@ -162,7 +162,7 @@ sja_normal_mode(struct sja_softc *sja)
 			if ((csc->csc_linkmodes & 0x10) == 0)
 				status &= ~SJA_IER_BE;
 #endif			
-			SJA_WRITE_1(sja, var, SJA_IER, status);
+			SJA_WRITE_1(sja->sja_dev, var, SJA_IER, status);
 			
 			csc->csc_flags = CAN_STATE_ERROR_ACTIVE;
 			error = 0;
@@ -177,10 +177,10 @@ sja_normal_mode(struct sja_softc *sja)
 		if (csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK)
 			status |= SJA_MOD_STM;
 		
-		SJA_WRITE_1(sja, var, SJA_MOD, status);
+		SJA_WRITE_1(sja->sja_dev, var, SJA_MOD, status);
 		DELAY(10);
 		
-		status = SJA_READ_1(sja, var, SJA_MOD);
+		status = SJA_READ_1(sja->sja_dev, var, SJA_MOD);
 		getmicrotime(&tv);
 	}
 	
@@ -255,18 +255,18 @@ sja_attach(device_t dev)
 	
 	/* set clock divider */
 	var->sja_cdr |= SJA_CDR_PELICAN;
-	SJA_WRITE_1(sja, var, SJA_CDR, var->sja_cdr);
+	SJA_WRITE_1(sja->sja_dev, var, SJA_CDR, var->sja_cdr);
 
 	/* set acceptance filter (accept all) */
 	for (addr = SJA_AC0; addr < SJA_AM0; addr++)
-		SJA_WRITE_1(sja, var, addr, 0x00);
+		SJA_WRITE_1(sja->sja_dev, var, addr, 0x00);
 
 	for (addr = SJA_AM0; addr <= SJA_AM3; addr++)
-		SJA_WRITE_1(sja, var, addr, 0xff);
+		SJA_WRITE_1(sja->sja_dev, var, addr, 0xff);
 
 	/* set output control register */
 	var->sja_ocr |= SJA_OCR_MOD_NORM;
-	SJA_WRITE_1(sja, var, SJA_OCR, var->sja_ocr);
+	SJA_WRITE_1(sja->sja_dev, var, SJA_OCR, var->sja_ocr);
 
 	/* set normal mode */
 	if ((error = sja_normal_mode(sja)) != 0) {
@@ -353,7 +353,7 @@ again:
 	cf = mtod(m, struct can_frame *);
 
 	/* fetch frame information */	
-	status = SJA_READ_1(sja, var, SJA_FI);
+	status = SJA_READ_1(sja->sja_dev, var, SJA_FI);
 
 	/* map id */
 	if (status & SJA_FI_FF) {
@@ -376,7 +376,7 @@ again:
 		maddr = addr + cf->can_dlc;
 	
 	for (i = 0; addr < maddr; addr++, i++) 
-		cf->can_data[i] = SJA_READ_1(sja, var, addr);
+		cf->can_data[i] = SJA_READ_1(sja->sja_dev, var, addr);
 
 	m->m_len = m->m_pkthdr.len = sizeof(*cf);
 	m->m_pkthdr.rcvif = ifp;
@@ -387,8 +387,8 @@ again:
 	SJA_LOCK(sja);
 	
 done:	/* SJA1000, 6.4.4, note 4 */
-	SJA_WRITE_1(sja, var, SJA_CMR, SJA_CMR_RRB);
-	status = SJA_READ_1(sja, var, SJA_SR);
+	SJA_WRITE_1(sja->sja_dev, var, SJA_CMR, SJA_CMR_RRB);
+	status = SJA_READ_1(sja->sja_dev, var, SJA_SR);
 	
 	if (status & SJA_SR_RBS)
 		goto again;
@@ -411,7 +411,7 @@ sja_txeof(struct sja_softc *sja)
 	csc = ifp->if_l2com;
 	var = sja->sja_var;
 	
-	status = SJA_READ_1(sja, var, SJA_SR);
+	status = SJA_READ_1(sja->sja_dev, var, SJA_SR);
 	
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 		
@@ -420,7 +420,7 @@ sja_txeof(struct sja_softc *sja)
 		if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
 		(*ifp->if_start)(ifp);
 	} else {
-		status = SJA_READ_1(sja, var, SJA_FI) & SJA_FI_DLC; 
+		status = SJA_READ_1(sja->sja_dev, var, SJA_FI) & SJA_FI_DLC; 
 		if_inc_counter(ifp, IFCOUNTER_OBYTES, status);
 		if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
 	}
@@ -448,7 +448,7 @@ sja_intr(void *arg)
 	if (ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
 		goto bad;
 	
-	status = SJA_READ_1(sja, var, SJA_IR);
+	status = SJA_READ_1(sja->sja_dev, var, SJA_IR);
 
 	if (status == SJA_IR_OFF)
 		goto bad;
@@ -465,7 +465,7 @@ sja_intr(void *arg)
 			if (sja_error(sja, status) != 0)
 				break;
 		}
-		intr = SJA_READ_1(sja, var, SJA_IR);	
+		intr = SJA_READ_1(sja->sja_dev, var, SJA_IR);	
 	}
 	error = FILTER_HANDLED;	
 done:
@@ -508,7 +508,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	cf->can_id |= CAN_ERR_FLAG;
 
 	/* fetch status information */	
-	status = SJA_READ_1(sja, var, SJA_SR);	
+	status = SJA_READ_1(sja->sja_dev, var, SJA_SR);	
 	
 	/*  error passive / warning condition */
 	if (intr & (SJA_IR_EP | SJA_IR_EW)) {	
@@ -539,15 +539,15 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 		cf->can_id |= CAN_ERR_DEV;
 		cf->can_data[CAN_ERR_DEV_DF] |= CAN_ERR_DEV_RX_OVF; 
 	
-		SJA_WRITE_1(sja, var, SJA_CMR, SJA_CMR_CDO);
-		status = SJA_READ_1(sja, var, SJA_SR);
+		SJA_WRITE_1(sja->sja_dev, var, SJA_CMR, SJA_CMR_CDO);
+		status = SJA_READ_1(sja->sja_dev, var, SJA_SR);
 	}
 	
 	/* bus error condition */
 	if (intr & SJA_IR_BE) {
 		if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
 		
-		flags = SJA_READ_1(sja, var, SJA_ECC);
+		flags = SJA_READ_1(sja->sja_dev, var, SJA_ECC);
 
 		cf->can_id |= (CAN_ERR_PROTO | CAN_ERR_BE);
 
@@ -571,15 +571,15 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	if (intr & SJA_IR_AL) {
 		if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
 		
-		flags = SJA_READ_1(sja, var, SJA_ALC);
+		flags = SJA_READ_1(sja->sja_dev, var, SJA_ALC);
 
 		cf->can_id |= CAN_ERR_AL;
 		cf->can_data[CAN_ERR_AL_DF] |= flags & SJA_ALC_MASK;
 	} 
 	
 	/* map error count */
-	cf->can_data[CAN_ERR_RX_DF] = SJA_READ_1(sja, var, SJA_REC);
-	cf->can_data[CAN_ERR_TX_DF] = SJA_READ_1(sja, var, SJA_TEC);
+	cf->can_data[CAN_ERR_RX_DF] = SJA_READ_1(sja->sja_dev, var, SJA_REC);
+	cf->can_data[CAN_ERR_TX_DF] = SJA_READ_1(sja->sja_dev, var, SJA_TEC);
 
 	m->m_len = m->m_pkthdr.len = sizeof(*cf);
 	m->m_pkthdr.rcvif = ifp;
@@ -633,21 +633,21 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 
 	status |= cf->can_dlc & SJA_FI_DLC;
 
-	SJA_WRITE_1(sja, var, SJA_FI, status);
+	SJA_WRITE_1(sja->sja_dev, var, SJA_FI, status);
 	
 	/* map id */
 	if (cf->can_id & CAN_EFF_FLAG) { 
 		cf->can_id &= CAN_EFF_MASK;
 		cf->can_id <<= 3;
 		
-		SJA_WRITE_4(sja, var, SJA_ID + 4, cf->can_id);
+		SJA_WRITE_4(sja->sja_dev, var, SJA_ID + 4, cf->can_id);
 		
 		addr = SJA_DATA_EFF;
 	} else {
 		cf->can_id &= CAN_SFF_MASK;
 		cf->can_id <<= 5;
 		
-		SJA_WRITE_2(sja, var, SJA_ID + 2, cf->can_id);
+		SJA_WRITE_2(sja->sja_dev, var, SJA_ID + 2, cf->can_id);
 		
 		addr = SJA_DATA_SFF;
 	}
@@ -655,7 +655,7 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 	maddr = addr + cf->can_dlc;
 	
 	for (i = 0; addr < maddr; addr++, i++) 
-		SJA_WRITE_1(sja, var, addr, cf->can_data[i]);
+		SJA_WRITE_1(sja->sja_dev, var, addr, cf->can_data[i]);
 
 	m_freem(m); /* XXX */
 	*mp = NULL;
@@ -723,8 +723,8 @@ sja_start_locked(struct ifnet *ifp)
 		else
 			ststus |= SJA_CMR_TR;
 
-		SJA_WRITE_1(sja, var, SJA_CMR, status);
-		status = SJA_READ_1(sja, var, SJA_SR);
+		SJA_WRITE_1(sja->sja_dev, var, SJA_CMR, status);
+		status = SJA_READ_1(sja->sja_dev, var, SJA_SR);
 	}						
 }
 
@@ -768,10 +768,10 @@ sja_init_locked(struct sja_softc *sja)
 	getmicrotime(&tv);
 	
 	for (; sja_timercmp(&tv0, &tv, 100);) {
-		SJA_WRITE_1(sja, var, SJA_MOD, SJA_MOD_RM);
+		SJA_WRITE_1(sja->sja_dev, var, SJA_MOD, SJA_MOD_RM);
 		DELAY(10);
 		
-		status = SJA_READ_1(sja, var, SJA_MOD);
+		status = SJA_READ_1(sja->sja_dev, var, SJA_MOD);
 		getmicrotime(&tv);
 	}
 	
@@ -780,27 +780,27 @@ sja_init_locked(struct sja_softc *sja)
 	
 		/* set clock divider */
 		var->sja_cdr |= SJA_CDR_PELICAN;
-		SJA_WRITE_1(sja, var, SJA_CDR, var->sja_cdr);
+		SJA_WRITE_1(sja->sja_dev, var, SJA_CDR, var->sja_cdr);
 
 		/* set acceptance filter (accept all) */
 		for (addr = SJA_AC0; addr < SJA_AM0; addr++)
-			SJA_WRITE_1(sja, var, addr, 0x00);
+			SJA_WRITE_1(sja->sja_dev, var, addr, 0x00);
 
 		for (addr = SJA_AM0; addr <= SJA_AM3; addr++)
-			SJA_WRITE_1(sja, var, addr, 0xff);
+			SJA_WRITE_1(sja->sja_dev, var, addr, 0xff);
 
 		/* set output control register */
 		var->sja_ocr |= SJA_OCR_MOD_NORM;
-		SJA_WRITE_1(sja, var, SJA_OCR, var->sja_ocr);
+		SJA_WRITE_1(sja->sja_dev, var, SJA_OCR, var->sja_ocr);
 
 		/* flush error counters and error code capture */
-		SJA_WRITE_1(sja, var, SJA_TEC, 0x00);
-		SJA_WRITE_1(sja, var, SJA_REC, 0x00);
+		SJA_WRITE_1(sja->sja_dev, var, SJA_TEC, 0x00);
+		SJA_WRITE_1(sja->sja_dev, var, SJA_REC, 0x00);
 	
-		status = SJA_READ_1(sja, var, SJA_ECC);
+		status = SJA_READ_1(sja->sja_dev, var, SJA_ECC);
 		
 		/* clear interrupt flags */
-		status = SJA_READ_1(sja, var, SJA_IR);
+		status = SJA_READ_1(sja->sja_dev, var, SJA_IR);
 
 		/* leave reset mode */
 		getmicrotime(&tv0);
@@ -816,10 +816,10 @@ sja_init_locked(struct sja_softc *sja)
 			if (csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK)
 				status |= SJA_MOD_STM;
 		
-			SJA_WRITE_1(sja, var, SJA_MOD, status);
+			SJA_WRITE_1(sja->sja_dev, var, SJA_MOD, status);
 			DELAY(10);
 		
-			status = SJA_READ_1(sja, var, SJA_MOD);
+			status = SJA_READ_1(sja->sja_dev, var, SJA_MOD);
 			getmicrotime(&tv);
 		}
 	}
@@ -832,7 +832,7 @@ sja_init_locked(struct sja_softc *sja)
 		if ((csc->csc_linkmodes & 0x10) == 0)
 			status &= ~SJA_IER_BE;
 #endif			
-		SJA_WRITE_1(sja, var, SJA_IER, status);
+		SJA_WRITE_1(sja->sja_dev, var, SJA_IER, status);
 			
 		csc->csc_flags = CAN_STATE_ERROR_ACTIVE;
 	
@@ -854,8 +854,8 @@ sja_stop(struct sja_softc *sja)
 
 	ifp->if_drv_flags |= ~(IFF_DRV_RUNNNING | IFF_DRV_OACTIVE);
 	
-	SJA_WRITE_1(sja, &sja->sja_var, SJA_IER, SJA_IER_OFF);
-	SJA_WRITE_1(sja, &sja->sja_var, SJA_CMR, SJA_CMR_AT);
+	SJA_WRITE_1(sja->sja_dev, &sja->sja_var, SJA_IER, SJA_IER_OFF);
+	SJA_WRITE_1(sja->sja_dev, &sja->sja_var, SJA_CMR, SJA_CMR_AT);
 }
 
 /*
@@ -911,7 +911,7 @@ sja_set_link_timings(struct can_ifsoftc *csc)
 	btr0 = ((clt->clt_brp - 1) & SJA_BTR0_BRP_MASK);
 	btr0 |= (((clt->clt_sjw - 1) & SJA_BTR0_CLT_MASK) << 6);
 	
-	SJA_WRITE_1(sja, var, SJA_BTR0, btr0);
+	SJA_WRITE_1(sja->sja_dev, var, SJA_BTR0, btr0);
 	
 	/* time segments and sampling, if any */
 	btr1 = ((clt->clt_prop + clt->clt_ps1 - 1) & 0x0f);
@@ -920,7 +920,7 @@ sja_set_link_timings(struct can_ifsoftc *csc)
 	if (csc->csc_linkmodes & CAN_CTRLMODE_3_SAMPLES)
 		btr1 |= SJA_BTR1_SAM;
 	
-	SJA_WRITE_1(sja, var, SJA_BTR1, btr1);
+	SJA_WRITE_1(sja->sja_dev, var, SJA_BTR1, btr1);
 
 	return (0);
 }
