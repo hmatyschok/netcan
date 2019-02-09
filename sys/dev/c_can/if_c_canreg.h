@@ -146,7 +146,7 @@
 #define C_CAN_IFX_CMMR_CONTROL		0x10
 #define C_CAN_IFX_CMMR_ARB		0x20
 #define C_CAN_IFX_CMMR_MASK		0x40
-#define C_CAN_IFX_CMMR_WR_RD		0x08	/* write / read (rw) */
+#define C_CAN_IFX_CMMR_WR_RD		0x08	/* write = 1 / read = 0 (rw) */
 
 /* initialize tx buffer */
 #define C_CAN_IFX_CMMR_TX_INIT \
