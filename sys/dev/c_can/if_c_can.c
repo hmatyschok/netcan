@@ -135,8 +135,8 @@ c_can_attach(device_t dev)
 	
 	can_ifattach(ifp, &c_can_set_link_timings, cc->cc_freq);
 	
-	IFQ_SET_MAXLEN(&ifp->if_snd, SJA_IFQ_MAXLEN);
-	ifp->if_snd.ifq_drv_maxlen = SJA_IFQ_MAXLEN;
+	IFQ_SET_MAXLEN(&ifp->if_snd, C_CAN_IFQ_MAXLEN);
+	ifp->if_snd.ifq_drv_maxlen = C_CAN_IFQ_MAXLEN;
 	IFQ_SET_READY(&ifp->if_snd);
 
 	/* initialize taskqueue(9) */
