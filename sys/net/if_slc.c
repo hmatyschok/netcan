@@ -225,6 +225,7 @@ slc_ifioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 
 	switch (cmd) {
 	case SIOCGDRVSPEC:
+	case SIOCSDRVSPEC:
 		switch (ifd->ifd_cmd) {
 		case TIOCGETD:
 			if (ifd->ifd_len != sizeof(dev_t))
@@ -236,7 +237,7 @@ slc_ifioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 			error = EINVAL;
 			break;
 		}
-		break;
+		break;			
 	case SIOCSIFFLAGS:
 		slc_ifinit(slc);
 		break;
@@ -771,7 +772,7 @@ slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 	ifp->if_start = slc_ifstart;
 	ifp->if_ioctl = slc_ifioctl;
 	
-	can_ifattach(ifp, NULL, 0);
+	can_ifattach(ifp, 0);
 
 	ifp->if_mtu = SLC_MTU;
 	

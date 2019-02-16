@@ -59,7 +59,7 @@ static void	sja_init(void *);
 static void	sja_init_locked(struct sja_softc *);
 static int	sja_reset(struct sja_softc *);
 static int	sja_normal_mode(struct sja_softc *);
-static int 	sja_set_link_timings(struct can_ifsoftc *);
+static int 	sja_set_link_timings(struct sja_softc *);
 
 /*
  * can(4) link timing capabilities 
@@ -241,7 +241,7 @@ sja_attach(device_t dev)
 	ifp->if_start = sja_start;
 	ifp->if_ioctl = sja_ioctl;
 	
-	can_ifattach(ifp, &sja_set_link_timings, var->sja_freq);
+	can_ifattach(ifp, var->sja_freq);
 	
 	IFQ_SET_MAXLEN(&ifp->if_snd, SJA_IFQ_MAXLEN);
 	ifp->if_snd.ifq_drv_maxlen = SJA_IFQ_MAXLEN;
@@ -867,13 +867,27 @@ sja_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
 	struct sja_softc *sja;
 	struct ifreq *ifr;
+	struct ifdrv *ifd;
 	int error;
 
 	sja = ifp->if_softc;
 	ifr = (struct ifreq *)data;
+	ifd = (struct ifdrv *)data;
 	error = 0;
 
 	switch (cmd) {
+	case SIOCGDRVSPEC:
+	case SIOCSDRVSPEC:
+		switch (ifd->ifd_cmd) {
+		case CANSLINKTIMINGS:
+			SJA_LOCK(sja);
+			error = sja_set_link_timings(sja);
+			SJA_UNLOCK(sja);
+			break;
+		default:
+			break;
+		}
+		break;
 	case SIOCSIFFLAGS:
 		SJA_LOCK(sja);
 		if (ifp->if_flags & IFF_UP) 
@@ -896,15 +910,15 @@ sja_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
  * Maps to generic software-context, called by can_set_netlink(9).
  */
 static int 
-sja_set_link_timings(struct can_ifsoftc *csc)
+sja_set_link_timings(struct sja_softc *sja)
 {
-	struct sja_softc *sja;
 	struct sja_data *var;
+	struct can_ifsoftc *csc;
 	struct can_link_timings *clt;
 	uint8_t btr0, btr1;
 	
-	sja = csc->csc_ifp->if_softc;
 	var = sja->sja_var;
+	csc = csc->csc_ifp->if_l2com;
 	clt = &csc->csc_timings;
 	
 	/* baud rate prescalar and synchroniziation jump */

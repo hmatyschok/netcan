@@ -142,6 +142,9 @@ canlo_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 	error = 0;
 
 	switch (cmd) {
+	case SIOCGDRVSPEC:
+	case SIOCSDRVSPEC:
+		break;	
 	case SIOCSIFFLAGS:
 	
 		if (ifp->if_flags & IFF_UP)
@@ -184,7 +187,7 @@ canlo_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 	ifp->if_ioctl = canlo_ioctl;
 	ifp->if_start = canlo_start;
 	
-	can_ifattach(ifp, NULL, 0);
+	can_ifattach(ifp, 0);
 
 	ifp->if_drv_flags |= IFF_DRV_RUNNING;
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;

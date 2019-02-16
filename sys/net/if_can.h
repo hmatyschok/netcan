@@ -307,7 +307,7 @@ struct can_link_timecaps {
 };
 #define CANGLINKTIMECAP	0 /* get struct can_link_timecaps */
 
-/* get/set timing parameters */
+/* [gs]et timing parameters */
 struct can_link_timings {
 	uint32_t	clt_brp;	/* prescaler value */
 	uint32_t	clt_prop;	/* Propagation segment in tq */
@@ -352,10 +352,6 @@ struct can_link_timings {
 #include <sys/queue.h>
 #include <sys/time.h>
 
-struct can_ifsoftc; 
-
-typedef int (*can_set_timings_t)(struct can_ifsoftc *csc);
-
 /*
  * Common structure for CAN interface drivers maps to if_l2com.
  * 
@@ -373,7 +369,6 @@ struct can_ifsoftc {
 	struct ifnet	*csc_ifp; 	/* our ifnet(9) interface */
 	struct can_link_timecaps	csc_timecaps; /* timing capabilities */
 	struct can_link_timings	csc_timings; /* operating timing values */
-	can_set_timings_t	csc_set_timings;
 	uint32_t	csc_freq;		/* CLK frequency */
 	uint32_t	csc_linkmodes;
 	uint32_t	csc_flags;
@@ -392,7 +387,7 @@ int 	can_hex2id(u_char *, struct can_frame *);
 void 	can_mbuf_tag_clean(struct mbuf *);
 
 /* interface-layer */
-void 	can_ifattach(struct ifnet *, can_set_timings_t, uint32_t);
+void 	can_ifattach(struct ifnet *, uint32_t);
 void 	can_ifdetach(struct ifnet *);
 void 	can_bpf_mtap(struct ifnet *, struct mbuf *);
 void 	can_ifinit_timings(struct can_ifsoftc *);

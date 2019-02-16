@@ -126,21 +126,10 @@ static MALLOC_DEFINE(M_IFCAN, "IFCAN", "CAN interface internals");
 static int 	can_restart(struct ifnet *);
 static int 	can_get_netlink(struct ifnet *, struct ifdrv *);
 static int 	can_set_netlink(struct ifnet *, struct ifdrv *);
-static int 	can_set_timings(struct can_ifsoftc *);
 
 static void 	can_ifinput(struct ifnet *, struct mbuf *);
 static int 	can_ifoutput(struct ifnet *, struct mbuf *, 
 	const struct sockaddr *, struct route *);
-
-/*
- * Maps to can_ifsoftc{}, if any.
- */
-static int 	
-can_set_timings(struct can_ifsoftc *csc)
-{
-
-	return (EOPNOTSUPP);
-}
 
 /*
  * Process a received can(4) frame, the packet is 
@@ -274,7 +263,7 @@ bad:
 }
 
 void
-can_ifattach(struct ifnet *ifp, can_set_timings_t cst, uint32_t freq)
+can_ifattach(struct ifnet *ifp, uint32_t freq)
 {
 	struct can_ifsoftc *csc;
 		
@@ -292,12 +281,6 @@ can_ifattach(struct ifnet *ifp, can_set_timings_t cst, uint32_t freq)
 	mtx_init(&csc->csc_mtx, "csc_mtx", NULL, MTX_DEF);
 	
 	csc->csc_freq = freq;
-	
-	if (cst == NULL) 
-		csc->csc_set_timings = can_set_timings;
-	else
-		csc->csc_set_timings = cst;
-	
 	
 	if_printf(ifp, "Index: %d\n", ifp->if_index);
 }
@@ -443,7 +426,7 @@ can_set_netlink(struct ifnet *ifp, struct ifdrv *ifd)
 			error = copyin(ifd->ifd_data, 
 				&csc->csc_timings, ifd->ifd_len);
 		
-		error = (*csc->csc_set_link_timings)(csc);
+		error = (*ifp->if_ioctl)(ifp, SIOCSDRVSPEC, ifd);
 		break;
 	case CANSLINKMODE:
 	case CANCLINKMODE: 	/* FALLTHROUGH */

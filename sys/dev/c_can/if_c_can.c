@@ -93,6 +93,7 @@ c_can_attach(device_t dev)
 {
 	struct c_can_softc *cc;
 	struct ifnet *ifp;
+	struct canif_softc *csc;
 	int rid, i, error;
 	uint16_t status;
 		
@@ -133,7 +134,7 @@ c_can_attach(device_t dev)
 	ifp->if_start = c_can_start;
 	ifp->if_ioctl = c_can_ioctl;
 	
-	can_ifattach(ifp, &c_can_set_link_timings, cc->cc_freq);
+	can_ifattach(ifp, cc->cc_freq);
 	
 	IFQ_SET_MAXLEN(&ifp->if_snd, C_CAN_IFQ_MAXLEN);
 	ifp->if_snd.ifq_drv_maxlen = C_CAN_IFQ_MAXLEN;
@@ -156,11 +157,29 @@ c_can_attach(device_t dev)
 		C_CAN_WRITE_2(cc->cc_dev, C_CAN_IF1_MCR, 0x0000);
 		
 		c_can_msg_obj_upd(cc, i, 
-			(C_CAN_IFX_CMMR_MO_INVAL|C_CAN_IFX_CMMR_WR_RD), 0);
+			(C_CAN_IFX_CMMR_MO_INVAL|C_CAN_IFX_CMMR_WR_RD), 
+				C_CAN_IF_RX);
 	}
-/*
- * ...
- */
+	
+	for (i = 0; i < 16; i++) {
+		C_CAN_WRITE_4(cc->cc_dev, C_CAN_IF1_MASK0, 0x20000000);
+		C_CAN_WRITE_4(cc->cc_dev, C_CAN_IF1_ID0, C_CAN_IFX_ARB_MSG_VAL);
+		
+		C_CAN_WRITE_2(cc->cc_dev, C_CAN_IF1_MCR, C_CAN_IFX_MCR_RX); 
+	
+		c_can_msg_obj_upd(cc, i, C_CAN_IFX_CMMR_RX_INIT, C_CAN_IF_RX);
+	}	
+
+	/* set-up status register */
+	C_CAN_WRITE_2(cc->cc_dev, C_CAN_SR, C_CAN_SR_UNUSED_ERR);
+
+	error = c_can_set_link_timings(cc);
+
+	if (error != 0) {
+		device_printf(dev, "couldn't set up Bit Timing Register\n");
+		goto fail1;
+	}
+	
 
 	/* XXX: trigger led(4)s ... */
 	
@@ -233,7 +252,7 @@ c_can_msg_obj_upd(struct c_can_softc *cc, int n, int cmd, int ifx)
 	uint16_t status;
 
 	port = C_CAN_IF1_CMR + ifx * (C_CAN_IF2_CMR - C_CAN_IF1_CMR);
-	val = (cmd << 16) | n;
+	val = (cmd << 0x10) | n;
 
 	C_CAN_WRITE_4(cc->cc_dev, port, val);
 	
@@ -246,11 +265,183 @@ c_can_msg_obj_upd(struct c_can_softc *cc, int n, int cmd, int ifx)
 		DELAY(1);
 	}
 }
+/*
+ * ...
+ */
+ 
+static int
+c_can_intr(void *arg)
+{
+	struct c_can_softc *cc;
+	uint16_t status;
+	
+	cc = (struct c_can_softc *)arg;
 
+	status = C_CAN_READ_2(cc->cc_dev, C_CAN_IR);
+	if (status == 0)
+		return (FILTER_STRAY);
+
+	/* disable interrupts */
+	status = C_CAN_READ_2(cc->cc_dev, C_CAN_CR);
+	status &= ~C_CAN_CR_INTR_MASK
+
+	C_CAN_WRITE_2(cc->cc_dev, C_CAN_CR, status);
+
+	taskqueue_enqueue(taskqueue_fast, &cc->cc_inttr_task);
+	
+	return (FILTER_HANDLED);
+}
+
+static void
+c_can_intr_task(void *arg, int npending)
+{
+	struct c_can_softc *cc;	
+	uint16_t status;
+	
+	cc = (struct c_can_softc *)arg; 
+	
+	status = C_CAN_READ_2(cc->cc_dev, C_CAN_SR);
+	C_CAN_WRITE_2(cc->cc_dev, C_CAN_SR, C_CAN_SR_UNUSED_ERR);
+	
+	/*
+	 * ...
+	 */
+	
+} 
+ 
 /*
  * ...
  */
 
+static int
+c_can_cr_wait(struct c_can_softc *cc, uint16_t control, int iswitch)
+{
+	struct timeval tv0, tv;
+	uint16_t status, eval;
+	int error;
+	
+	getmicrotime(&tv0);
+	getmicrotime(&tv);
+
+	C_CAN_WRITE_2(cc->cc_dev, C_CAN_CR, control);	
+	
+	status = C_CAN_READ_2(cc->cc_dev, C_CAN_CR);
+	eval = (iswitch != 0) ? C_CAN_CR_INIT : 0;
+	
+	for (error = EIO; c_can_timercmp(&tv0, &tv, 10000);) {
+		DELAY(10);
+		
+		if ((status & C_CAN_CR_INIT) == eval) {
+			error = 0;
+			break;
+		}
+		status = C_CAN_READ_2(cc->cc_dev, C_CAN_CR);
+		getmicrotime(&tv);
+	}
+	
+	return (error);
+}
+
+static int 
+c_can_set_link_timings(struct c_can_softc *cc)
+{
+	struct can_ifsoftc *csc
+	struct can_link_timings *clt;
+	uint16_t btr, brpe, status;
+	int error;
+	
+	csc = cc->cc_ifp->if_l2com;
+	clt = &csc->csc_timings;
+	
+	btr = ((clt->clt_brp - 1) & C_CAN_BTR_BRP_MASK);
+	btr |= ((clt->clt_sjw - 1) << 6);
+	btr |= ((clt->clt_prop + clt->clt_ps1 - 1) << 8);
+	btr |= ((clt->clt_ps2 - 1) << 12);
+	
+	brpe = (((clt->clt_brp - 1) & C_CAN_BTR_BRP_MASK) >> 6);
+	
+	status = C_CAN_READ_2(cc->cc_dev, C_CAN_CR);
+	status &= ~C_CAN_CR_INIT;
+
+	error = c_can_cr_wait(cc, (C_CAN_CR_CCE|C_CAN_CR_INIT), 1);
+
+	if (error == 0) {
+		C_CAN_WRITE_2(cc->cc_dev, C_CAN_BTR, btr);
+		C_CAN_WRITE_2(cc->cc_dev, C_CAN_BRPER, brpe);
+	
+		error = c_can_cr_wait(cc, status, 0);
+	}
+	return (error);
+}	
+	
+/*
+ * ...
+ */
+ 
+static void 
+c_can_stop(struct c_can_softc *cc)
+{
+	struct ifnet *ifp;
+	uint16_t status;
+	
+	C_CAN_LOCK_ASSERT(cc);
+	ifp = cc->cc_ifp;
+
+	ifp->if_drv_flags |= ~(IFF_DRV_RUNNNING | IFF_DRV_OACTIVE);
+	
+	status = C_CAN_READ_2(cc->cc_dev, C_CAN_CR);
+	status &= ~C_CAN_CR_INTR_MASK
+
+	C_CAN_WRITE_2(cc->cc_dev, C_CAN_CR, status);
+}
+	
+/*
+ * ...
+ */
+
+static int
+c_can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
+{
+	struct c_can_softc *cc;
+	struct ifreq *ifr;
+	struct ifdrv *ifd;
+	int error;
+
+	sja = ifp->if_softc;
+	ifr = (struct ifreq *)data;
+	ifd = (struct ifdrv *)data;
+	error = 0;
+
+	switch (cmd) {
+	case SIOCGDRVSPEC:
+	case SIOCSDRVSPEC:
+		switch (ifd->ifd_cmd) {
+		case CANSLINKTIMINGS:
+			C_CAN_LOCK(cc);
+			error = c_can_set_link_timings(sja);
+			C_CAN_UNLOCK(cc);
+			break;
+		default:
+			break;
+		}
+		break;
+	case SIOCSIFFLAGS:
+		C_CAN_LOCK(cc);
+		if (ifp->if_flags & IFF_UP) 
+			c_can_init_locked(cc);
+		else {
+			if (ifp->if_drv_flags & IFF_DRV_RUNNING)
+				c_can_stop(cc);
+		}
+		C_CAN_UNLOCK(cc);
+		break;
+	default:
+		error = can_ioctl(ifp, cmd, data);
+		break;
+	}
+
+	return (error);
+}
 
 /*
  * Common I/O subr.

@@ -99,17 +99,34 @@
  */ 
 #define C_CAN_SR_LEC_MASK	0x0007	/* lost error code mask (rw) */
 
+#define C_CAN_SR_NO_ERR		0x00
+#define C_CAN_SR_STUFF_ERR      0x01
+#define C_CAN_SR_FORM_ERR       0x02
+#define C_CAN_SR_ACK_ERR        0x03
+#define C_CAN_SR_BIT1_ERR       0x04
+#define C_CAN_SR_BIT0_ERR       0x05
+#define C_CAN_SR_CRC_ERR        0x06
+#define C_CAN_SR_UNUSED_ERR     0x07
+
 #define C_CAN_SR_LEC(reg) \
 	((reg) & C_CAN_SR_LEC_MASK)
 
-#define C_CAN_SR_NO_ERR(reg) 		(C_CAN_SR_LEC(reg) == 0x00) 	
-#define C_CAN_SR_STUFF_ERR(reg)		(C_CAN_SR_LEC(reg) == 0x01)
-#define C_CAN_SR_FORM_ERR(reg)		(C_CAN_SR_LEC(reg) == 0x02)
-#define C_CAN_SR_ACK_ERR(reg) 		(C_CAN_SR_LEC(reg) == 0x03)
-#define C_CAN_SR_BIT1_ERR(reg)		(C_CAN_SR_LEC(reg) == 0x04)
-#define C_CAN_SR_BIT0_ERR(reg)		(C_CAN_SR_LEC(reg) == 0x05)
-#define C_CAN_SR_CRC_ERR(reg)		(C_CAN_SR_LEC(reg) == 0x06)
-#define C_CAN_SR_UNUSED_ERR(reg)	(C_CAN_SR_LEC(reg) == 0x07)
+#define IS_C_CAN_SR_NO_ERR(reg) \
+	(C_CAN_SR_LEC(reg) == C_CAN_SR_NO_ERR) 	
+#define IS_C_CAN_SR_STUFF_ERR(reg) \
+	(C_CAN_SR_LEC(reg) == C_CAN_SR_STUFF_ERR)
+#define IS_C_CAN_SR_FORM_ERR(reg) \
+	(C_CAN_SR_LEC(reg) == C_CAN_SR_FORM_ERR)
+#define IS_C_CAN_SR_ACK_ERR(reg) \
+	(C_CAN_SR_LEC(reg) == C_CAN_SR_ACK_ERR)
+#define IS_C_CAN_SR_BIT1_ERR(reg) \
+	(C_CAN_SR_LEC(reg) == C_CAN_SR_BIT1_ERR)
+#define IS_C_CAN_SR_BIT0_ERR(reg) \
+	(C_CAN_SR_LEC(reg) == C_CAN_SR_BIT0_ERR)
+#define IS_C_CAN_SR_CRC_ERR(reg) \
+	(C_CAN_SR_LEC(reg) == C_CAN_SR_CRC_ERR)
+#define IS_C_CAN_SR_UNUSED_ERR(reg) \
+	(C_CAN_SR_LEC(reg) == C_CAN_SR_UNUSED_ERR)
 
 #define C_CAN_SR_TX_OK		0x0008	/* tx'd message successfully (rw) */
 #define C_CAN_SR_RX_OK		0x0010	/* rx'd message successfully (rw) */
@@ -124,9 +141,34 @@
 #define C_CAN_ECR_REC_MASK		0xef00		/* rx error counter (r) */
 #define C_CAN_ECR_RR		0x8000		/* rx error passive (r) */
 
+/* 
+ * C_CAN, 3.2.4 Bit Timing Register [BTR] 
+ */ 
+#define C_CAN_BTR_BRP_MASK		0x003f
+#define C_CAN_BTR_SJW_MASK		0x00c0
+#define C_CAN_BTR_TSEG1_MASK		0x0f00
+#define C_CAN_BTR_TSEG2_MASK		0x7000
+
+#define C_CAN_BTR_BRP(reg) \	/* baud rate prescalar (rw) */
+	((reg) & C_CAN_BTR_BRP_MASK)
+#define C_CAN_BTR_SJW(reg) \	/* sync jump width (rw) */
+	(((reg) & C_CAN_BTR_SJW_MASK) >> 6)
+#define C_CAN_BTR_TSEG1(reg) \	/* phase segment 1 (rw) */
+	(((reg) & C_CAN_BTR_TSEG1_MASK) >> 8)
+#define C_CAN_BTR_TSEG2(reg) \	/* phase segment 2 (rw) */
+	(((reg) & C_CAN_BTR_TSEG2_MASK) >> 12)
+
+/* 
+ * C_CAN, 3.2.6 BRP Extension Register [BRPER] 
+ */ 
+#define C_CAN_BRPER_BRPE_MASK		0x000f
+
 /*
  * ...
  */
+
+#define C_CAN_IFX_RX		0 
+#define C_CAN_IFX_TX		1 
 
 #define C_CAN_IFX_CMR_MESG_NUM_MASK		0x002f	 
 
@@ -186,6 +228,21 @@
 #define C_CAN_IFX_MCR_MSG_LST		0x0400	/* message lost (rw) */
 #define C_CAN_IFX_MCR_NEW_DAT		0x0800	/* new data (rw) */
 
+
+#define C_CAN_IFX_MCR_RX \
+	(C_CAN_IFX_MCR_RX_IE|C_CAN_IFX_MCR_UMASK)
+#define C_CAN_IFX_MCR_RX_EOB \
+	(C_CAN_IFX_MCR_RX|C_CAN_IFX_MCR_EOB)
+
+#define C_CAN_IFX_MCR_TX \
+	(C_CAN_IFX_MCR_TX_IE|C_CAN_IFX_MCR_EOB)
+
+/*
+ * ...
+ */
+#define C_CAN_IFX_ARB_TX		0x20000000
+#define C_CAN_IFX_ARB_MSG_XTD		0x40000000
+#define C_CAN_IFX_ARB_MSG_VAL		0x80000000
 		
 /*
  * Work in progress..
@@ -198,6 +255,7 @@ struct c_can_softc {
 	struct task		cc_intr_task;
 	void	*cc_intr;
 	uint32_t	cc_freq;
+	uint16_t	cc_status;
 	struct mtx	cc_mtx;
 };
 #define	C_CAN_LOCK(cc)		mtx_lock(&(cc)->cc_mtx)
