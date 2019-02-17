@@ -394,8 +394,8 @@ c_can_rxeof(struct c_can_softc *cc)
 		addr = C_CAN_IF1_DATA0;
 		maddr = addr + cf->can_dlc;
 	
-		for (i = 0; addr < maddr; addr++, i++) 
-			cf->can_data[i] = C_CAN_READ_1(cc->cc_dev, addr);
+		for (k = 0; addr < maddr; addr++, k++) 
+			cf->can_data[k] = C_CAN_READ_1(cc->cc_dev, addr);
 done:			
 		m->m_len = m->m_pkthdr.len = sizeof(*cf);
 		m->m_pkthdr.rcvif = ifp;
