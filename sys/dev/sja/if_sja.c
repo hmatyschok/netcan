@@ -336,7 +336,6 @@ sja_rxeof(struct sja_softc *sja)
 	struct can_frame *cf;
 	uint8_t addr;
 	uint8_t status;
-	uint16_t maddr;
 	int i;
 	
 	SJA_LOCK_ASSERT(sja);
@@ -365,17 +364,14 @@ again:
 		addr = SJA_DATA_SFF;
 	}	
 
-	/* map dlc */
-	cf->can_dlc = status & SJA_FI_DLC;
-
-	/* map data region */
+	/* map dlc and data region */
 	if (status & SJA_FI_RTR) {
 		cf->can_id |= CAN_RTR_FLAG;
-		maddr = addr = 0;
-	} else
-		maddr = addr + cf->can_dlc;
+		addr = cf->can_dlc = 0;
+	} else 
+		cf->can_dlc = status & SJA_FI_DLC;
 	
-	for (i = 0; addr < maddr; addr++, i++) 
+	for (i = 0; i < cf->can_dlc; addr++, i++) 
 		cf->can_data[i] = SJA_READ_1(sja->sja_dev, var, addr);
 
 	/* pass can(4) frame to layer above */

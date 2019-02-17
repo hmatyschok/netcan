@@ -327,7 +327,7 @@ c_can_rxeof(struct c_can_softc *cc)
 	struct mbuf *m;
 	uint16_t rxd, i, j, mask, status, k;
 	uint32_t arb;
-	uint8_t addr, maddr;
+	uint8_t addr;
 	
 	C_CAN_LOCK_ASSERT(cc);
 	ifp = cc->cc_ifp;
@@ -384,19 +384,16 @@ c_can_rxeof(struct c_can_softc *cc)
 			} else 
 				cf->can_id |= ((arb >> 18) & CAN_SFF_MASK);
 		
-			/* map dlc */
-			cf->can_dlc = status & C_CAN_IFX_MCR_DLC_MASK;
-		
-			/* map data region */
+			/* map dlc and data region */
 			if (arb & C_CAN_IFX_ARBX_TX) {
 				cf->can_id |= CAN_RTR_FLAG;
-				maddr = addr = 0;
+				cf->can_dlc = addr = 0;
 			} else {
+				cf->can_dlc = status & C_CAN_IFX_MCR_DLC_MASK;
 				addr = C_CAN_IF1_DATA0;
-				maddr = addr + cf->can_dlc;
 			}
 			
-			for (k = 0; addr < maddr; addr++, k++) 
+			for (k = 0; k < cf->can_dlc; addr++, k++) 
 				cf->can_data[k] = C_CAN_READ_1(cc->cc_dev, addr);
 		
 			/* finalize mesg. object */
