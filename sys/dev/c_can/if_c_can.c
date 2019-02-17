@@ -398,6 +398,9 @@ c_can_rxeof(struct c_can_softc *cc)
 			
 			for (k = 0; addr < maddr; addr++, k++) 
 				cf->can_data[k] = C_CAN_READ_1(cc->cc_dev, addr);
+		
+			/* finalize mesg. object */
+			c_can_msg_obj_upd(cc, j, C_CAN_IFX_CMMR_NEW_DAT, C_CAN_IF_RX);
 		}
 		
 		/* pass can(4) frame to upper layer */
@@ -406,11 +409,7 @@ c_can_rxeof(struct c_can_softc *cc)
 
 		C_CAN_UNLOCK(cc);
 		(*ifp->if_input)(ifp, m);
-		C_CAN_LOCK(cc);	
-		
-		/* finalize, if any */
-		if ((status & C_CAN_IFX_MCR_MSG_LST) == 0)
-			c_can_msg_obj_upd(cc, j, C_CAN_IFX_CMMR_NEW_DAT, C_CAN_IF_RX);	
+		C_CAN_LOCK(cc);		
 	}
 }
 
