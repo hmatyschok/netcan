@@ -378,10 +378,10 @@ again:
 	for (i = 0; addr < maddr; addr++, i++) 
 		cf->can_data[i] = SJA_READ_1(sja->sja_dev, var, addr);
 
+	/* pass can(4) frame to layer above */
 	m->m_len = m->m_pkthdr.len = sizeof(*cf);
 	m->m_pkthdr.rcvif = ifp;
-	
-	/* pass can(4) frame to layer above */
+
 	SJA_UNLOCK(sja);
  	(*ifp->if_input)(ifp, m);
 	SJA_LOCK(sja);
@@ -581,10 +581,10 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	cf->can_data[CAN_ERR_DF_RX] = SJA_READ_1(sja->sja_dev, var, SJA_REC);
 	cf->can_data[CAN_ERR_DF_TX] = SJA_READ_1(sja->sja_dev, var, SJA_TEC);
 
+	/* pass can(4) frame to upper layer */
 	m->m_len = m->m_pkthdr.len = sizeof(*cf);
 	m->m_pkthdr.rcvif = ifp;
 
-	/* pass can(4) frame to upper layer */
 	SJA_UNLOCK(sja);
 	(*ifp->if_input)(ifp, m);
 	SJA_LOCK(sja);

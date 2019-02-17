@@ -134,6 +134,9 @@
 #define C_CAN_SR_EW		0x0040	/* error warning status (r) */
 #define C_CAN_SR_BO		0x0080	/* bus-off status (r) */
 
+#define C_CAN_SR_ERR_MASK \
+	(C_CAN_SR_PE|C_CAN_SR_EW|C_CAN_SR_BO)
+
 /* 
  * C_CAN, 3.2.3 Error Counter [ECR] 
  */ 

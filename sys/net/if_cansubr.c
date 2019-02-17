@@ -330,10 +330,10 @@ can_restart(struct ifnet *ifp)
 	cf = mtod(m, struct can_frame *);
 	cf->can_id |= (CAN_ERR_FLAG | CAN_ERR_RESTARTED);
 
+	/* pass can(4) frame to layer above */
 	m->m_len = m->m_pkthdr.len = sizeof(*cf);
 	m->m_pkthdr.rcvif = ifp;
 	
-	/* pass can(4) frame to layer above */
  	(*ifp->if_input)(ifp, m);
  	
 done:

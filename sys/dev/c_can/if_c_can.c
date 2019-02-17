@@ -303,6 +303,9 @@ c_can_intr_task(void *arg, int npending)
 	status = C_CAN_READ_2(cc->cc_dev, C_CAN_SR);
 	C_CAN_WRITE_2(cc->cc_dev, C_CAN_SR, C_CAN_SR_UNUSED_ERR);
 	
+	if (status & C_CAN_SR_ERR_MASK)
+		c_can_error(cc, status);
+	
 	/*
 	 * ...
 	 */
@@ -375,7 +378,7 @@ c_can_rxeof(struct c_can_softc *cc)
 			arb = C_CAN_READ_4(cc->cc_dev, C_CAN_IF1_ARB0);
 		
 			if (arb &C_CAN_IFX_ARBX_MSG_XTD) {
-				cf->can_id = CAN_EFF_FLAG;
+				cf->can_id |= CAN_EFF_FLAG;
 				cf->can_id |= (arb & CAN_EFF_MASK);
 			} else 
 				cf->can_id |= ((arb >> 18) & CAN_SFF_MASK);
@@ -395,14 +398,16 @@ c_can_rxeof(struct c_can_softc *cc)
 			for (k = 0; addr < maddr; addr++, k++) 
 				cf->can_data[k] = C_CAN_READ_1(cc->cc_dev, addr);
 		}
+		
+		/* pass can(4) frame to upper layer */
 		m->m_len = m->m_pkthdr.len = sizeof(*cf);
 		m->m_pkthdr.rcvif = ifp;
 
-		/* pass can(4) frame to upper layer */
 		C_CAN_UNLOCK(cc);
 		(*ifp->if_input)(ifp, m);
 		C_CAN_LOCK(cc);	
 		
+		/* finalize, if any */
 		if ((status & C_CAN_IFX_MCR_MSG_LST) == 0)
 			c_can_msg_obj_upd(cc, j, C_CAN_IFX_CMMR_NEW_DAT, C_CAN_IF_RX);	
 	}
