@@ -599,7 +599,6 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 	struct can_frame *cf;
 	uint8_t status;
 	uint8_t addr;
-	uint16_t maddr;
 	int i, error = 0;
 	
 	SJA_LOCK_ASSERT(sja);
@@ -648,9 +647,7 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 		addr = SJA_DATA_SFF;
 	}
 	
-	maddr = addr + cf->can_dlc;
-	
-	for (i = 0; addr < maddr; addr++, i++) 
+	for (i = 0; i < cf->can_dlc; addr++, i++) 
 		SJA_WRITE_1(sja->sja_dev, var, addr, cf->can_data[i]);
 
 	m_freem(m); /* XXX */

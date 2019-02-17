@@ -410,6 +410,13 @@ c_can_rxeof(struct c_can_softc *cc)
 	}
 }
 
+static void
+c_can_txeof(struct c_can_softc *cc)
+{
+	
+	
+	
+}
  
 /*
  * ...
