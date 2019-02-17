@@ -150,7 +150,7 @@ c_can_attach(device_t dev)
 	C_CAN_WRITE_2(cc->cc_dev, C_CAN_CR, status);
 
 	/* configure message objects */
-	for (i = 0; i < 32; i++) {	/* XXX */
+	for (i = 1; i < 33; i++) {	/* XXX */
 		C_CAN_WRITE_2(cc->cc_dev, C_CAN_IF1_ID0, 0x0000);
 		C_CAN_WRITE_2(cc->cc_dev, C_CAN_IF1_ID1, 0x0000);
 		
@@ -158,16 +158,16 @@ c_can_attach(device_t dev)
 		
 		c_can_msg_obj_upd(cc, i, 
 			(C_CAN_IFX_CMMR_MO_INVAL | C_CAN_IFX_CMMR_WR_RD), 
-				C_CAN_IF_RX);
+				C_CAN_IFX_RX);
 	}
 	
-	for (i = 0; i < 16; i++) {	/* XXX */
+	for (i = 1; i < 17; i++) {	/* XXX */
 		C_CAN_WRITE_4(cc->cc_dev, C_CAN_IF1_MASK0, 0x20000000);
 		C_CAN_WRITE_4(cc->cc_dev, C_CAN_IF1_ID0, C_CAN_IFX_ARB_MSG_VAL);
 		
 		C_CAN_WRITE_2(cc->cc_dev, C_CAN_IF1_MCR, C_CAN_IFX_MCR_RX); 
 	
-		c_can_msg_obj_upd(cc, i, C_CAN_IFX_CMMR_RX_INIT, C_CAN_IF_RX);
+		c_can_msg_obj_upd(cc, i, C_CAN_IFX_CMMR_RX_INIT, C_CAN_IFX_RX);
 	}	
 
 	/* set-up status register */
@@ -336,6 +336,7 @@ c_can_rxeof(struct c_can_softc *cc)
 	
 	for (i = 0, j = 1; rxd != 0 || i < 16; i++, j++) {	/* XXX */
 		
+		/* fetch mesg. object, if any */
 		mask = (1 << i);
 
 		if ((rxd & mask) == 0) 
