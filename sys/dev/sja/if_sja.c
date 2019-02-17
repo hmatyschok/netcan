@@ -371,7 +371,7 @@ again:
 	/* map data region */
 	if (status & SJA_FI_RTR) {
 		cf->can_id |= CAN_RTR_FLAG;
-		maddr = 0;
+		maddr = addr = 0;
 	} else
 		maddr = addr + cf->can_dlc;
 	

@@ -369,34 +369,32 @@ c_can_rxeof(struct c_can_softc *cc)
 
 			cf->can_id |= (CAN_ERR_FLAG|CAN_ERR_DEV);
 			cf->can_data[CAN_ERR_DF_DEV] = CAN_ERR_DEV_RX_OVF;
+		} else {
+		
+			/* determine frame type and map id */
+			arb = C_CAN_READ_4(cc->cc_dev, C_CAN_IF1_ARB0);
+		
+			if (arb &C_CAN_IFX_ARBX_MSG_XTD) {
+				cf->can_id = CAN_EFF_FLAG;
+				cf->can_id |= (arb & CAN_EFF_MASK);
+			} else 
+				cf->can_id |= ((arb >> 18) & CAN_SFF_MASK);
+		
+			/* map dlc */
+			cf->can_dlc = status & C_CAN_IFX_MCR_DLC_MASK;
+		
+			/* map data region */
+			if (arb & C_CAN_IFX_ARBX_TX) {
+				cf->can_id |= CAN_RTR_FLAG;
+				maddr = addr = 0;
+			} else {
+				addr = C_CAN_IF1_DATA0;
+				maddr = addr + cf->can_dlc;
+			}
 			
-			goto done;
+			for (k = 0; addr < maddr; addr++, k++) 
+				cf->can_data[k] = C_CAN_READ_1(cc->cc_dev, addr);
 		}
-		
-		/* determine frame type and map id */
-		arb = C_CAN_READ_4(cc->cc_dev, C_CAN_IF1_ARB0);
-		
-		if (arb &C_CAN_IFX_ARBX_MSG_XTD) {
-			cf->can_id = CAN_EFF_FLAG;
-			cf->can_id |= (arb & CAN_EFF_MASK);
-		} else 
-			cf->can_id |= ((arb >> 18) & CAN_SFF_MASK);
-		
-		if (arb & C_CAN_IFX_ARBX_TX) {
-			cf->can_id |= CAN_RTR_FLAG;
-			goto done;
-		}
-		
-		/* map dlc */
-		cf->can_dlc = status & C_CAN_IFX_MCR_DLC_MASK;
-		
-		/* map data region */
-		addr = C_CAN_IF1_DATA0;
-		maddr = addr + cf->can_dlc;
-	
-		for (k = 0; addr < maddr; addr++, k++) 
-			cf->can_data[k] = C_CAN_READ_1(cc->cc_dev, addr);
-done:			
 		m->m_len = m->m_pkthdr.len = sizeof(*cf);
 		m->m_pkthdr.rcvif = ifp;
 
