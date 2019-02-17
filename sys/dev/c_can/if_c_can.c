@@ -150,18 +150,18 @@ c_can_attach(device_t dev)
 	C_CAN_WRITE_2(cc->cc_dev, C_CAN_CR, status);
 
 	/* configure message objects */
-	for (i = 0; i < 32; i++) {
+	for (i = 0; i < 32; i++) {	/* XXX */
 		C_CAN_WRITE_2(cc->cc_dev, C_CAN_IF1_ID0, 0x0000);
 		C_CAN_WRITE_2(cc->cc_dev, C_CAN_IF1_ID1, 0x0000);
 		
 		C_CAN_WRITE_2(cc->cc_dev, C_CAN_IF1_MCR, 0x0000);
 		
 		c_can_msg_obj_upd(cc, i, 
-			(C_CAN_IFX_CMMR_MO_INVAL|C_CAN_IFX_CMMR_WR_RD), 
+			(C_CAN_IFX_CMMR_MO_INVAL | C_CAN_IFX_CMMR_WR_RD), 
 				C_CAN_IF_RX);
 	}
 	
-	for (i = 0; i < 16; i++) {
+	for (i = 0; i < 16; i++) {	/* XXX */
 		C_CAN_WRITE_4(cc->cc_dev, C_CAN_IF1_MASK0, 0x20000000);
 		C_CAN_WRITE_4(cc->cc_dev, C_CAN_IF1_ID0, C_CAN_IFX_ARB_MSG_VAL);
 		
@@ -256,7 +256,7 @@ c_can_msg_obj_upd(struct c_can_softc *cc, int n, int cmd, int ifx)
 
 	C_CAN_WRITE_4(cc->cc_dev, port, val);
 	
-	for (i = 0; i < 6; i++) {
+	for (i = 0; i < 6; i++) {	/* XXX */
 		status = C_CAN_READ_2(cc->cc_dev, port);
 		
 		if ((status & C_CAN_IFX_CMR_BUSY) == 0)
@@ -307,7 +307,109 @@ c_can_intr_task(void *arg, int npending)
 	 * ...
 	 */
 	
+	c_can_rxeof(cc);
+	
+	c_can_txeof(cc); 
+	 
+	/* enable interrupts */
+	status = C_CAN_READ_2(cc->cc_dev, C_CAN_CR);
+	status |= C_CAN_CR_INTR_MASK;
+	C_CAN_WRITE_2(cc->cc_dev, C_CAN_CR, status);
 } 
+
+static void
+c_can_rxeof(struct c_can_softc *cc)
+{
+	struct ifnet *ifp;
+	struct mbuf *m;
+	uint16_t rxd, i, j, mask, status, k;
+	uint32_t arb;
+	uint8_t addr, maddr;
+	
+	C_CAN_LOCK_ASSERT(cc);
+	ifp = cc->cc_ifp;
+	
+	rxd = C_CAN_READ_2(cc->cc_dev, C_CAN_NEW_DAT0);
+	
+	for (i = 0, j = 1; rxd != 0 || i < 16; i++, j++) {	/* XXX */
+		
+		mask = (1 << i);
+
+		if ((rxd & mask) == 0) 
+			continue;
+		
+		rxd &= ~mask;			
+		
+		c_can_msg_obj_upd(cc, j, C_CAN_IFX_CMMR_RX_LOW, C_CAN_IFX_RX);
+		
+		status = C_CAN_READ_2(cc->cc_dev, C_CAN_IF1_MCR);
+		
+		if ((status & IF_MCONT_NEWDAT) == 0)
+			continue;
+		
+		if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL)) {
+			if_inc_counter(ifp, IFCOUNTER_IQDROPS, 1);
+			continue;
+		}
+	 
+		(void)memset(mtod(m, caddr_t), 0, MHLEN);
+		cf = mtod(m, struct can_frame *);
+		
+		if (status & C_CAN_IFX_MCR_MSG_LST) {
+			if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
+			
+			status &= ~(C_CAN_IFX_MCR_INT_PND
+				| C_CAN_IFX_MCR_MSG_LST
+				| C_CAN_IFX_MCR_NEW_DAT);
+			C_CAN_WRITE_2(cc->cc_dev, C_CAN_IF1_MCR, status);
+			
+			c_can_obj_upd(cc, j, 
+				(C_CAN_IFX_CMMR_CONTROL | C_CAN_IFX_CMMR_WR_RD), 
+					C_CAN_IF_RX);
+
+			cf->can_id |= (CAN_ERR_FLAG|CAN_ERR_DEV);
+			cf->can_data[CAN_ERR_DF_DEV] = CAN_ERR_DEV_RX_OVF;
+			
+			goto done;
+		}
+		
+		/* determine frame type and map id */
+		arb = C_CAN_READ_4(cc->cc_dev, C_CAN_IF1_ARB0);
+		
+		if (arb &C_CAN_IFX_ARBX_MSG_XTD) {
+			cf->can_id = CAN_EFF_FLAG;
+			cf->can_id |= (arb & CAN_EFF_MASK);
+		} else 
+			cf->can_id |= ((arb >> 18) & CAN_SFF_MASK);
+		
+		if (arb & C_CAN_IFX_ARBX_TX) {
+			cf->can_id |= CAN_RTR_FLAG;
+			goto done;
+		}
+		
+		/* map dlc */
+		cf->can_dlc = status & C_CAN_IFX_MCR_DLC_MASK;
+		
+		/* map data region */
+		addr = C_CAN_IF1_DATA0;
+		maddr = addr + cf->can_dlc;
+	
+		for (i = 0; addr < maddr; addr++, i++) 
+			cf->can_data[i] = C_CAN_READ_1(cc->cc_dev, addr);
+done:			
+		m->m_len = m->m_pkthdr.len = sizeof(*cf);
+		m->m_pkthdr.rcvif = ifp;
+
+		/* pass can(4) frame to upper layer */
+		C_CAN_UNLOCK(cc);
+		(*ifp->if_input)(ifp, m);
+		C_CAN_LOCK(cc);	
+		
+		if ((status & C_CAN_IFX_MCR_MSG_LST) == 0)
+			c_can_msg_obj_upd(cc, j, C_CAN_IFX_CMMR_NEW_DAT, C_CAN_IF_RX);	
+	}
+}
+
  
 /*
  * ...
@@ -418,7 +520,7 @@ c_can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 		switch (ifd->ifd_cmd) {
 		case CANSLINKTIMINGS:
 			C_CAN_LOCK(cc);
-			error = c_can_set_link_timings(sja);
+			error = c_can_set_link_timings(cc);
 			C_CAN_UNLOCK(cc);
 			break;
 		default:
@@ -446,33 +548,46 @@ c_can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 /*
  * Common I/O subr.
  */
+static uint8_t
+c_can_read_1(device_t dev, int port)
+{
+	
+	return (C_CAN_READ_1(device_get_parent(dev), port));	
+}
 
 static uint16_t
 c_can_read_2(device_t dev, int port)
 {
 	
-	return (C_CAN_READ_2(device_get_parent(dev), var, port));	
+	return (C_CAN_READ_2(device_get_parent(dev), port));	
 }
 
 static uint32_t
 c_can_read_4(device_t dev, int port)
 {
 	
-	return (C_CAN_READ_4(device_get_parent(dev), var, port));	
+	return (C_CAN_READ_4(device_get_parent(dev), port));	
+}
+
+static void
+c_can_write_1(device_t dev, int port, uint8_t val)
+{
+	
+	C_CAN_WRITE_1(device_get_parent(dev), port, val);	
 }
 
 static void
 c_can_write_2(device_t dev, int port, uint16_t val)
 {
 	
-	C_CAN_WRITE_2(device_get_parent(dev), port, val));	
+	C_CAN_WRITE_2(device_get_parent(dev), port, val);	
 }
 
 static void
 c_can_write_4(device_t dev, int port, uint32_t val)
 {
 	
-	C_CAN_WRITE_4(device_get_parent(dev), port, val));	
+	C_CAN_WRITE_4(device_get_parent(dev), port, val);	
 }
 
 /*
@@ -482,7 +597,7 @@ static void
 c_can_reset(device_t dev)
 {
 	
-	C_CAN_RESET(device_get_parent(dev), rswitch);	
+	C_CAN_RESET(device_get_parent(dev));	
 }
 
 /* 
@@ -495,9 +610,11 @@ static device_method_t c_can_methods[] = {
 	DEVMETHOD(device_detach,	c_can_detach),
 	
 	/* c_can(4) interface */
+	DEVMETHOD(c_can_read_1,	c_can_read_1),
 	DEVMETHOD(c_can_read_2,	c_can_read_2),
 	DEVMETHOD(c_can_read_4,	c_can_read_4),
 
+	DEVMETHOD(c_can_write_1,	c_can_write_1),
 	DEVMETHOD(c_can_write_2,	c_can_write_2),
 	DEVMETHOD(c_can_write_4,	c_can_write_4),
 		

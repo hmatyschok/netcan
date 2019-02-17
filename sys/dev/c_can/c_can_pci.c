@@ -206,6 +206,16 @@ c_can_pci_detach(device_t dev)
  * Common I/O subr.
  */
 
+static uint8_t
+c_can_pci_read_1(device_t dev, int port)
+{
+	struct c_can_pci_softc *sc;
+	
+	sc = device_get_softc(dev);
+	
+	return (bus_read_1(sc->ccp_res, (port << sc->ccp_aln)));
+}
+
 static uint16_t
 c_can_pci_read_2(device_t dev, int port)
 {
@@ -224,6 +234,16 @@ c_can_pci_read_4(device_t dev, int port)
 	sc = device_get_softc(dev);
 	
 	return (bus_read_4(sc->ccp_res, (port << sc->ccp_aln)));
+}
+
+static void
+c_can_pci_write_1(device_t dev, int port, uint8_t val)
+{
+	struct c_can_pci_softc *sc;
+	
+	sc = device_get_softc(dev);
+	
+	bus_write_1(sc->ccp_res, (port << sc->ccp_aln), val);
 }
 
 static void
@@ -272,9 +292,11 @@ static device_method_t c_can_pci_methods[] = {
 	DEVMETHOD(device_detach,	c_can_pci_detach),
 		
 	/* c_can(4) interface */
+	DEVMETHOD(c_can_read_1,		c_can_pci_read_1),
 	DEVMETHOD(c_can_read_2,		c_can_pci_read_2),
 	DEVMETHOD(c_can_read_4,		c_can_pci_read_4),	
 	
+	DEVMETHOD(c_can_write_1,		c_can_pci_write_1),
 	DEVMETHOD(c_can_write_2,		c_can_pci_write_2),
 	DEVMETHOD(c_can_write_4,		c_can_pci_write_4),
 	

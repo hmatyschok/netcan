@@ -247,7 +247,7 @@ kvaser_pci_detach(device_t dev)
  */
 
 static uint8_t
-kvaser_read_1(device_t dev, sja_data_t sjad, int port)
+kvaser_pci_read_1(device_t dev, sja_data_t sjad, int port)
 {
 	struct kvaser_softc *sc;
 	struct sja_chan *chan;
@@ -259,7 +259,7 @@ kvaser_read_1(device_t dev, sja_data_t sjad, int port)
 }
 
 static uint16_t
-kvaser_read_2(device_t dev, sja_data_t var, int port)
+kvaser_pci_read_2(device_t dev, sja_data_t var, int port)
 {
 	struct kvaser_softc *sc;
 	struct sja_chan *chan;
@@ -271,7 +271,7 @@ kvaser_read_2(device_t dev, sja_data_t var, int port)
 }
 
 static uint32_t
-kvaser_read_4(device_t dev, sja_data_t var, int port)
+kvaser_pci_read_4(device_t dev, sja_data_t var, int port)
 {
 	struct kvaser_softc *sc;
 	struct sja_chan *chan;
@@ -291,7 +291,7 @@ kvaser_pci_write_1(device_t dev, sja_data_t var, int port, uint8_t val)
 	sc = device_get_softc(dev);
 	chan = &sc->kv_chan[var->sja_port];
 	
-	bus_write_1(chan->sja_res, port, val));
+	bus_write_1(chan->sja_res, port, val);
 }
 
 static void
@@ -303,7 +303,7 @@ kvaser_pci_write_2(device_t dev, sja_data_t var, int port, uint16_t val)
 	sc = device_get_softc(dev);
 	chan = &sc->kv_chan[var->sja_port];
 	
-	bus_write_2(chan->sja_res, port, val));
+	bus_write_2(chan->sja_res, port, val);
 }
 
 static void
@@ -315,7 +315,7 @@ kvaser_pci_write_4(device_t dev, sja_data_t var, int port, uint32_t val)
 	sc = device_get_softc(dev);
 	chan = &sc->kv_chan[var->sja_port];
 	
-	bus_write_4(chan->sja_res, port, val));	
+	bus_write_4(chan->sja_res, port, val);	
 }
 
 /* 

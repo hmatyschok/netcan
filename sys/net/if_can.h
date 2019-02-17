@@ -225,13 +225,13 @@ struct can_frame {
 #define CAN_ERR_TRX_CANL_SHORT_TO_CANH		0x80 /* 1000 0000 */
 
 /* index for data field on error class */
-#define CAN_ERR_AL_DF		0
-#define CAN_ERR_DEV_DF		1
-#define CAN_ERR_PROTO_DF 	2
-#define CAN_ERR_PROTO_LOC_DF 	3	
-#define CAN_ERR_PROTO_TRX_DF 	4
-#define CAN_ERR_RX_DF		6
-#define CAN_ERR_TX_DF		7
+#define CAN_ERR_DF_AL		0
+#define CAN_ERR_DF_DEV		1
+#define CAN_ERR_DF_PROTO 	2
+#define CAN_ERR_DF_PROTO_LOC 	3	
+#define CAN_ERR_DF_PROTO_TRX 	4
+#define CAN_ERR_DF_RX		6
+#define CAN_ERR_DF_TX		7
 
 /* CAN-FD frame */
 #define CANFD_MAX_DLEN 	64

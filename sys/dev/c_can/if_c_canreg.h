@@ -42,8 +42,8 @@
 #define C_CAN_IF1_CMMR		0x12	/* IF1 command mask */
 #define C_CAN_IF1_MASK0		0x14		/* IF1 mask 1 */
 #define C_CAN_IF1_MASK1		0x16		/* IF1 mask 2 */
-#define C_CAN_IF1_ID0		0x18		/* IF1 arbitriation 1 */
-#define C_CAN_IF1_ID1		0x1a		/* IF1 arbitriation 2 */
+#define C_CAN_IF1_ARB0		0x18		/* IF1 arbitriation 1 */
+#define C_CAN_IF1_ARB1		0x1a		/* IF1 arbitriation 2 */
 #define C_CAN_IF1_MCR		0x1c		/* IF1 message control */
 #define C_CAN_IF1_DATA0		0x1e		/* IF1 data register 1 */
 #define C_CAN_IF1_DATA1		0x20		/* IF1 data register 2 */
@@ -188,7 +188,7 @@
 #define C_CAN_IFX_CMMR_CONTROL		0x10
 #define C_CAN_IFX_CMMR_ARB		0x20
 #define C_CAN_IFX_CMMR_MASK		0x40
-#define C_CAN_IFX_CMMR_WR_RD		0x08	/* write = 1 / read = 0 (rw) */
+#define C_CAN_IFX_CMMR_WR_RD		0x80	/* write = 1 / read = 0 (rw) */
 
 /* initialize tx buffer */
 #define C_CAN_IFX_CMMR_TX_INIT \
@@ -217,7 +217,7 @@
  * ...
  */
 
-#define C_CAN_IFX_MCR_DLC_MASK		0x0007	/* data length code (rw) */
+#define C_CAN_IFX_MCR_DLC_MASK		0x000f	/* data length code (rw) */
 #define C_CAN_IFX_MCR_EOB		0x0008		/* end of buffer (rw) */
 #define C_CAN_IFX_MCR_TX_RQST		0x0010		/* tx request (rw) */
 #define C_CAN_IFX_MCR_RMT_EN		0x0020		/* remote enable (rw) */
@@ -240,9 +240,9 @@
 /*
  * ...
  */
-#define C_CAN_IFX_ARB_TX		0x20000000
-#define C_CAN_IFX_ARB_MSG_XTD		0x40000000
-#define C_CAN_IFX_ARB_MSG_VAL		0x80000000
+#define C_CAN_IFX_ARBX_TX		0x20000000
+#define C_CAN_IFX_ARBX_MSG_XTD		0x40000000
+#define C_CAN_IFX_ARBX_MSG_VAL		0x80000000
 		
 /*
  * Work in progress..

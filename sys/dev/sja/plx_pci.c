@@ -679,7 +679,7 @@ plx_pci_detach(device_t dev)
  */
 
 static uint8_t
-plx_read_1(device_t dev, sja_data_t sjad, int port)
+plx_pci_read_1(device_t dev, sja_data_t sjad, int port)
 {
 	struct plx_softc *sc;
 	struct sja_chan *chan;
@@ -691,7 +691,7 @@ plx_read_1(device_t dev, sja_data_t sjad, int port)
 }
 
 static uint16_t
-plx_read_2(device_t dev, sja_data_t var, int port)
+plx_pci_read_2(device_t dev, sja_data_t var, int port)
 {
 	struct plx_softc *sc;
 	struct sja_chan *chan;
@@ -703,7 +703,7 @@ plx_read_2(device_t dev, sja_data_t var, int port)
 }
 
 static uint32_t
-plx_read_4(device_t dev, sja_data_t var, int port)
+plx_pci_read_4(device_t dev, sja_data_t var, int port)
 {
 	struct plx_softc *sc;
 	struct sja_chan *chan;

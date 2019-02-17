@@ -537,7 +537,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 		if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
 		
 		cf->can_id |= CAN_ERR_DEV;
-		cf->can_data[CAN_ERR_DEV_DF] |= CAN_ERR_DEV_RX_OVF; 
+		cf->can_data[CAN_ERR_DF_DEV] |= CAN_ERR_DEV_RX_OVF; 
 	
 		SJA_WRITE_1(sja->sja_dev, var, SJA_CMR, SJA_CMR_CDO);
 		status = SJA_READ_1(sja->sja_dev, var, SJA_SR);
@@ -553,18 +553,18 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 
 		/* map error condition, if any */
 		if ((flags & SJA_ECC_ERR_MASK) == SJA_ECC_BE)
-			cf->can_data[CAN_ERR_PROTO_DF] |= CAN_ERR_PROTO_BIT;
+			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROTO_BIT;
 		else if ((flags & SJA_ECC_ERR_MASK) == SJA_ECC_FMT)
-			cf->can_data[CAN_ERR_PROTO_DF] |= CAN_ERR_PROT_FORM;
+			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROT_FORM;
 		else if ((flags & SJA_ECC_ERR_MASK) == ECC_STUFF)
-			cf->can_data[CAN_ERR_PROTO_DF] |= CAN_ERR_PROT_STUFF;
+			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROT_STUFF;
 			
 		/* map tx error condition, if any */ 
 		if ((flags & ECC_DIR) == 0)
-			cf->can_data[CAN_ERR_PROTO_DF] |= CAN_ERR_PROT_TX;	
+			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROT_TX;	
 	
 		/* map error location */
-		cf->can_data[CAN_ERR_PROTO_LOC_DF] |= flags & SJA_ECC_SEG;
+		cf->can_data[CAN_ERR_DF_PROTO_LOC] |= flags & SJA_ECC_SEG;
 	}
 	
 	/* arbitriation lost condition */
@@ -574,12 +574,12 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 		flags = SJA_READ_1(sja->sja_dev, var, SJA_ALC);
 
 		cf->can_id |= CAN_ERR_AL;
-		cf->can_data[CAN_ERR_AL_DF] |= flags & SJA_ALC_MASK;
+		cf->can_data[CAN_ERR_DF_AL] |= flags & SJA_ALC_MASK;
 	} 
 	
 	/* map error count */
-	cf->can_data[CAN_ERR_RX_DF] = SJA_READ_1(sja->sja_dev, var, SJA_REC);
-	cf->can_data[CAN_ERR_TX_DF] = SJA_READ_1(sja->sja_dev, var, SJA_TEC);
+	cf->can_data[CAN_ERR_DF_RX] = SJA_READ_1(sja->sja_dev, var, SJA_REC);
+	cf->can_data[CAN_ERR_DF_TX] = SJA_READ_1(sja->sja_dev, var, SJA_TEC);
 
 	m->m_len = m->m_pkthdr.len = sizeof(*cf);
 	m->m_pkthdr.rcvif = ifp;
@@ -968,21 +968,21 @@ static void
 sja_write_1(device_t dev, sja_data_t var, int port, uint8_t val)
 {
 	
-	SJA_WRITE_1(device_get_parent(dev), var, port, val));	
+	SJA_WRITE_1(device_get_parent(dev), var, port, val);	
 }
 
 static void
 sja_write_2(device_t dev, sja_data_t var, int port, uint16_t val)
 {
 	
-	SJA_WRITE_2(device_get_parent(dev), var, port, val));	
+	SJA_WRITE_2(device_get_parent(dev), var, port, val);	
 }
 
 static void
 sja_write_4(device_t dev, sja_data_t var, int port, uint32_t val)
 {
 	
-	SJA_WRITE_4(device_get_parent(dev), var, port, val));	
+	SJA_WRITE_4(device_get_parent(dev), var, port, val);	
 }
 
 static void

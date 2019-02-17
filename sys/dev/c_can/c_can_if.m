@@ -32,6 +32,11 @@ INTERFACE c_can;
 #
 # Read register.
 #
+METHOD uint8_t read_1 {
+	device_t	dev;
+	int		port;
+};
+
 METHOD uint16_t read_2 {
 	device_t	dev;
 	int		port;
@@ -45,6 +50,13 @@ METHOD uint32_t read_4 {
 #
 # Write register.
 #
+METHOD void write_1 {
+	device_t	dev;	
+	int		port;
+	uint8_t		val;
+};
+
+
 METHOD void write_2 {
 	device_t	dev;	
 	int		port;
