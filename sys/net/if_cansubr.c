@@ -196,7 +196,8 @@ can_ifinput(struct ifnet *ifp, struct mbuf *m)
 	if (ifp->if_flags & IFF_LOOPBACK)
 		can_mbuf_tag_clean(m);
 
-#ifdef CAN	
+#ifdef CAN
+	if_inc_counter(ifp, IFCOUNTER_IPACKETS, 1);
 	if_inc_counter(ifp, IFCOUNTER_IBYTES, m->m_pkthdr.len);
 
 	M_SETFIB(m, ifp->if_fib);
@@ -269,7 +270,7 @@ can_ifattach(struct ifnet *ifp, uint32_t freq)
 		
 	if_attach(ifp);
 		
-	ifp->if_mtu = CAN_MTU;
+	ifp->if_mtu = CAN_MTU;	/* XXX */
 	ifp->if_input = can_ifinput;	
 	ifp->if_output = can_ifoutput; 
 	

@@ -241,85 +241,6 @@ c_can_detach(device_t dev)
 	return (0);
 }
 
-/*
- * ...
- */
-
-static void 
-c_can_msg_obj_upd(struct c_can_softc *cc, int n, int cmd, int ifx)
-{
-	int port, val, i;
-	uint16_t status;
-
-	port = C_CAN_IF1_CMR + ifx * (C_CAN_IF2_CMR - C_CAN_IF1_CMR);
-	val = (cmd << 0x10) | n;
-
-	C_CAN_WRITE_4(cc->cc_dev, port, val);
-	
-	for (i = 0; i < 6; i++) {	/* XXX */
-		status = C_CAN_READ_2(cc->cc_dev, port);
-		
-		if ((status & C_CAN_IFX_CMR_BUSY) == 0)
-			break;
-		
-		DELAY(1);
-	}
-}
-/*
- * ...
- */
- 
-static int
-c_can_intr(void *arg)
-{
-	struct c_can_softc *cc;
-	uint16_t status;
-	
-	cc = (struct c_can_softc *)arg;
-
-	status = C_CAN_READ_2(cc->cc_dev, C_CAN_IR);
-	if (status == 0)
-		return (FILTER_STRAY);
-
-	/* disable interrupts */
-	status = C_CAN_READ_2(cc->cc_dev, C_CAN_CR);
-	status &= ~C_CAN_CR_INTR_MASK
-
-	C_CAN_WRITE_2(cc->cc_dev, C_CAN_CR, status);
-
-	taskqueue_enqueue(taskqueue_fast, &cc->cc_inttr_task);
-	
-	return (FILTER_HANDLED);
-}
-
-static void
-c_can_intr_task(void *arg, int npending)
-{
-	struct c_can_softc *cc;	
-	uint16_t status;
-	
-	cc = (struct c_can_softc *)arg; 
-	
-	status = C_CAN_READ_2(cc->cc_dev, C_CAN_SR);
-	C_CAN_WRITE_2(cc->cc_dev, C_CAN_SR, C_CAN_SR_UNUSED_ERR);
-	
-	if (status & C_CAN_SR_ERR_MASK)
-		c_can_error(cc, status);
-	
-	/*
-	 * ...
-	 */
-	
-	c_can_rxeof(cc);
-	
-	c_can_txeof(cc); 
-	 
-	/* enable interrupts */
-	status = C_CAN_READ_2(cc->cc_dev, C_CAN_CR);
-	status |= C_CAN_CR_INTR_MASK;
-	C_CAN_WRITE_2(cc->cc_dev, C_CAN_CR, status);
-} 
-
 static void
 c_can_rxeof(struct c_can_softc *cc)
 {
@@ -416,6 +337,148 @@ c_can_txeof(struct c_can_softc *cc)
 	
 	
 	
+}
+
+/*
+ * ...
+ */
+
+static void 
+c_can_msg_obj_upd(struct c_can_softc *cc, int n, int cmd, int ifx)
+{
+	int port, val, i;
+	uint16_t status;
+
+	port = C_CAN_IF1_CMR + ifx * (C_CAN_IF2_CMR - C_CAN_IF1_CMR);
+	val = (cmd << 0x10) | n;
+
+	C_CAN_WRITE_4(cc->cc_dev, port, val);
+	
+	for (i = 0; i < 6; i++) {	/* XXX */
+		status = C_CAN_READ_2(cc->cc_dev, port);
+		
+		if ((status & C_CAN_IFX_CMR_BUSY) == 0)
+			break;
+		
+		DELAY(1);
+	}
+}
+/*
+ * ...
+ */
+ 
+static int
+c_can_intr(void *arg)
+{
+	struct c_can_softc *cc;
+	uint16_t status;
+	
+	cc = (struct c_can_softc *)arg;
+
+	status = C_CAN_READ_2(cc->cc_dev, C_CAN_IR);
+	if (status == 0)
+		return (FILTER_STRAY);
+
+	/* disable interrupts */
+	status = C_CAN_READ_2(cc->cc_dev, C_CAN_CR);
+	status &= ~C_CAN_CR_INTR_MASK
+
+	C_CAN_WRITE_2(cc->cc_dev, C_CAN_CR, status);
+
+	taskqueue_enqueue(taskqueue_fast, &cc->cc_inttr_task);
+	
+	return (FILTER_HANDLED);
+}
+
+static void
+c_can_intr_task(void *arg, int npending)
+{
+	struct c_can_softc *cc;	
+	uint16_t status;
+	
+	cc = (struct c_can_softc *)arg; 
+	
+	status = C_CAN_READ_2(cc->cc_dev, C_CAN_SR);
+	C_CAN_WRITE_2(cc->cc_dev, C_CAN_SR, C_CAN_SR_UNUSED_ERR);
+	
+	if (status & C_CAN_SR_ERR_MASK)
+		c_can_error(cc, status);
+	
+	/*
+	 * ...
+	 */
+	
+	c_can_rxeof(cc);
+	
+	c_can_txeof(cc); 
+	 
+	/* enable interrupts */
+	status = C_CAN_READ_2(cc->cc_dev, C_CAN_CR);
+	status |= C_CAN_CR_INTR_MASK;
+	C_CAN_WRITE_2(cc->cc_dev, C_CAN_CR, status);
+} 
+
+/*
+ * Transmit can(4) frame.
+ */
+static void
+c_can_start(struct ifnet *ifp)
+{
+	struct c_can_softc *cc;
+
+	sja = ifp->if_softc;
+	C_CAN_LOCK(cc);
+	c_can_start_locked(ifp);
+	C_CAN_UNLOCK(cc);
+}
+
+static void
+c_can_start_locked(struct ifnet *ifp)
+{
+	struct c_can_softc *cc;
+	struct can_ifsoftc *csc;
+	struct mbuf *m;
+	uint8_t status;
+	
+	cc = ifp->if_softc;	
+	C_CAN_LOCK_ASSERT(cc);	
+	csc = ifp->if_l2com;
+			
+	if ((ifp->if_drv_flags & (IFF_DRV_RUNNING | IFF_DRV_OACTIVE)) !=
+	    IFF_DRV_RUNNING)
+		return;
+			
+	for (;;) {
+		IFQ_DEQUEUE(&ifp->if_snd, m);
+		if (m == NULL) 
+			break;
+
+		if (c_can_encap(cc, &m) != 0) {
+			if (m == NULL)
+				break;
+			
+			IFQ_DRV_PREPEND(&ifp->if_snd, m);
+			ifp->if_drv_flags |= IFF_DRV_OACTIVE;
+			break;
+		}	
+		
+		/* IAP on bpf(4) */
+		can_bpf_mtap(ifp, &m);		
+	
+		/* notify controller for transmission */
+		if (csc->csc_linkmodes & CAN_LINKMODE_ONE_SHOT)
+			status = SJA_CMR_AT;
+		else 
+			status = 0x00;
+
+		if (csc->csc_linkmodes & CAN_LINKMODE_LOOPBACK)
+			status |= SJA_CMR_SRR;
+		else
+			ststus |= SJA_CMR_TR;
+
+		SJA_WRITE_1(sja->c_can_dev, var, SJA_CMR, status);
+		status = SJA_READ_1(sja->c_can_dev, var, SJA_SR);
+	}						
 }
  
 /*
