@@ -79,7 +79,7 @@ static struct mtx slc_list_mtx;
 static TAILQ_HEAD(slc_head, slc_softc) slc_list = 
 	TAILQ_HEAD_INITIALIZER(slc_list);
 	
-static MALLOC_DEFINE(M_SLC, "slc", "Serial line CAN Interface"); 
+static MALLOC_DEFINE(M_SLC, "slc", "Serial line can(4) Interface"); 
  
 /* Subr. */
 static void 	slc_destroy(struct slc_softc *);

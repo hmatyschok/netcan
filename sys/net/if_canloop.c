@@ -73,22 +73,126 @@
 #include <net/if_types.h>
 #include <net/if_can.h>
 
+struct canolo_softc {
+	struct ifnet	*cs_ifp;
+	TAILQ_ENTRY(canlo_softc) cs_next;
+};
+
 /*
- * Loopback interface driver for the CAN protocol
+ * Loopback interface driver for the can(4) protocol
  */
 
 static int		canlo_ioctl(struct ifnet *, u_long, caddr_t);
 static void 	canlo_start(struct ifnet *);
+static void 	canlo_init(void *);
 
 static void 	canlo_clone_destroy(struct ifnet *);
 static int 	canlo_clone_create(struct if_clone *, int, caddr_t);
 
 /*
- * Interface cloner.
+ * Interface cloner and module(9) description.
  */ 
+
+static struct mtx canlo_list_mtx;
+static TAILQ_HEAD(canlo_head, canlo_softc) canlo_list = 
+	TAILQ_HEAD_INITIALIZER(canlo_list);
+	
+static MALLOC_DEFINE(M_CANLO, "canlo", "can(4) Loopback Interface"); 
 
 static struct if_clone *canlo_cloner;
 static const char canlo_name[] = "canlo";
+
+static void
+canlo_clone_destroy(struct ifnet *ifp)
+{
+	struct canlo_softc *cs
+	
+	cs = (struct canlo_softc *)ifp->if_softc;
+	
+	mtx_lock(&canlo_list_mtx);
+	TAILQ_REMOVE(&canlo_list, cs, cs_next);
+	mtx_unlock(&canlo_list_mtx);
+	
+	ifp->if_drv_flags &= ~(IFF_DRV_RUNNING | IFF_DRV_OACTIVE);
+	ifp->if_flags &= ~IFF_UP;
+
+	can_ifdetach(ifp);
+	if_free(ifp);
+}
+
+static int
+canlo_clone_create(struct if_clone *ifc, int unit, caddr_t data)
+{
+	struct canlo_softc *cs;
+	struct ifnet *ifp;
+
+	cs = malloc(sizeof(*cs), M_CANLO, M_WAITOK | M_ZERO);
+	if ((ifp = if_alloc(IFT_CAN)) == NULL)
+		return (ENOSPC);
+
+	/* attach */
+	mtx_lock(&canlo_list_mtx);
+	TAILQ_INSERT_TAIL(&canlo_list, cs, cs_next);
+	mtx_unlock(&canlo_list_mtx);
+	
+	ifp->if_softc = cs;
+
+	if_initname(ifp, canlo_name, unit);
+	
+	ifp->if_flags = IFF_LOOPBACK | IFF_MULTICAST;
+	ifp->if_init = canlo_init;
+	ifp->if_ioctl = canlo_ioctl;
+	ifp->if_start = canlo_start;
+	
+	can_ifattach(ifp, 0);
+
+	ifp->if_drv_flags |= IFF_DRV_RUNNING;
+	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
+
+	return (0);
+}
+
+static int
+canlo_modevent(module_t mod, int type, void *data)
+{
+	int error;
+
+	switch (type) {
+	case MOD_LOAD:
+		mtx_init(&canlo_list_mtx, "canlo_list_mtx", NULL, MTX_DEF);
+		canlo_cloner = if_clone_simple(canlo_name, 
+			canlo_clone_create, canlo_clone_destroy, 0);
+		error = 0;
+	case MOD_UNLOAD:
+		if_clone_detach(canlo_cloner);
+		mtx_destroy(&canlo_list_mtx);
+		error = 0;
+		break;
+	default:
+		error = EOPNOTSUPP;
+		break;
+	}
+	return (error);
+}
+
+static moduledata_t canlo_mod = {
+	"if_canlo",
+	canlo_modevent,
+	0
+};
+
+static void
+canlo_ifinit(void *xsc)
+{
+	struct canlo_softc *slc;
+	struct ifnet *ifp;
+
+	slc = (struct canlo_softc *)xsc;
+	ifp = slc->canlo_ifp;
+	
+	ifp->if_drv_flags |= IFF_DRV_RUNNING;
+	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;	
+}
 
 /*
  * Dequeue for transmission.
@@ -120,7 +224,7 @@ canlo_start(struct ifnet *ifp)
 #ifdef CAN
 		(*ifp->if_input)(ifp, m);
 #else
-		(void)printf("%s: %s: can't handle CAN frame\n", 
+		(void)printf("%s: %s: can't handle can(4) frame\n", 
 			__func__, ifp->if_xname);
 		m_freem(m);
 #endif 	/* ! CAN */
@@ -158,69 +262,6 @@ canlo_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 	}
 	return (error);
 }
-
-/*
- * Module description.
- */
-
-static void
-canlo_clone_destroy(struct ifnet *ifp)
-{
-	ifp->if_drv_flags &= ~(IFF_DRV_RUNNING | IFF_DRV_OACTIVE);
-	ifp->if_flags &= ~IFF_UP;
-
-	can_ifdetach(ifp);
-	if_free(ifp);
-}
-
-static int
-canlo_clone_create(struct if_clone *ifc, int unit, caddr_t data)
-{
-	struct ifnet *ifp;
-
-	if ((ifp = if_alloc(IFT_CAN)) == NULL)
-		return (ENOSPC);
-
-	if_initname(ifp, canlo_name, unit);
-	
-	ifp->if_flags = IFF_LOOPBACK | IFF_MULTICAST;
-	ifp->if_ioctl = canlo_ioctl;
-	ifp->if_start = canlo_start;
-	
-	can_ifattach(ifp, 0);
-
-	ifp->if_drv_flags |= IFF_DRV_RUNNING;
-	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
-
-	return (0);
-}
-
-static int
-canlo_modevent(module_t mod, int type, void *data)
-{
-	int error;
-
-	switch (type) {
-	case MOD_LOAD:
-		canlo_cloner = if_clone_simple(canlo_name, 
-			canlo_clone_create, canlo_clone_destroy, 0);
-		error = 0;
-	case MOD_UNLOAD:
-		if_clone_detach(canlo_cloner);
-		error = 0;
-		break;
-	default:
-		error = EOPNOTSUPP;
-		break;
-	}
-	return (error);
-}
-
-static moduledata_t canlo_mod = {
-	"if_canlo",
-	canlo_modevent,
-	0
-};
 
 DECLARE_MODULE(if_canlo, canlo_mod, SI_SUB_PSEUDO, SI_ORDER_ANY);
 MODULE_DEPEND(if_canlo, can, 1, 1, 1);

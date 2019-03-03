@@ -899,9 +899,6 @@ sja_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 	return (error);
 }
 
-/*
- * Maps to generic software-context, called by can_set_netlink(9).
- */
 static int 
 sja_set_link_timings(struct sja_softc *sja)
 {
@@ -988,6 +985,7 @@ sja_clear_intr(device_t dev, sja_data_t var)
 /*
  * Hooks for the operating system.
  */
+ 
 static device_method_t sja_methods[] = {
 	/* device(9) interface */
 	DEVMETHOD(device_probe, 	sja_probe),
