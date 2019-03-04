@@ -411,7 +411,7 @@ struct sja_softc {
 	(((uvp)->tv_sec - (tvp)->tv_sec) < (val))
 	
 /* linkmode capabilities */
-#define SJA_LINKMODE_CABS \
+#define SJA_LINKMODE_CAPS \
 	(CAN_LINKMODE_LOOPBACK|CAN_LINKMODE_LISTENONLY|
 	CAN_LINKMODE_3SAMPLES|CAN_LINKMODE_ONE_SHOT|
 	CAN_LINKMODE_BUS_ERR_REP|CAN_LINKMODE_PRESUME_ACK)

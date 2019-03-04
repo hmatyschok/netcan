@@ -73,7 +73,7 @@ static const struct can_link_timecaps sja_timecaps = {
 	.cltc_brp_min =		1,
 	.cltc_brp_max =		64,
 	.cltc_brp_inc =		1,
-	.cltc_linkmode_caps =		SJA_LINKMODE_CABS,
+	.cltc_linkmode_caps =		SJA_LINKMODE_CAPS,
 };
 
 /*
