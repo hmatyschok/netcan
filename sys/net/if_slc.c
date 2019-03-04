@@ -145,7 +145,7 @@ slc_ifinit(void *xsc)
 	else
 		ifp->if_flags &= ~IFF_UP;
 		
-	if (ifp->if_flags & IFF_UP)
+	if ((ifp->if_flags & IFF_UP) != 0)
 		ifp->if_drv_flags |= IFF_DRV_RUNNING;
 	else
 		ifp->if_drv_flags &= ~IFF_DRV_RUNNING;		
@@ -483,12 +483,12 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	cf = mtod(m, struct can_frame *);
 	
 	/* determine CAN frame type */
-	if (cf->can_id & CAN_RTR_FLAG) 
+	if ((cf->can_id & CAN_RTR_FLAG) != 0) 
 		*bp = SLC_HC_SFF_RTR;
 	else
 		*bp = SLC_HC_SFF_DATA;
 	
-	if (cf->can_id & CAN_EFF_FLAG) 
+	if ((cf->can_id & CAN_EFF_FLAG) != 0) 
 		*bp = toupper(*bp);
 		
 	bp += SLC_CMD_LEN;	
