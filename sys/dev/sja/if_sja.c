@@ -259,10 +259,10 @@ sja_attach(device_t dev)
 	SJA_WRITE_1(sja->sja_dev, var, SJA_CDR, var->sja_cdr);
 
 	/* set acceptance filter (accept all) */
-	for (addr = SJA_AC0; addr < SJA_AM0; addr++)
+	for (addr = SJA_ACR0; addr < SJA_AMR0; addr++)
 		SJA_WRITE_1(sja->sja_dev, var, addr, 0x00);
 
-	for (addr = SJA_AM0; addr <= SJA_AM3; addr++)
+	for (addr = SJA_AMR0; addr <= SJA_AMR3; addr++)
 		SJA_WRITE_1(sja->sja_dev, var, addr, 0xff);
 
 	/* set output control register */
@@ -777,10 +777,10 @@ sja_init_locked(struct sja_softc *sja)
 		SJA_WRITE_1(sja->sja_dev, var, SJA_CDR, var->sja_cdr);
 
 		/* set acceptance filter (accept all) */
-		for (addr = SJA_AC0; addr < SJA_AM0; addr++)
+		for (addr = SJA_ACR0; addr < SJA_AMR0; addr++)
 			SJA_WRITE_1(sja->sja_dev, var, addr, 0x00);
 
-		for (addr = SJA_AM0; addr <= SJA_AM3; addr++)
+		for (addr = SJA_AMR0; addr <= SJA_AMR3; addr++)
 			SJA_WRITE_1(sja->sja_dev, var, addr, 0xff);
 
 		/* set output control register */

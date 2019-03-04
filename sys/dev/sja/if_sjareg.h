@@ -44,14 +44,14 @@
 #define SJA_EWL		0x0d		/* error warning limit */
 #define SJA_RXERR		0x0e		/* rx error counter */ 
 #define SJA_TXERR		0x0f		/* tx error counter */
-#define SJA_AC0		0x10		/* acceptance code 0 */
-#define SJA_AC1		0x11		/* acceptance code 1 */
-#define SJA_AC2		0x12		/* acceptance code 2 */
-#define SJA_AC3		0x13		/* acceptance code 3 */
-#define SJA_AM0		0x14		/* acceptance mask 0 */
-#define SJA_AM1		0x15		/* acceptance mask 1 */
-#define SJA_AM2		0x16		/* acceptance mask 2 */
-#define SJA_AM3		0x17		/* acceptance mask 3 */
+#define SJA_ACR0		0x10		/* acceptance code 0 */
+#define SJA_ACR1		0x11		/* acceptance code 1 */
+#define SJA_ACR2		0x12		/* acceptance code 2 */
+#define SJA_ACR3		0x13		/* acceptance code 3 */
+#define SJA_AMR0		0x14		/* acceptance mask 0 */
+#define SJA_AMR1		0x15		/* acceptance mask 1 */
+#define SJA_AMR2		0x16		/* acceptance mask 2 */
+#define SJA_AMR3		0x17		/* acceptance mask 3 */
 	/* 0x18 - 0x1c reserved */
 #define SJA_RMC		0x1d		/* rx message counter */
 #define SJA_RBSA		0x1e		/* rx ring start-addr */
