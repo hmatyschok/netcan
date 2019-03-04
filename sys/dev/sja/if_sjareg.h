@@ -190,15 +190,16 @@
 /* 
  * SJA1000, 6.4.7 Interrupt Enable Register [IER] 
  */
+#define SJA_IER_RIE		0x01 	/* receive interrupt */
+#define SJA_IER_TIE		0x02 	/* transmit interrupt */
+#define SJA_IER_EIE		0x04 	/* error warning interrupt */
+#define SJA_IER_DOIE		0x08 	/* data overrun interrupt */
+#define SJA_IER_WUIE		0x10 	/* wake-up interrupt */
+#define SJA_IER_EPIE		0x20 	/* error passive interrupt */ 
+#define SJA_IER_ALIE		0x40 	/* arbitration lost interrupt */
+#define SJA_IER_BEIE		0x80 	/* bus error interrupt */
+
 #define SJA_IER_OFF		0x00 
-#define SJA_IER_RX		0x01 	/* receive interrupt */
-#define SJA_IER_TX		0x02 	/* transmit interrupt */
-#define SJA_IER_EE		0x04 	/* error warning interrupt */
-#define SJA_IER_DO		0x08 	/* data overrun interrupt */
-#define SJA_IER_WU		0x10 	/* wake-up interrupt */
-#define SJA_IER_EP		0x20 	/* error passive interrupt */ 
-#define SJA_IER_AL		0x40 	/* arbitration lost interrupt */
-#define SJA_IER_BE		0x80 	/* bus error interrupt */
 
 /* 
  * SJA1000, 6.4.8 Arbitration Lost Capature Register [ALC] 

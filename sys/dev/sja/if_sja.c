@@ -158,10 +158,10 @@ sja_normal_mode(struct sja_softc *sja)
 
 		if ((status & SJA_MOD_RM) == 0) {
 			status = SJA_IRE_ALL;
-			status &= ~SJA_IER_BE;
+			status &= ~SJA_IER_BEIE;
 #if 0
 			if ((csc->csc_linkmodes & 0x10) == 0)
-				status &= ~SJA_IER_BE;
+				status &= ~SJA_IER_BEIE;
 #endif			
 			SJA_WRITE_1(sja->sja_dev, var, SJA_IER, status);
 			
@@ -821,10 +821,10 @@ sja_init_locked(struct sja_softc *sja)
 	/* enable interrupts, if any */
 	if ((status & SJA_MOD_RM) == 0) {
 		status = SJA_IRE_ALL;
-		status &= ~SJA_IER_BE;
+		status &= ~SJA_IER_BEIE;
 #if 0
 		if ((csc->csc_linkmodes & 0x10) == 0)
-			status &= ~SJA_IER_BE;
+			status &= ~SJA_IER_BEIE;
 #endif			
 		SJA_WRITE_1(sja->sja_dev, var, SJA_IER, status);
 			
