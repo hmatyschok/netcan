@@ -200,6 +200,7 @@
 #define SJA_IER_BEIE		0x80 	/* bus error interrupt */
 
 #define SJA_IER_OFF		0x00 
+#define SJA_IER_ALL		0xff
 
 /* 
  * SJA1000, 6.4.8 Arbitration Lost Capature Register [ALC] 
@@ -210,7 +211,6 @@
 #define SJA_ALC_BIT3		0x08 	/* ALC in 2^3 + 1 bit of id */
 #define SJA_ALC_BIT4		0x10 	/* ALC in 2^4 + 1 bit of id */
 #define SJA_ALC_MASK		0x1f
-#define SJA_ALC_RSVD		0xe0 	/* reserved */ 
 
 #if 0
 #define SJA_ALC_VAL(reg)		((reg) & SJA_ALC_MASK)

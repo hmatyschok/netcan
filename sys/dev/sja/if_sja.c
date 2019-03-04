@@ -157,7 +157,7 @@ sja_normal_mode(struct sja_softc *sja)
 	for (error = EIO; sja_timercmp(&tv0, &tv, 100); ) {
 
 		if ((status & SJA_MOD_RM) == 0) {
-			status = SJA_IRE_ALL;
+			status = SJA_IER_ALL;
 			status &= ~SJA_IER_BEIE;
 #if 0
 			if ((csc->csc_linkmodes & 0x10) == 0)
@@ -820,7 +820,7 @@ sja_init_locked(struct sja_softc *sja)
 	
 	/* enable interrupts, if any */
 	if ((status & SJA_MOD_RM) == 0) {
-		status = SJA_IRE_ALL;
+		status = SJA_IER_ALL;
 		status &= ~SJA_IER_BEIE;
 #if 0
 		if ((csc->csc_linkmodes & 0x10) == 0)
