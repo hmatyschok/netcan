@@ -41,7 +41,7 @@
 	/* 0x0a reserved */
 #define SJA_ALC		0x0b		/* arbitration lost capature */
 #define SJA_ECC		0x0c		/* error code capature */
-#define SJA_EWL		0x0d		/* error warning limit */
+#define SJA_EWLR		0x0d		/* error warning limit */
 #define SJA_RXERR		0x0e		/* rx error counter */ 
 #define SJA_TXERR		0x0f		/* tx error counter */
 #define SJA_ACR0		0x10		/* acceptance code 0 */
@@ -146,7 +146,6 @@
 #define SJA_MOD_STM		0x04 	/* self test mode */
 #define SJA_MOD_AFM		0x08 	/* acceptance filter mode */
 #define SJA_MOD_SM		0x10  	/* sleep mode */
-#define SJA_MOD_RSVD		0xe0 	/* reserved */
 
 /* 
  * SJA1000, 6.4.4 Command Registers [CMR] 
@@ -156,7 +155,6 @@
 #define SJA_CMR_RRB		0x04 	/* release receive buffer */
 #define SJA_CMR_CDO		0x08 	/* clear data overrun */
 #define SJA_CMR_SRR		0x10 	/* self reception test */
-#define SJA_CMR_RSVD		0xe0 	/* reserved */
 
 /* 
  * SJA1000, 6.4.5 Status Register [SR] 
@@ -173,19 +171,21 @@
 /* 
  * SJA1000, 6.4.6 Interrupt Register [IR] 
  */
-#define SJA_IR_OFF		0x00 
-#define SJA_IR_RX		0x01 	/* receive interrupt */
-#define SJA_IR_TX		0x02 	/* transmit interrupt */
-#define SJA_IR_EW		0x04 	/* error warning interrupt */
-#define SJA_IR_DO		0x08 	/* data overrun interrupt */
-#define SJA_IR_WU		0x10 	/* wake-up interrupt */
-#define SJA_IR_EP		0x20 	/* error passive interrupt */ 
-#define SJA_IR_AL		0x40 	/* arbitration lost interrupt */
-#define SJA_IR_BE		0x80 	/* bus error interrupt */
-#define SJA_IR_ALL		0xff
+ 
+#define SJA_IR_RI		0x01 	/* receive interrupt */
+#define SJA_IR_TI		0x02 	/* transmit interrupt */
+#define SJA_IR_EI		0x04 	/* error warning interrupt */
+#define SJA_IR_DOI		0x08 	/* data overrun interrupt */
+#define SJA_IR_WUI		0x10 	/* wake-up interrupt */
+#define SJA_IR_EPI		0x20 	/* error passive interrupt */ 
+#define SJA_IR_ALI		0x40 	/* arbitration lost interrupt */
+#define SJA_IR_BEI		0x80 	/* bus error interrupt */
 
 #define SJA_IR_ERR \
-	(SJA_IR_EW|SJA_IR_DO|SJA_IR_EP|SJA_IR_AL|SJA_IR_BE)
+	(SJA_IR_EI|SJA_IR_DOI|SJA_IR_EPI|SJA_IR_ALI|SJA_IR_BEI)
+
+#define SJA_IR_OFF		0x00
+#define SJA_IR_ALL		0xff
 	
 /* 
  * SJA1000, 6.4.7 Interrupt Enable Register [IER] 

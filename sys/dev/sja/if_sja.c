@@ -452,10 +452,10 @@ sja_intr(void *arg)
 	
 	for (n = 0; status != SJA_IR_OFF && n < 6; n++) { /* XXX */
 		
-		if (status & SJA_IR_RX)
+		if (status & SJA_IR_RI)
 			sja_rxeof(sja);
 			
-		if (status & SJA_IR_TX)
+		if (status & SJA_IR_TI)
 			sja_txeof(sja);
 			
 		if (status & SJA_IR_ERR) {
@@ -508,7 +508,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	status = SJA_READ_1(sja->sja_dev, var, SJA_SR);	
 	
 	/*  error passive / warning condition */
-	if (intr & (SJA_IR_EP | SJA_IR_EW)) {	
+	if (intr & (SJA_IR_EPI | SJA_IR_EI)) {	
 	
 		if (status & SJA_SR_BS)
 			flags = CAN_STATE_BUS_OFF;
@@ -530,7 +530,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	}
 	
 	/* data overrun condition */ 	
-	if (intr & SJA_IR_DO) {
+	if (intr & SJA_IR_DOI) {
 		if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
 		
 		cf->can_id |= CAN_ERR_DEV;
@@ -541,7 +541,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	}
 	
 	/* bus error condition */
-	if (intr & SJA_IR_BE) {
+	if (intr & SJA_IR_BEI) {
 		if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
 		
 		flags = SJA_READ_1(sja->sja_dev, var, SJA_ECC);
@@ -565,7 +565,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	}
 	
 	/* arbitriation lost condition */
-	if (intr & SJA_IR_AL) {
+	if (intr & SJA_IR_ALI) {
 		if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
 		
 		flags = SJA_READ_1(sja->sja_dev, var, SJA_ALC);
