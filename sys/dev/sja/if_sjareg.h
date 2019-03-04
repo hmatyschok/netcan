@@ -37,7 +37,7 @@
 #define SJA_BTR0		0x06		/* bus timing 0 */
 #define SJA_BTR1		0x07		/* bus timing 1 */
 #define SJA_OCR		0x08		/* output control */
-#define SJA_TEST		0x09		/* test */
+#define SJA_TR		0x09		/* test */
 	/* 0x0a reserved */
 #define SJA_ALC		0x0b		/* arbitration lost capature */
 #define SJA_ECC		0x0c		/* error code capature */
