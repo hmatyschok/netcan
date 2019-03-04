@@ -42,8 +42,8 @@
 #define SJA_ALC		0x0b		/* arbitration lost capature */
 #define SJA_ECC		0x0c		/* error code capature */
 #define SJA_EWL		0x0d		/* error warning limit */
-#define SJA_REC		0x0e		/* rx error counter */ 
-#define SJA_TEC		0x0f		/* tx error counter */
+#define SJA_RXERR		0x0e		/* rx error counter */ 
+#define SJA_TXERR		0x0f		/* tx error counter */
 #define SJA_AC0		0x10		/* acceptance code 0 */
 #define SJA_AC1		0x11		/* acceptance code 1 */
 #define SJA_AC2		0x12		/* acceptance code 2 */

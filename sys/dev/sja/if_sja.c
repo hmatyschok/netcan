@@ -139,8 +139,8 @@ sja_normal_mode(struct sja_softc *sja)
 	var = sja->sja_var;
 
 	/* flush error counters and error code capture */
-	SJA_WRITE_1(sja->sja_dev, var, SJA_TEC, 0x00);
-	SJA_WRITE_1(sja->sja_dev, var, SJA_REC, 0x00);
+	SJA_WRITE_1(sja->sja_dev, var, SJA_TXERR, 0x00);
+	SJA_WRITE_1(sja->sja_dev, var, SJA_RXERR, 0x00);
 	
 	status = SJA_READ_1(sja->sja_dev, var, SJA_ECC);
 	
@@ -575,8 +575,8 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	} 
 	
 	/* map error count */
-	cf->can_data[CAN_ERR_DF_RX] = SJA_READ_1(sja->sja_dev, var, SJA_REC);
-	cf->can_data[CAN_ERR_DF_TX] = SJA_READ_1(sja->sja_dev, var, SJA_TEC);
+	cf->can_data[CAN_ERR_DF_RX] = SJA_READ_1(sja->sja_dev, var, SJA_RXERR);
+	cf->can_data[CAN_ERR_DF_TX] = SJA_READ_1(sja->sja_dev, var, SJA_TXERR);
 
 	/* pass can(4) frame to upper layer */
 	m->m_len = m->m_pkthdr.len = sizeof(*cf);
@@ -788,8 +788,8 @@ sja_init_locked(struct sja_softc *sja)
 		SJA_WRITE_1(sja->sja_dev, var, SJA_OCR, var->sja_ocr);
 
 		/* flush error counters and error code capture */
-		SJA_WRITE_1(sja->sja_dev, var, SJA_TEC, 0x00);
-		SJA_WRITE_1(sja->sja_dev, var, SJA_REC, 0x00);
+		SJA_WRITE_1(sja->sja_dev, var, SJA_TXERR, 0x00);
+		SJA_WRITE_1(sja->sja_dev, var, SJA_RXERR, 0x00);
 	
 		status = SJA_READ_1(sja->sja_dev, var, SJA_ECC);
 		
