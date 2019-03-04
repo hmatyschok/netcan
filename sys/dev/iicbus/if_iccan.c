@@ -91,10 +91,10 @@ struct icc_softc {
 
 	uint8_t	icc_addr;			/* peer I2C address */
 	
-	int	icc_err_cnt;
+	int	icc_iferrs;
 	
-	struct mbuf	*icc_inb;
-	char	*icc_outb;
+	struct mbuf	*icc_ifbuf;
+	char	*icc_obuf;
 	struct mtx	icc_lock;
 };
 
@@ -126,7 +126,7 @@ icc_attach(device_t dev)
 	mtx_init(&icc->icc_lock, device_get_nameunit(dev), 
 		MTX_NETWORK_LOCK, MTX_DEF);
 		
-	icc->icc_outb = malloc(MHLEN, M_DEVBUF, M_WAITOK);	
+	icc->icc_obuf = malloc(MHLEN, M_DEVBUF, M_WAITOK);	
 		
 	icc->icc_addr = PCF_MASTER_ADDRESS;	/* XXX: only PCF masters */
 	icc->icc_dev = dev;
@@ -148,9 +148,6 @@ icc_attach(device_t dev)
 	return (0);
 }
 
-/*
- * icc_intr()
- */
 static int
 icc_intr(device_t dev, int status, char *c)
 {
@@ -158,7 +155,7 @@ icc_intr(device_t dev, int status, char *c)
 	struct ifnet *ifp;
 	struct mbuf *m;
 
-	icc = (struct icc_softc *)device_get_softc(dev);
+	icc = device_get_softc(dev);
 	ifp = icc->icc_ifp;
 
 	mtx_lock(&icc->icc_lock);
@@ -167,10 +164,10 @@ icc_intr(device_t dev, int status, char *c)
 	case INTR_GENERAL:
 	case INTR_START:
 		/* allocate mbuf(9), if any and initialize */
-		if ((m = icc->icc_inb) == NULL) {
+		if ((m = icc->icc_ifbuf) == NULL) {
 			if ((m = m_gethdr(M_NOWAIT, MT_DATA)) == NULL) {
-				icc->icc_err_cnt++;
-				icc->icc_inb = NULL;
+				icc->icc_iferrs++;
+				icc->icc_ifbuf = NULL;
 				break;
 			}
 		} else
@@ -179,17 +176,17 @@ icc_intr(device_t dev, int status, char *c)
 		m->m_len = m->m_pkthdr.len = 0;
 		m->m_pkthdr.rcvif = ifp;
 		
-		icc->icc_inb = m;
+		icc->icc_ifbuf = m;
 		break;
 	case INTR_STOP:
 
 		/* if any error occurred during transfert,
 		 * drop the packet */
-		if ((m = icc->icc_inb) == NULL)
-			icc->icc_err_cnt++;
+		if ((m = icc->icc_ifbuf) == NULL)
+			icc->icc_iferrs++;
 		
-		if (icc->icc_err_cnt != 0) {
-			if_printf(ifp, "errors (%d)!\n", icc->icc_err_cnt);
+		if (icc->icc_iferrs != 0) {
+			if_printf(ifp, "errors (%d)!\n", icc->icc_iferrs);
 			icc->icc_ierrors = 0;			/* reset error count */
 			if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
 			break;
@@ -199,7 +196,7 @@ icc_intr(device_t dev, int status, char *c)
 			break;					/* ignore */
 		
 		m->m_data = m->m_pktdat;
-		icc->icc_inb = NULL;
+		icc->icc_ifbuf = NULL;
 		
 		mtx_unlock(&icc->icc_lock);
 		(*ifp->if_input)(ifp, m);
@@ -208,18 +205,18 @@ icc_intr(device_t dev, int status, char *c)
 		break;
 	case INTR_RECEIVE:
 
-		if ((m = icc->icc_inb) == NULL) {
-			icc->icc_err_cnt++;
+		if ((m = icc->icc_ifbuf) == NULL) {
+			icc->icc_iferrs++;
 			break;
 		}
 
 		if (m->m_pkthdr.len >= ifp->if_mtu) {
-			icc->icc_err_cnt++;
+			icc->icc_iferrs++;
 			break;	
 		}
 
 		if (m->m_pkthdr.len >= MHLEN) {
-			icc->icc_err_cnt++;
+			icc->icc_iferrs++;
 			break;	
 		}
 
@@ -236,7 +233,7 @@ icc_intr(device_t dev, int status, char *c)
 		*c = 0xff;					/* XXX */
 	  	break;
 	case INTR_ERROR:
-		icc->icc_err_cnt++;
+		icc->icc_iferrs++;
 		break;
 	default:
 		panic("%s: unknown event (%d)!", __func__, status);
@@ -246,59 +243,21 @@ icc_intr(device_t dev, int status, char *c)
 	return (0);
 }
 
-/*
- * XXX: incomplete..
- */
-
-static void
-icc_init(void *xsc)
-{
-	struct icc_softc *icc;
-	
-	icc = (struct icc_softc *)xsc;
-	
-	mtx_lock(&icc->icc_lock);
-	icc_init_locked(icc);
-	mtx_unlock(&icc->icc_lock);
-}
-
-static void
-icc_init_locked(struct iic_softc *icc)
-{
-	struct ifnet *ifp;
-	device_t dev;
-	ifp = icc->icc_ifp;
-	dev = device_get_parent(icc->icc_dev);
-	
-	mtx_unlock(&icc->icc_lock);
-	
-	if (iicbus_request_bus(dev, icdev, IIC_WAIT | IIC_INTR) == 0) { 
-		mtx_lock(&icc->icc_lock);	
-		iicbus_reset(dev, IIC_FASTEST, 0, NULL);
-		ifp->if_drv_flags |= IFF_DRV_RUNNING;
-		ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;		
-	} else 
-		mtx_lock(&icc->icc_lock);
-}
-
 static int
 icc_encap(struct icc_softc *icc, struct mbuf **mp)
 {
-	device_t dev;
+	struct mbuf *m;
 	u_char *bp;
 	int len, sent;
-	struct mbuf *m;
-	int error;
+	device_t dev;
 	
 	mtx_assert(&icc->icc_mtx, MA_OWNED);
-	dev = device_get_parent(icc->icc_dev);
-	bp = icc->iic_outb;
-	len = 0;
 
-	if ((*m)->m_pkthdr.len > icc->icc_ifp->if_mtu) {
-		error = EMSGSIZE;
-		goto out;
-	}
+	if ((*m)->m_pkthdr.len > icc->icc_ifp->if_mtu)
+		return (EFBIG);
+	
+	bp = icc->icc_obuf;
+	len = 0;
 
 	for (m = *mp; m != NULL; m = m->m_next) {
 		bcopy(*mtod(m, u_char *), bp, m->m_len);	
@@ -306,17 +265,11 @@ icc_encap(struct icc_softc *icc, struct mbuf **mp)
 		len += m->m_len;
 		bp += m->m_len;
 	}
+	dev = device_get_parent(icc->icc_dev);
 	
-	error = icbus_block_write(dev, icc->icc_addr, 
-		icc->iic_outb, len, &sent);
-out:
-	return (error);
-	
+	return (icbus_block_write(dev, icc->icc_addr, 
+		icc->icc_obuf, len, &sent));
 }
-
-/*
- * Transmit can(4) frame.
- */
 
 static void
 icc_start(struct ifnet *ifp)
@@ -352,19 +305,48 @@ icc_start(struct ifnet *ifp)
 	mtx_unlock(&icc->icc_lock);
 }
 
+static void
+icc_init(void *xsc)
+{
+	struct icc_softc *icc;
+	
+	icc = (struct icc_softc *)xsc;
+	
+	mtx_lock(&icc->icc_lock);
+	icc_init_locked(icc);
+	mtx_unlock(&icc->icc_lock);
+}
+
+static void
+icc_init_locked(struct iic_softc *icc)
+{
+	struct ifnet *ifp;
+	device_t dev;
+	
+	ifp = icc->icc_ifp;
+	dev = device_get_parent(icc->icc_dev);
+	
+	mtx_assert(&icc->icc_mtx, MA_OWNED);
+	mtx_unlock(&icc->icc_lock);
+	
+	if (iicbus_request_bus(dev, icdev, IIC_WAIT | IIC_INTR) == 0) { 
+		mtx_lock(&icc->icc_lock);	
+		iicbus_reset(dev, IIC_FASTEST, 0, NULL);
+		ifp->if_drv_flags |= IFF_DRV_RUNNING;
+		ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;		
+	} else 
+		mtx_lock(&icc->icc_lock);
+}
+
 static int
 icc_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
-	struct icc_softc *icc;
-	device_t dev, parent;
 	struct ifreq *ifr;
+	struct icc_softc *icc;
 	int error;
 
-	icc = ifp->if_softc;
-	dev = icc->icc_dev;
-	parent = device_get_parent(dev);
-	
 	ifr = (struct ifreq *)data;
+	icc = ifp->if_softc;
 	error = 0;
 
 	switch (cmd) {
@@ -372,23 +354,15 @@ icc_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 	case SIOCSDRVSPEC:
 		break;
 	case SIOCSIFFLAGS:
-		mtx_lock(&sc->ic_lock);
+		mtx_lock(&icc->icc_lock);
 		
 		if ((ifp->if_flags & IFF_UP) != 0) {
-		    if ((ifp->if_drv_flags & IFF_DRV_RUNNING) == 0) {
-				mtx_unlock(&sc->ic_lock);
-				iic_init(iic);
-				mtx_lock(&sc->ic_lock);
-			}
-		} else if ((ifp->if_drv_flags & IFF_DRV_RUNNING) != 0) {
-			/* XXX: disable PCF, try to release the bus anyway */
-			ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
-			
-			mtx_unlock(&sc->ic_lock);
-			iicbus_release_bus(parent, icdev);
-			mtx_lock(&sc->ic_lock);
-		}
-		mtx_unlock(&sc->ic_lock);
+		    if ((ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
+				iic_init_locked(iic);
+		} else if ((ifp->if_drv_flags & IFF_DRV_RUNNING) != 0)
+			icc_stop(icc);
+		
+		mtx_unlock(&icc->icc_lock);
 		break;
 	default:
 		error = can_ioctl(ifp, cmd, data);
@@ -396,6 +370,26 @@ icc_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 	}
 
 	return (error);
+}
+
+static void 
+icc_stop(struct icc_softc *icc)
+{
+	struct ifnet *ifp;
+	device_t dev, parent;
+	
+	mtx_assert(&icc->icc_mtx, MA_OWNED);
+	ifp = icc->icc_ifp;
+	dev = icc->icc_dev;
+	parent = device_get_parent(dev);
+
+	ifp->if_drv_flags |= ~(IFF_DRV_RUNNNING | IFF_DRV_OACTIVE);
+	
+	/* XXX: disable PCF, try to release the bus anyway */
+	
+	mtx_unlock(&icc->icc_lock);
+	iicbus_release_bus(parent, dev);
+	mtx_lock(&icc->icc_lock);
 }
 
 /*

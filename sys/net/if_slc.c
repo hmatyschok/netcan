@@ -272,14 +272,14 @@ slc_rint(struct tty *tp, char c, int flags)
 	}
 
 	/* allocate mbuf(9) and initialize */
-	if ((m = slc->slc_inb) == NULL) {
+	if ((m = slc->slc_ifbuf) == NULL) {
 		if ((m = m_gethdr(M_NOWAIT, MT_DATA)) == NULL) {
 			error = ENOBUFS;
 			goto out;
 		}
 		m->m_len = m->m_pkthdr.len = 0;
 		mtx_lock(&slc->slc_mtx);
-		slc->slc_inb = m;
+		slc->slc_ifbuf = m;
 		mtx_unlock(&slc->slc_mtx);
 	}
 	
@@ -308,8 +308,8 @@ out:
 	return (error);
 bad:
 	mtx_lock(&slc->slc_mtx);
-	if (slc->slc_inb != NULL) 
-		slc->slc_inb = NULL;	
+	if (slc->slc_ifbuf != NULL) 
+		slc->slc_ifbuf = NULL;	
 	mtx_unlock(&slc->slc_mtx);
 	m_freem(m);
 	goto out;
@@ -557,9 +557,9 @@ slc_dtty(struct slc_softc *slc)
 		mtx_lock(&slc->slc_mtx);
 		slc->slc_tp = NULL;	
 		
-		if (slc->slc_inb != NULL) {
-			m_freem(slc->slc_inb);
-			slc->slc_inb = NULL;
+		if (slc->slc_ifbuf != NULL) {
+			m_freem(slc->slc_ifbuf);
+			slc->slc_ifbuf = NULL;
 		}
 		IF_DRAIN(&slc->slc_outq);
 		mtx_unlock(&slc->slc_mtx);
@@ -605,12 +605,12 @@ slc_rxeof(struct slc_softc *slc)
 	
 	mtx_lock(&slc->slc_mtx);
 		
-	if ((m = slc->slc_inb) == NULL) {
+	if ((m = slc->slc_ifbuf) == NULL) {
 		mtx_unlock(&slc->slc_mtx);
 		error = EINVAL;
 		goto out;
 	}
-	slc->slc_inb = NULL;
+	slc->slc_ifbuf = NULL;
 	mtx_unlock(&slc->slc_mtx);
 
 	if ((ifp = slc->slc_ifp) == NULL) {
