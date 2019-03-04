@@ -73,6 +73,7 @@ static const struct can_link_timecaps sja_timecaps = {
 	.cltc_brp_min =		1,
 	.cltc_brp_max =		64,
 	.cltc_brp_inc =		1,
+	.cltc_linkmode_caps =		SJA_LINKMODE_CABS,
 };
 
 /*
@@ -703,7 +704,7 @@ sja_start_locked(struct ifnet *ifp)
 		}	
 		
 		/* IAP on bpf(4) */
-		can_bpf_mtap(ifp, &m);		
+		can_bpf_mtap(ifp, m);		
 	
 		/* notify controller for transmission */
 		if (csc->csc_linkmodes & CAN_LINKMODE_ONE_SHOT)
