@@ -284,7 +284,7 @@ can_ifattach(struct ifnet *ifp, struct can_link_timecaps *cltc,
 	
 	if (cltc != NULL) {
 		bcopy(cltc, &csc->csc_timecaps, sizeof(*cltc));
-		csc->csc_csc_timecaps.cltc_clock_freq = freq;
+		csc->csc_timecaps.cltc_clock_freq = freq;
 	}
 	
 	if_printf(ifp, "Index: %d\n", ifp->if_index);
