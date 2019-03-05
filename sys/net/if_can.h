@@ -369,7 +369,6 @@ struct can_ifsoftc {
 	struct ifnet	*csc_ifp; 	/* our ifnet(9) interface */
 	struct can_link_timecaps	csc_timecaps; /* timing capabilities */
 	struct can_link_timings	csc_timings; /* operating timing values */
-	uint32_t	csc_freq;		/* CLK frequency */
 	uint32_t	csc_linkmodes;
 	uint32_t	csc_flags;
 	struct callout	csc_timo; 	/* callout for error control */
@@ -387,7 +386,7 @@ int 	can_hex2id(u_char *, struct can_frame *);
 void 	can_mbuf_tag_clean(struct mbuf *);
 
 /* interface-layer */
-void 	can_ifattach(struct ifnet *, uint32_t);
+void 	can_ifattach(struct ifnet *, struct can_link_timecaps *, uint32_t);
 void 	can_ifdetach(struct ifnet *);
 void 	can_bpf_mtap(struct ifnet *, struct mbuf *);
 void 	can_ifinit_timings(struct can_ifsoftc *);

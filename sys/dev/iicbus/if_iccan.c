@@ -140,7 +140,7 @@ icc_attach(device_t dev)
 	ifp->if_start = icc_start;
 	ifp->if_ioctl = icc_ioctl;
 
-	can_ifattach(ifp, 0);
+	can_ifattach(ifp, NULL, 0);
 	
 	ifp->if_drv_flags |= IFF_DRV_RUNNING;
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;

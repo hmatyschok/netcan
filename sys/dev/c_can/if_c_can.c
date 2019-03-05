@@ -73,6 +73,7 @@ static const struct can_link_timecaps c_can_timecaps = {
 	.cltc_brp_min =		1,
 	.cltc_brp_max =		1024,
 	.cltc_brp_inc =		1,
+	.cltc_linkmode_caps =		C_CAN_LINKMODE_CAPS,
 };
 
 /*
@@ -134,7 +135,7 @@ c_can_attach(device_t dev)
 	ifp->if_start = c_can_start;
 	ifp->if_ioctl = c_can_ioctl;
 	
-	can_ifattach(ifp, cc->cc_freq);
+	can_ifattach(ifp, &c_can_timecaps, cc->cc_freq);
 	
 	IFQ_SET_MAXLEN(&ifp->if_snd, C_CAN_IFQ_MAXLEN);
 	ifp->if_snd.ifq_drv_maxlen = C_CAN_IFQ_MAXLEN;

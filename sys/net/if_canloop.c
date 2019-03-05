@@ -144,7 +144,7 @@ canlo_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 	ifp->if_ioctl = canlo_ioctl;
 	ifp->if_start = canlo_start;
 	
-	can_ifattach(ifp, 0);
+	can_ifattach(ifp, NULL, 0);
 
 	ifp->if_drv_flags |= IFF_DRV_RUNNING;
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;

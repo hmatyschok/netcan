@@ -257,7 +257,6 @@ struct c_can_softc {
 	struct resource 	*cc_irq;
 	struct task		cc_intr_task;
 	void	*cc_intr;
-	uint32_t	cc_freq;
 	uint16_t	cc_status;
 	struct mtx	cc_mtx;
 };
@@ -268,3 +267,8 @@ struct c_can_softc {
 /* utility-macros */
 #define	c_can_timercmp(tvp, uvp, val)	\
 	(((uvp)->tv_sec - (tvp)->tv_sec) < (val))
+
+/* linkmode capabilities */
+#define C_CAN_LINKMODE_CAPS \
+	(CAN_LINKMODE_LOOPBACK|CAN_LINKMODE_LISTENONLY|
+		CAN_LINKMODE_BUS_ERR_REP)

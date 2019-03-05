@@ -242,7 +242,7 @@ sja_attach(device_t dev)
 	ifp->if_start = sja_start;
 	ifp->if_ioctl = sja_ioctl;
 	
-	can_ifattach(ifp, var->sja_freq);
+	can_ifattach(ifp, &sja_timecaps, var->sja_freq);
 	
 	IFQ_SET_MAXLEN(&ifp->if_snd, SJA_IFQ_MAXLEN);
 	ifp->if_snd.ifq_drv_maxlen = SJA_IFQ_MAXLEN;
