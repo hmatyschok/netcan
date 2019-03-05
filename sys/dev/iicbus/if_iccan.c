@@ -99,6 +99,7 @@ struct icc_softc {
 };
 
 static int	icc_encap(struct icc_softc *, struct mbuf **);
+static int	icc_error(struct icc_softc *, uint8_t);
 static void	icc_init(void *);
 static void	icc_init_locked(struct iic_softc *);
 static int	icc_ioctl(struct ifnet *, u_long, caddr_t);
@@ -233,6 +234,7 @@ icc_intr(device_t dev, int status, char *c)
 		*c = 0xff;					/* XXX */
 	  	break;
 	case INTR_ERROR:
+		(void)icc_error(icc, *c);
 		icc->icc_iferrs++;
 		break;
 	default:
@@ -241,6 +243,63 @@ icc_intr(device_t dev, int status, char *c)
 
 	mtx_unlock(&icc->icc_lock);
 	return (0);
+}
+
+static int 
+icc_error(struct icc_softc *icc, uint8_t status)
+{
+	struct ifnet *ifp;
+ 	struct mbuf *m;
+ 	struct can_frame *cf;
+ 	int error;
+	
+	mtx_assert(&icc->icc_mtx, MA_OWNED);
+	ifp = icc->icc_ifp;
+
+	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL)) {
+		error = ENOBUFS;
+		goto done;
+	}
+	error = 0; 
+	 
+	(void)memset(mtod(m, caddr_t), 0, MHLEN);
+	cf = mtod(m, struct can_frame *);
+	cf->can_id |= CAN_ERR_FLAG;
+
+	switch (status) {
+	case IIC_EBUSERR:		/* bus error condition */
+		
+		if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
+		
+		cf->can_id |= (CAN_ERR_PROTO | CAN_ERR_BE);
+		cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROTO_UNSPEC;
+	
+		/* map error location */
+		cf->can_data[CAN_ERR_DF_PROTO_LOC] |= CAN_ERR_PROTO_LOC_UNSPEC;
+	
+		break;
+	case IIC_EOVERFLOW:		/* data overrun condition */	
+		if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
+		
+		cf->can_id |= CAN_ERR_DEV;
+		cf->can_data[CAN_ERR_DF_DEV] |= CAN_ERR_DEV_RX_OVF;
+	
+		break;
+	default:
+		m_freem(m);
+		error = EIO;
+		goto done;
+	}
+	
+	/* pass can(4) frame to upper layer */
+	m->m_len = m->m_pkthdr.len = sizeof(*cf);
+	m->m_pkthdr.rcvif = ifp;
+
+	mtx_unlock(&icc->icc_lock);
+	(*ifp->if_input)(ifp, m);
+	mtx_lock(&icc->icc_lock);
+done:
+	return (error);
 }
 
 static int
@@ -341,12 +400,12 @@ icc_init_locked(struct iic_softc *icc)
 static int
 icc_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
-	struct ifreq *ifr;
 	struct icc_softc *icc;
+	struct ifreq *ifr;
 	int error;
 
-	ifr = (struct ifreq *)data;
 	icc = ifp->if_softc;
+	ifr = (struct ifreq *)data;
 	error = 0;
 
 	switch (cmd) {

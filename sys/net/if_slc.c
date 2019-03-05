@@ -212,8 +212,8 @@ slc_ifstart(struct ifnet *ifp)
 static int
 slc_ifioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
-	struct ifdrv *ifd;
 	struct slc_softc *slc;
+	struct ifdrv *ifd;
 	int error;
 
 	if ((slc = ifp->if_softc) == NULL) {
