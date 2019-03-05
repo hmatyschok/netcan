@@ -435,10 +435,10 @@ sja_intr(void *arg)
 	int n, error;
 	
 	sja = (struct sja_softc *)arg;
-	var = sja->sja_var;
 
 	SJA_LOCK(sja);
-
+	
+	var = sja->sja_var;
 	ifp = sja->sja_ifp;
 
 	if (ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
@@ -473,9 +473,6 @@ bad:
 	goto done;
 }
 
-/*
- * Service primitive for exception handling.
- */
 static int 
 sja_error(struct sja_softc *sja, uint8_t intr)
 {
@@ -820,7 +817,6 @@ sja_init_locked(struct sja_softc *sja)
 	/* enable interrupts, if any */
 	if ((status & SJA_MOD_RM) == 0) {
 		status = SJA_IER_ALL;
-		status &= ~SJA_IER_BEIE;
 
 		if ((csc->csc_linkmodes & CAN_LINKMODE_BUS_ERR_REP) == 0)
 			status &= ~SJA_IER_BEIE;
