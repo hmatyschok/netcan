@@ -283,7 +283,7 @@ can_ifattach(struct ifnet *ifp, struct can_link_timecaps *cltc,
 	mtx_init(&csc->csc_mtx, "csc_mtx", NULL, MTX_DEF);
 	
 	if (cltc != NULL)
-		bcopy(cltc, &csc->csc_csc_timecaps, sizeof(*cltc));
+		bcopy(cltc, &csc->csc_timecaps, sizeof(*cltc));
 	
 	csc->csc_csc_timecaps.cltc_clock_freq = freq;
 	
