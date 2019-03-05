@@ -235,7 +235,6 @@ icc_intr(device_t dev, int status, char *c)
 	  	break;
 	case INTR_ERROR:
 		(void)icc_error(icc, *c);
-		icc->icc_iferrs++;
 		break;
 	default:
 		panic("%s: unknown event (%d)!", __func__, status);
@@ -254,6 +253,9 @@ icc_error(struct icc_softc *icc, uint8_t status)
  	int error;
 	
 	mtx_assert(&icc->icc_mtx, MA_OWNED);
+	
+	icc->icc_iferrs++;
+	
 	ifp = icc->icc_ifp;
 
 	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL)) {
