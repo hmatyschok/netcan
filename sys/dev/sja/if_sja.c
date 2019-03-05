@@ -446,7 +446,7 @@ sja_intr(void *arg)
 	
 	status = SJA_READ_1(sja->sja_dev, var, SJA_IR);
 
-	if ((status & SJA_IR_OFF) != 0)
+	if (status == SJA_IR_OFF)
 		goto bad;
 	
 	for (n = 0; status != SJA_IR_OFF && n < 6; n++) { /* XXX */
