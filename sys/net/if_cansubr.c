@@ -138,8 +138,9 @@ static int 	can_ifoutput(struct ifnet *, struct mbuf *,
 static void
 can_ifinput(struct ifnet *ifp, struct mbuf *m)
 {
+#ifdef DIAGNOSTIC	
 	struct can_hdr *ch; 
-	
+#endif 	/* DIAGNOSTIC */	
 	M_ASSERTPKTHDR(m);
 	KASSERT(m->m_pkthdr.rcvif != NULL,
 	    ("%s: NULL interface pointer", __func__));
@@ -169,9 +170,9 @@ can_ifinput(struct ifnet *ifp, struct mbuf *m)
 			goto bad1;
 		}
 	}
-	ch = mtod(m, struct can_hdr *);
-
 #ifdef DIAGNOSTIC	
+	ch = mtod(m, struct can_hdr *);
+	
 	switch (ch->ch_id & CAN_FLAG_MASK) {
 	case CAN_STD_FRM:
 	case CAN_EXT_FRM:
@@ -196,14 +197,12 @@ can_ifinput(struct ifnet *ifp, struct mbuf *m)
 	if (ifp->if_flags & IFF_LOOPBACK)
 		can_mbuf_tag_clean(m);
 
-#ifdef CAN
 	if_inc_counter(ifp, IFCOUNTER_IPACKETS, 1);
 	if_inc_counter(ifp, IFCOUNTER_IBYTES, m->m_pkthdr.len);
 
 	M_SETFIB(m, ifp->if_fib);
 	netisr_dispatch(NETISR_CAN, m);
 	return;
-#endif /* CAN */
 bad1:
 	if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
 bad:
@@ -606,6 +605,7 @@ can_hex2bin(u_char *buf, struct can_frame *cf)
 int
 can_id2hex(struct can_frame *cf, u_char *buf)
 {
+	canid_t id;
 	int len;
 	u_char *ep;
 	u_char c;
@@ -614,15 +614,15 @@ can_id2hex(struct can_frame *cf, u_char *buf)
 		return (-1);
 	
 	if ((cf->can_id & CAN_EFF_FLAG) != 0) {
-		cf->can_id &= CAN_EFF_MASK;
+		id = (cf->can_id & CAN_EFF_MASK);
 		len = SLC_EFF_ID_LEN;
 	} else {
-		cf->can_id &= CAN_SFF_MASK;
+		id = (cf->can_id & CAN_SFF_MASK);
 		len = SLC_SFF_ID_LEN;
 	}
 	
-	for (ep = buf + len - 1; ep >= buf; ep--, cf->can_id >>= 4) {
-		c = (cf->can_id & 0x0f);
+	for (ep = buf + len - 1; ep >= buf; ep--, id >>= 4) {
+		c = (id & 0x0f);
 		
 		if (isdigit(c))
 			c -= '0';

@@ -645,6 +645,7 @@ slc_rxeof(struct slc_softc *slc)
 out:
 	return (error);			
 bad:
+	if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
 	m_freem(m);
 	goto out;
 }
