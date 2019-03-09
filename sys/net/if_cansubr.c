@@ -170,20 +170,20 @@ can_ifinput(struct ifnet *ifp, struct mbuf *m)
 		}
 	}
 	ch = mtod(m, struct can_hdr *);
-	
+
+#ifdef DIAGNOSTIC	
 	switch (ch->ch_id & CAN_FLAG_MASK) {
 	case CAN_STD_FRM:
 	case CAN_EXT_FRM:
 	case CAN_RTR_FRM:
 	case CAN_ERR_FRM:
-#ifdef DIAGNOSTIC
 		if_printf(ifp, "%s: ", __func__);
 		m_print(m, m->m_pkthdr.len);
-#endif /* DIAGNOSTiC */
 		break;
 	default:
 		goto bad1;
 	}
+#endif /* DIAGNOSTIC */
 	
 #ifdef MAC
 	mac_ifnet_create_mbuf(ifp, m);
@@ -239,7 +239,7 @@ can_ifoutput(struct ifnet *ifp, struct mbuf *m,
 		goto bad;
 #endif 	/* MAC */
 	
-	if (ifp->if_flags & IFF_MONITOR) {
+	if ((ifp->if_flags & IFF_MONITOR) != 0) {
 		error = ENETDOWN;
 		goto bad;
 	}
@@ -546,14 +546,10 @@ can_mbuf_tag_clean(struct mbuf *m)
 int
 can_bin2hex(struct can_frame *cf, u_char *buf)
 {
-	int len;
-	int i;
+	int len, i;
 	u_char c;
 	
-	if (buf == NULL) /* XXX: buflen??? */
-		return (-1);
-	
-	if (cf == NULL) 
+	if (buf == NULL || cf == NULL) 
 		return (-1);
 	
 	if (cf->can_dlc >= CAN_MAX_DLC)
@@ -580,21 +576,15 @@ can_bin2hex(struct can_frame *cf, u_char *buf)
 int
 can_hex2bin(u_char *buf, struct can_frame *cf)
 {
-	int len;
-	int i;
+	int len, i;
 	u_char c;
 	
-	if (cf == NULL) 
-		return (-1);
-	
-	if (buf == NULL)
+	if (cf == NULL || buf == NULL)
 		return (-1);
 	
 	if (cf->can_dlc >= CAN_MAX_DLC)
 		return (-1);
-	
-	(void)memset(cf->can_data, 0, cf->can_dlc); /* XXX */
-	
+		
 	len = cf->can_dlc * 2;
 	
 	for (i = 0; buf[i] != 0 && i < len; i++) {
@@ -620,13 +610,10 @@ can_id2hex(struct can_frame *cf, u_char *buf)
 	u_char *ep;
 	u_char c;
 	
-	if (buf == NULL)
+	if (buf == NULL || cf == NULL)
 		return (-1);
 	
-	if (cf == NULL)
-		return (-1);
-	
-	if (cf->can_id & CAN_EFF_FLAG) {
+	if ((cf->can_id & CAN_EFF_FLAG) != 0) {
 		cf->can_id &= CAN_EFF_MASK;
 		len = SLC_EFF_ID_LEN;
 	} else {
@@ -650,24 +637,19 @@ can_id2hex(struct can_frame *cf, u_char *buf)
 int
 can_hex2id(u_char *buf, struct can_frame *cf)
 {
-	int len;
-	canid_t u;
-	canid_t v;
-	int i;
+	int len, i;
+	canid_t u, v;
 	u_char c;
 	
-	if (cf == NULL)
+	if (cf == NULL || buf == NULL)
 		return (-1);
 	
-	if (buf == NULL)
-		return (-1);
-	
-	if (cf->can_id & CAN_EFF_FLAG) 
+	if ((cf->can_id & CAN_EFF_FLAG) != 0) 
 		len = SLC_EFF_ID_LEN;
 	else 
 		len = SLC_SFF_ID_LEN;
 	
-	for (u = v = 0, i = 0; i < len; i++, v <<= 4) { /* XXX */
+	for (i = 0, u = v = 0; i < len; i++, v <<= 4) { /* XXX */
 		c = buf[i];
 		
 		if (isdigit(c))
@@ -692,7 +674,8 @@ can_alloc(u_char type, struct ifnet *ifp)
 {
 	struct can_ifsoftc *csc;
 	
-	csc = malloc(sizeof(struct can_ifsoftc), M_IFCAN, M_WAITOK | M_ZERO);
+	csc = malloc(sizeof(struct can_ifsoftc), 
+		M_IFCAN, M_WAITOK | M_ZERO);
 	csc->csc_ifp = ifp;
 	
 	return (csc);

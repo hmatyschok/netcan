@@ -268,9 +268,7 @@ icc_error(struct icc_softc *icc, uint8_t status)
 	cf = mtod(m, struct can_frame *);
 	cf->can_id |= CAN_ERR_FLAG;
 
-	switch (status) {
-	case IIC_EBUSERR:		/* bus error condition */
-		
+	if (status == IIC_EBUSERR) {	/* bus error condition */
 		if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
 		
 		cf->can_id |= (CAN_ERR_PROTO | CAN_ERR_BE);
@@ -278,16 +276,13 @@ icc_error(struct icc_softc *icc, uint8_t status)
 	
 		/* map error location */
 		cf->can_data[CAN_ERR_DF_PROTO_LOC] |= CAN_ERR_PROTO_LOC_UNSPEC;
-	
-		break;
-	case IIC_EOVERFLOW:		/* data overrun condition */	
+
+	} else if (status == IIC_EOVERFLOW) {	/* data overrun condition */	
 		if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
 		
 		cf->can_id |= CAN_ERR_DEV;
 		cf->can_data[CAN_ERR_DF_DEV] |= CAN_ERR_DEV_RX_OVF;
-	
-		break;
-	default:
+	} else {
 		m_freem(m);
 		error = EIO;
 		goto done;

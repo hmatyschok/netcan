@@ -83,7 +83,7 @@ static MALLOC_DEFINE(M_SLC, "slc", "Serial line can(4) Interface");
  
 /* Subr. */
 static void 	slc_destroy(struct slc_softc *);
-static int 	slc_encap(struct slc_softc *, struct mbuf **);
+static struct tty *tp	slc_encap(struct slc_softc *, struct mbuf **);
 static int 	slc_rxeof(struct slc_softc *); 
 static int 	slc_gtty(struct slc_softc *, void *); 
 static int 	slc_stty(struct slc_softc *, void *, struct thread *); 
@@ -125,11 +125,6 @@ static struct cdevsw slc_cdevsw = {
 	.d_ioctl = 	slc_ioctl,
 	.d_name = 	slc_name,
 };
-
-/*-
- * Interface-level routines.
- * 
- */
  
 static void
 slc_ifinit(void *xsc)
@@ -155,11 +150,10 @@ static void
 slc_ifstart(struct ifnet *ifp)
 {
 	struct slc_softc *slc;
-	struct tty *tp;
 	struct mbuf *m;
+	struct tty *tp;
 	
 	slc = ifp->if_softc;
-	tp = slc->slc_tp;
 		
 	if ((ifp->if_drv_flags & (IFF_DRV_RUNNING | IFF_DRV_OACTIVE)) !=
 	    IFF_DRV_RUNNING)
@@ -171,44 +165,28 @@ slc_ifstart(struct ifnet *ifp)
 		if (m == NULL) 
 			break;
 
-		/* IAP on bpf(4). */
 		can_bpf_mtap(ifp, m);
 
-		if (tp == NULL) {
-			m_freem(m);
-			continue;
-		}
-
 		/* 
-		 * Encode CAN frame in its 
+		 * Encode can(4) frame in its 
 		 *
 		 *  <type> <id> <dlc> <data>*
 		 * 
 		 * ASCII representation.
 		 */
-		if (slc_encap(slc, &m) != 0) {
-			if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
-			m_freem(m);
-			continue;
-		}
-		
-		/* do some statistics */		
-		if_inc_counter(ifp, IFCOUNTER_OBYTES, m->m_pkthdr.len);
-		if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);		
-		
-		/* notify the tty(4) */
-		tty_lock(tp);
-		if (tty_gone(tp) == 0)
-			ttydevsw_outwakeup(tp);
-		tty_unlock(tp);
+		if ((tp = slc_encap(slc, &m)) != NULL) {
+			/* notify the tty(4) */
+			tty_lock(tp);
+			
+			if (tty_gone(tp) == 0)
+				ttydevsw_outwakeup(tp);
+			
+			tty_unlock(tp);
+		}		
 	}								
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 }
 
-/*
- * Process an ioctl(2) request.
- */
-/* ARGSUSED */
 static int
 slc_ifioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
@@ -249,14 +227,6 @@ out:
 	return (error);
 }
 
-/*-
- * Bottom-level subr.
- * 
- */
-
-/*
- * Rx-interrupt.
- */
 static int
 slc_rint(struct tty *tp, char c, int flags)
 {
@@ -271,16 +241,16 @@ slc_rint(struct tty *tp, char c, int flags)
 		goto out;
 	}
 
+	mtx_lock(&slc->slc_mtx);
+
 	/* allocate mbuf(9) and initialize */
 	if ((m = slc->slc_ifbuf) == NULL) {
 		if ((m = m_gethdr(M_NOWAIT, MT_DATA)) == NULL) {
 			error = ENOBUFS;
-			goto out;
+			goto out1;
 		}
 		m->m_len = m->m_pkthdr.len = 0;
-		mtx_lock(&slc->slc_mtx);
 		slc->slc_ifbuf = m;
-		mtx_unlock(&slc->slc_mtx);
 	}
 	
 	if (flags != 0) {
@@ -304,15 +274,16 @@ slc_rint(struct tty *tp, char c, int flags)
 		error = EFBIG;
 		goto bad;
 	}
+out1:	
+	mtx_unlock(&slc->slc_mtx);
 out:
 	return (error);
 bad:
-	mtx_lock(&slc->slc_mtx);
-	if (slc->slc_ifbuf != NULL) 
-		slc->slc_ifbuf = NULL;	
-	mtx_unlock(&slc->slc_mtx);
+	m->m_data = m->m_pktdat;
 	m_freem(m);
-	goto out;
+	
+	slc->slc_ifbuf = NULL;	
+	goto out1;
 }
 
 static size_t
@@ -322,9 +293,6 @@ slc_rint_poll(struct tty *tp)
 	return (1);
 }
 
-/*
- * Tx-interrupt.
- */
 static size_t
 slc_txeof(struct tty *tp, void *buf, size_t len)
 {
@@ -386,11 +354,6 @@ slc_txeof_poll(struct tty *tp)
 	return (outqlen);
 }
 
-/*-
- * Device-level routines.
- * 
- */
-
 static int
 slc_open(struct cdev *dev, int flag, int mode, struct thread *td)
 {
@@ -431,11 +394,6 @@ slc_ioctl(struct cdev *dev, u_long cmd, caddr_t data, int flags,
 	return (error);
 }
 
-/*-
- * Subr.
- * 
- */
-
 static void
 slc_destroy(struct slc_softc *slc)
 {
@@ -464,25 +422,37 @@ slc_destroy(struct slc_softc *slc)
 	free(slc, M_SLC);
 }
 
-/* 
- * Serialize data and enqueue for transmission. 
- */ 
-static int 
+static struct tty *
 slc_encap(struct slc_softc *slc, struct mbuf **mp)
-{
-	u_char buf[MHLEN];
-	u_char *bp;
+{ 
+	struct ifnet *ifp;
+	struct tty *tp;
 	struct mbuf *m;
 	struct can_frame *cf;
+	u_char buf[MHLEN], *bp;
 	int len;
-	int error;
 	
-	(void)memset((bp = buf), 0, MHLEN);
+	mtx_lock(&slc->slc_mtx);
+	ifp = slc->slc_ifp;
 
-	m = *mp;
+	if ((tp = slc->slc_tp) == NULL)
+		goto bad;
+	
+	/* get a writable copy, if any */
+	if (M_WRITABLE(*mp) == 0) {
+		if ((m = m_dup(*mp, M_NOWAIT)) == NULL)
+			goto bad1;
+			
+		m_freem(*mp);	
+		*mp = m;
+	} else
+		m = *mp;
+
 	cf = mtod(m, struct can_frame *);
 	
-	/* determine CAN frame type */
+	(void)memset((bp = buf), 0, MHLEN);
+	
+	/* determine can(4) frame type */
 	if ((cf->can_id & CAN_RTR_FLAG) != 0) 
 		*bp = SLC_HC_SFF_RTR;
 	else
@@ -494,10 +464,9 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	bp += SLC_CMD_LEN;	
 
 	/* map id */
-	if ((len = can_id2hex(cf, bp)) < 0) {
-		error = EINVAL;
-		goto out;
-	}
+	if ((len = can_id2hex(cf, bp)) != 0)
+		goto bad1;
+		
 	bp += len;
 	
 	/* map dlc */
@@ -506,10 +475,9 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	
 	/* apply data, if any */
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) { /* XXX */
-		if (can_bin2hex(cf, bp) < 0) {
-			error = EINVAL;
-			goto out;
-		}
+		if (can_bin2hex(cf, bp) != 0)
+			goto bad1;
+			
 		bp += cf->can_dlc;	
 	}
 
@@ -525,26 +493,34 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 
 	bcopy(buf, mtod(m, u_char *), len);
 	
-	/* enqueue */
-	mtx_lock(&slc->slc_mtx);
+	/* enqueue, if any */
 	IF_LOCK(&slc->slc_outq);
-	if (_IF_QFULL(&slc->slc_outq)) 
-		error = ENOSPC; /* XXX: upcall??? */
-	else {
-		_IF_ENQUEUE(&slc->slc_outq, m);
-		slc->slc_outqlen += m->m_pkthdr.len;
-		error = 0;
-	}
+	
+	if (_IF_QFULL(&slc->slc_outq)) {
+		IF_UNLOCK(&slc->slc_outq);
+		goto bad1;
+	} 
+	
+	_IF_ENQUEUE(&slc->slc_outq, m);
+	slc->slc_outqlen += len;
+
 	IF_UNLOCK(&slc->slc_outq);
-	mtx_unlock(&slc->slc_mtx);
+	
+	/* do some statistics */
+	if_inc_counter(ifp, IFCOUNTER_OBYTES, len);
+	if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
 out:
-	*mp = m;	
-	return (error);
+	mtx_unlock(&slc->slc_mtx);
+	return (tp);
+bad1:
+	if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
+	tp = NULL;
+bad:
+	m_freem(*mp);
+	*mp = NULL;
+	goto out;
 }
 
-/* 
- * Detach tty(4) hook. 
- */
 static int 
 slc_dtty(struct slc_softc *slc)
 {
@@ -573,9 +549,6 @@ slc_dtty(struct slc_softc *slc)
 	return (error);
 }
 
-/* 
- * Get id from hooked line. 
- */
 static int 
 slc_gtty(struct slc_softc *slc, void *data)
 {
@@ -589,39 +562,29 @@ slc_gtty(struct slc_softc *slc, void *data)
 	return (0);
 }
 
-/* 
- * De-serialize rx'd data, handoff into protocol-layer. 
- */ 
 static int
 slc_rxeof(struct slc_softc *slc)
 {
-	int error = 0;
 	struct ifnet *ifp;
 	struct mbuf *m;
-	u_char buf[MHLEN];
-	u_char *bp;
+	u_char buf[MHLEN], *bp;
 	struct can_frame *cf;
-	int len;
+	int len, error = 0;
 	
-	mtx_lock(&slc->slc_mtx);
+	mtx_assert(&slc->slc_mtx, MA_OWNED);
+	ifp = slc->slc_ifp;
 		
 	if ((m = slc->slc_ifbuf) == NULL) {
-		mtx_unlock(&slc->slc_mtx);
-		error = EINVAL;
+		error = ENOBUFS;
 		goto out;
 	}
+	
 	slc->slc_ifbuf = NULL;
-	mtx_unlock(&slc->slc_mtx);
-
-	if ((ifp = slc->slc_ifp) == NULL) {
-		error = ENXIO;
-		goto bad;
-	}
 
 	(void)memset((bp = buf), 0, MHLEN);
 	cf = (struct can_frame *)bp;
 
-	/* determine CAN frame type */
+	/* determine can(4) frame type */
 	switch (*mtod(m, u_char *)) {
 	case SLC_HC_SFF_RTR:
 		cf->can_id |= CAN_RTR_FLAG;
@@ -641,7 +604,7 @@ slc_rxeof(struct slc_softc *slc)
 	m_adj(m, SLC_CMD_LEN);
 	
 	/* fetch id */
-	if ((len = can_hex2id(mtod(m, u_char *), cf)) < 0) {
+	if ((len = can_hex2id(mtod(m, u_char *), cf)) != 0) {
 		error = EINVAL;
 		goto bad;
 	}
@@ -650,13 +613,9 @@ slc_rxeof(struct slc_softc *slc)
 	/* fetch dlc */
 	cf->can_dlc = *mtod(m, u_char *);
 	
-	if (cf->can_dlc < SLC_HC_DLC_INF) {
-		error = EINVAL;
-		goto bad;
-	}
-	
-	if (cf->can_dlc > SLC_HC_DLC_SUP) {
-		error = EINVAL;
+	if ((cf->can_dlc < SLC_HC_DLC_INF) || 
+		(cf->can_dlc > SLC_HC_DLC_SUP)) {
+		error = EMSGSIZE;
 		goto bad;
 	}
 	cf->can_dlc -= SLC_HC_DLC_INF;
@@ -664,16 +623,12 @@ slc_rxeof(struct slc_softc *slc)
 	
 	/* fetch data, if any */
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) { 
-		if (can_hex2bin(mtod(m, u_char *), cf) < 0) {
+		if (can_hex2bin(mtod(m, u_char *), cf) != 0) {
 			error = EINVAL;
 			goto bad;
 		}
 	}
-
-	if (m->m_len < sizeof(struct can_frame))
-		len = sizeof(struct can_frame);
-	else
-		len = sizeof(struct can_hdr) + cf->can_dlc;
+	len = sizeof(struct can_frame);
 
 	/* reinitialize mbuf(9) and copy back */
 	m->m_len = m->m_pkthdr.len = len;
@@ -681,9 +636,11 @@ slc_rxeof(struct slc_softc *slc)
 
 	bcopy(buf, mtod(m, u_char *), len);
 	
-	/* pass CAN frame to layer above */
+	/* pass can(4) frame to layer above */
 	m->m_pkthdr.rcvif = ifp;
+ 	mtx_unlock(&slc->slc_mtx);
  	(*ifp->if_input)(ifp, m);
+ 	mtx_lock(&slc->slc_mtx);
 out:
 	return (error);			
 bad:
@@ -724,14 +681,6 @@ out:
 	return (error);
 }
 
-/*- 
- * Interface cloner and module description. 
- * 
- */ 
-
-/* 
- * Ctor. 
- */
 static int
 slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 {
@@ -782,9 +731,6 @@ slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 	return (0);
 }
 
-/* 
- * Dtor. 
- */
 static void
 slc_ifclone_destroy(struct ifnet *ifp)
 {

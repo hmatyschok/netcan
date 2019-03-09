@@ -478,20 +478,15 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	struct sja_data *var;
  	struct mbuf *m;
  	struct can_frame *cf;
- 	int error;
-	uint8_t status;
-	uint8_t flags;
+	uint8_t status, flags;
 	
 	SJA_LOCK_ASSERT(sja);
 	ifp = sja->sja_ifp;
 	csc = ifp->if_l2com;
 	var = sja->sja_var;
 	
-	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL)) {
-		error = ENOBUFS;
-		goto done;
-	}
-	error = 0;
+	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL))
+		return (ENOBUFS);
 	 
 	(void)memset(mtod(m, caddr_t), 0, MHLEN);
 	cf = mtod(m, struct can_frame *);
@@ -578,8 +573,8 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	SJA_UNLOCK(sja);
 	(*ifp->if_input)(ifp, m);
 	SJA_LOCK(sja);
-done:
-	return (error);
+
+	return (0);
 }
 
 /*
@@ -593,18 +588,16 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 	struct can_frame *cf;
 	uint8_t status;
 	uint8_t addr;
-	int i, error = 0;
+	int i;
 	
 	SJA_LOCK_ASSERT(sja);
 	var = sja->sja_var;
 	
 	/* get a writable copy, if any */
 	if (M_WRITABLE(*mp) == 0) {
-		m = m_dup(*mp, M_NOWAIT);
-		if (m == NULL) {
-			error = ENOBUFS;
-			goto out;
-		}
+		if ((m = m_dup(*mp, M_NOWAIT)) == NULL)
+			return (ENOBUFS);
+		
 		m_freem(*mp);
 	} else
 		m = *mp;
@@ -646,8 +639,8 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 
 	m_freem(m); /* XXX */
 	*mp = NULL;
-out:	
-	return (error);
+
+	return (0);
 }
 
 /*
