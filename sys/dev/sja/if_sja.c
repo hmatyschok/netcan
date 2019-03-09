@@ -335,21 +335,19 @@ sja_rxeof(struct sja_softc *sja)
 	struct sja_data *var;
 	struct mbuf *m;
 	struct can_frame *cf;
-	uint8_t addr;
-	uint8_t status;
+	uint8_t status, addr;
 	int i;
 	
 	SJA_LOCK_ASSERT(sja);
 	ifp = sja->sja_ifp;
 	var = sja->sja_var;
-	
 again:	
 	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL)) {
 		if_inc_counter(ifp, IFCOUNTER_IQDROPS, 1);
 		goto done;
 	}
 	 
-	(void)memset(mtod(m, caddr_t), 0, MHLEN);
+	bzero(mtod(m, caddr_t), MHLEN);
 	cf = mtod(m, struct can_frame *);
 
 	/* fetch frame information */	
@@ -488,7 +486,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL))
 		return (ENOBUFS);
 	 
-	(void)memset(mtod(m, caddr_t), 0, MHLEN);
+	bzero(mtod(m, caddr_t), MHLEN);
 	cf = mtod(m, struct can_frame *);
 	cf->can_id |= CAN_ERR_FLAG;
 
