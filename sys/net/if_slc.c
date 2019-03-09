@@ -83,7 +83,7 @@ static MALLOC_DEFINE(M_SLC, "slc", "Serial line can(4) Interface");
  
 /* Subr. */
 static void 	slc_destroy(struct slc_softc *);
-static struct tty *tp	slc_encap(struct slc_softc *, struct mbuf **);
+static struct tty *	slc_encap(struct slc_softc *, struct mbuf **);
 static int 	slc_rxeof(struct slc_softc *); 
 static int 	slc_gtty(struct slc_softc *, void *); 
 static int 	slc_stty(struct slc_softc *, void *, struct thread *); 
@@ -464,7 +464,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	bp += SLC_CMD_LEN;	
 
 	/* map id */
-	if ((len = can_id2hex(cf, bp)) != 0)
+	if ((len = can_id2hex(cf, bp)) < 0)
 		goto bad1;
 		
 	bp += len;
@@ -475,7 +475,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	
 	/* apply data, if any */
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) { /* XXX */
-		if (can_bin2hex(cf, bp) != 0)
+		if (can_bin2hex(cf, bp) < 0)
 			goto bad1;
 			
 		bp += cf->can_dlc;	
@@ -513,9 +513,10 @@ out:
 	mtx_unlock(&slc->slc_mtx);
 	return (tp);
 bad1:
-	if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
 	tp = NULL;
 bad:
+	if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
+	
 	m_freem(*mp);
 	*mp = NULL;
 	goto out;
@@ -604,7 +605,7 @@ slc_rxeof(struct slc_softc *slc)
 	m_adj(m, SLC_CMD_LEN);
 	
 	/* fetch id */
-	if ((len = can_hex2id(mtod(m, u_char *), cf)) != 0) {
+	if ((len = can_hex2id(mtod(m, u_char *), cf)) < 0) {
 		error = EINVAL;
 		goto bad;
 	}
@@ -623,7 +624,7 @@ slc_rxeof(struct slc_softc *slc)
 	
 	/* fetch data, if any */
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) { 
-		if (can_hex2bin(mtod(m, u_char *), cf) != 0) {
+		if (can_hex2bin(mtod(m, u_char *), cf) < 0) {
 			error = EINVAL;
 			goto bad;
 		}
