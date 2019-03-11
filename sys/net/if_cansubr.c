@@ -637,11 +637,12 @@ can_id2hex(struct can_frame *cf, u_char *buf)
 int
 can_hex2id(u_char *buf, struct can_frame *cf)
 {
-	int len, i;
+	int len;
 	canid_t u, v;
+	u_char *bp, *ep;
 	u_char c;
 	
-	if (cf == NULL || buf == NULL)
+	if (cf == NULL || (bp = buf) == NULL)
 		return (-1);
 	
 	if ((cf->can_id & CAN_EFF_FLAG) != 0) 
@@ -649,8 +650,8 @@ can_hex2id(u_char *buf, struct can_frame *cf)
 	else 
 		len = SLC_SFF_ID_LEN;
 	
-	for (i = 0, u = v = 0; i < len; i++, v <<= 4) { /* XXX */
-		c = buf[i];
+	for (u = v = 0, ep = buf + len - 1; bp <= ep; bp++, v <<= 4) {
+		c = *bp;
 		
 		if (isdigit(c))
 			c -= '0';
