@@ -546,9 +546,10 @@ int
 can_bin2hex(struct can_frame *cf, u_char *buf)
 {
 	int len, i;
+	u_char *bp;
 	u_char c;
 	
-	if (buf == NULL || cf == NULL) 
+	if ((bp = buf) == NULL || cf == NULL) 
 		return (-1);
 	
 	if (cf->can_dlc >= CAN_MAX_DLC)
@@ -565,9 +566,9 @@ can_bin2hex(struct can_frame *cf, u_char *buf)
 			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
 	
 		if ((i & 1) == 0)
-			buf[i / 2] |= (c >> 4);
+			bp[i / 2] |= (c >> 4);
 		else
-			buf[i / 2] |= c;
+			bp[i / 2] |= c;
 	}
 	return (0);
 }
@@ -576,9 +577,10 @@ int
 can_hex2bin(u_char *buf, struct can_frame *cf)
 {
 	int len, i;
+	u_char *bp;
 	u_char c;
 	
-	if (cf == NULL || buf == NULL)
+	if (cf == NULL || (bp = buf) == NULL)
 		return (-1);
 	
 	if (cf->can_dlc >= CAN_MAX_DLC)
@@ -586,8 +588,8 @@ can_hex2bin(u_char *buf, struct can_frame *cf)
 		
 	len = cf->can_dlc * 2;
 	
-	for (i = 0; buf[i] != 0 && i < len; i++) {
-		c = buf[i];
+	for (i = 0; bp[i] != 0 && i < len; i++) {
+		c = bp[i];
 	
 		if (isdigit(c))
 			c -= '0';
