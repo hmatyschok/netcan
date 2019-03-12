@@ -194,7 +194,7 @@ can_ifinput(struct ifnet *ifp, struct mbuf *m)
 	can_bpf_mtap(ifp, m);
 
 	/* remove annotated meta-data */
-	if (ifp->if_flags & IFF_LOOPBACK)
+	if ((ifp->if_flags & IFF_LOOPBACK) != 0)
 		can_mbuf_tag_clean(m);
 
 	if_inc_counter(ifp, IFCOUNTER_IPACKETS, 1);
@@ -508,12 +508,13 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 void
 can_bpf_mtap(struct ifnet *ifp, struct mbuf *m)
 {
-	/* bpf wants the CAN id in network byte order */
 	struct can_frame *cf;
 	canid_t oid;
 
+	/* bpf(4) wants the can(4) id in network byte order */
+
 	cf = mtod(m, struct can_frame *);
-	oid = cf->can_id;
+	oid = cf->can_id;	
 	cf->can_id = htonl(oid);
 	bpf_mtap(ifp->if_bpf, m);
 	cf->can_id = oid;
@@ -555,9 +556,7 @@ can_bin2hex(struct can_frame *cf, u_char *buf)
 	if (cf->can_dlc >= CAN_MAX_DLC)
 		return (-1);
 	
-	len = cf->can_dlc * 2;
-	
-	for (i = 0; cf->can_data[i] != 0 && i < len; i++) {
+	for (len = cf->can_dlc, i = 0; i < len; i++) {
 		c = cf->can_data[i];
 	
 		if (isdigit(c))
@@ -565,10 +564,11 @@ can_bin2hex(struct can_frame *cf, u_char *buf)
 		else if (isalpha(c)) 
 			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
 	
-		if ((i & 1) == 0)
-			bp[i / 2] |= (c >> 4);
-		else
-			bp[i / 2] |= c;
+		*bp = (c & 0x0f);
+		bp += 1;
+		
+		*bp = ((c & 0xf0) >> 4);
+		bp += 1;
 	}
 	return (0);
 }
