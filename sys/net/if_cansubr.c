@@ -564,10 +564,10 @@ can_bin2hex(struct can_frame *cf, u_char *buf)
 		else if (isalpha(c)) 
 			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
 	
-		*bp = (c & 0x0f);
+		*bp = ((c & 0xf0) >> 4);
 		bp += 1;
 		
-		*bp = ((c & 0xf0) >> 4);
+		*bp = (c & 0x0f);
 		bp += 1;
 	}
 	return (0);
