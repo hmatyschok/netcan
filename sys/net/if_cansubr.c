@@ -542,21 +542,21 @@ can_mbuf_tag_clean(struct mbuf *m)
  * See sys/cam/ctl/ctl.c [@ line #4486] and the licence 
  * information on top of this file for further details. 
  */
-
+ 
 int
 can_bin2hex(struct can_frame *cf, u_char *buf)
 {
 	int len, i;
-	u_char *bp;
+	u_char *dp,*bp;
 	u_char c;
 	
 	if ((bp = buf) == NULL || cf == NULL) 
 		return (-1);
 	
-	if (cf->can_dlc >= CAN_MAX_DLC)
+	if ((len = cf->can_dlc) >= CAN_MAX_DLC)
 		return (-1);
 	
-	for (len = cf->can_dlc, i = 0; i < len; i++) {
+	for (i = 0; i < len; i++) {
 		c = cf->can_data[i];
 	
 		if (isdigit(c))
@@ -567,7 +567,7 @@ can_bin2hex(struct can_frame *cf, u_char *buf)
 		*bp = ((c & 0xf0) >> 4);
 		bp += 1;
 		
-		*bp = (c & 0x0f);
+		*bp = (c & 0x0f); 
 		bp += 1;
 	}
 	return (0);
@@ -578,28 +578,34 @@ can_hex2bin(u_char *buf, struct can_frame *cf)
 {
 	int len, i;
 	u_char *bp;
-	u_char c;
+	u_char c1, c0;
 	
 	if (cf == NULL || (bp = buf) == NULL)
 		return (-1);
 	
-	if (cf->can_dlc >= CAN_MAX_DLC)
+	if ((len = cf->can_dlc) >= CAN_MAX_DLC)
 		return (-1);
+	
+	for (i = 0; i < len; i++) {
+		c1 = *bp;
+	
+		if (isdigit(c1))
+			c1 -= '0';
+		else if (isalpha(c1)) 
+			c1 -= (isupper(c1)) ? 'A' - 10 : 'a' - 10;
+
+		bp += 1;
 		
-	len = cf->can_dlc * 2;
+		c0 = *bp;
 	
-	for (i = 0; bp[i] != 0 && i < len; i++) {
-		c = bp[i];
+		if (isdigit(c0))
+			c0 -= '0';
+		else if (isalpha(c0)) 
+			c0 -= (isupper(c0)) ? 'A' - 10 : 'a' - 10;
 	
-		if (isdigit(c))
-			c -= '0';
-		else if (isalpha(c)) 
-			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
-	
-		if ((i & 1) == 0)
-			cf->can_data[i / 2] |= (c << 4);
-		else
-			cf->can_data[i / 2] |= c;
+		bp += 1;
+		
+		cf->can_data[i] = ((c1 << 4) | c0);
 	}
 	return (0);
 }
@@ -609,10 +615,10 @@ can_id2hex(struct can_frame *cf, u_char *buf)
 {
 	canid_t id;
 	int len;
-	u_char *ep;
+	u_char *bp, *ep;
 	u_char c;
 	
-	if (buf == NULL || cf == NULL)
+	if ((bp = buf) == NULL || cf == NULL)
 		return (-1);
 	
 	if ((cf->can_id & CAN_EFF_FLAG) != 0) {
@@ -623,7 +629,7 @@ can_id2hex(struct can_frame *cf, u_char *buf)
 		len = SLC_SFF_ID_LEN;
 	}
 	
-	for (ep = buf + len - 1; ep >= buf; ep--, id >>= 4) {
+	for (ep = bp + len - 1; ep >= bp; ep--, id >>= 4) {
 		c = (id & 0x0f);
 		
 		if (isdigit(c))
