@@ -547,7 +547,7 @@ int
 can_bin2hex(struct can_frame *cf, u_char *buf)
 {
 	int len, i;
-	u_char *dp,*bp;
+	u_char *bp;
 	u_char c;
 	
 	if ((bp = buf) == NULL || cf == NULL) 
@@ -586,7 +586,7 @@ can_hex2bin(u_char *buf, struct can_frame *cf)
 	if ((len = cf->can_dlc) >= CAN_MAX_DLC)
 		return (-1);
 	
-	for (i = 0; i < len; i++) {
+	for (i = 0; i < len; i++, bp++) {
 		c1 = *bp;
 	
 		if (isdigit(c1))
@@ -594,7 +594,7 @@ can_hex2bin(u_char *buf, struct can_frame *cf)
 		else if (isalpha(c1)) 
 			c1 -= (isupper(c1)) ? 'A' - 10 : 'a' - 10;
 
-		bp += 1;
+		bp++;
 		
 		c0 = *bp;
 	
@@ -602,8 +602,6 @@ can_hex2bin(u_char *buf, struct can_frame *cf)
 			c0 -= '0';
 		else if (isalpha(c0)) 
 			c0 -= (isupper(c0)) ? 'A' - 10 : 'a' - 10;
-	
-		bp += 1;
 		
 		cf->can_data[i] = ((c1 << 4) | c0);
 	}
@@ -658,7 +656,7 @@ can_hex2id(u_char *buf, struct can_frame *cf)
 	else 
 		len = SLC_SFF_ID_LEN;
 	
-	for (u = v = 0, ep = buf + len - 1; bp <= ep; bp++, v <<= 4) {
+	for (u = v = 0, ep = bp + len - 1; bp <= ep; bp++, v <<= 4) {
 		c = *bp;
 		
 		if (isdigit(c))
