@@ -522,14 +522,14 @@ can_bin2hex(struct can_frame *cf, u_char *buf)
 
 		*bp = ((c & 0xf0) >> 4);
 		
-		if (isalpha(*bp)) 
+		if (isalpha(*bp) && islower(*bp)) 
 			*bp = toupper(*bp);
 
 		bp += 1;
 		
 		*bp = (c & 0x0f); 
 		
-		if (isalpha(*bp)) 
+		if (isalpha(*bp) && islower(*bp)) 
 			*bp = toupper(*bp);
 		
 		bp += 1;
@@ -594,7 +594,7 @@ can_id2hex(struct can_frame *cf, u_char *buf)
 	for (ep = bp + len - 1; ep >= bp; ep--, id >>= 4) {
 		c = (id & 0x0f);
 
-		if (isalpha(c)) 
+		if (isalpha(c) && islower(c)) 
 			c = toupper(c);
 	
 		*ep = c;	
