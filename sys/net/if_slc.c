@@ -613,6 +613,7 @@ slc_rxeof(struct slc_softc *slc)
 	
 	/* fetch dlc */
 	cf->can_dlc = *mtod(m, u_char *);
+	m_adj(m, SLC_DLC_LEN);
 	
 	if ((cf->can_dlc < SLC_HC_DLC_INF) || 
 		(cf->can_dlc > SLC_HC_DLC_SUP)) {
@@ -620,7 +621,6 @@ slc_rxeof(struct slc_softc *slc)
 		goto bad;
 	}
 	cf->can_dlc -= SLC_HC_DLC_INF;
-	m_adj(m, SLC_DLC_LEN);
 	
 	/* fetch data, if any */
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) { 

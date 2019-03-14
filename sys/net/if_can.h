@@ -328,8 +328,10 @@ struct can_link_timings {
 #define CAN_LINKMODE_PRESUME_ACK	0x40    /* Ignore missing CAN ACKs */
 #define CAN_LINKMODE_FD_NON_ISO		0x80	/* CAN FD, non-ISO mode */
 
+#if 0
 #define CAN_IFFBITS \ /* XXX: incomplete, ... work in progres. */
     "\020\1LOOPBACK\2LISTENONLY\3TRIPLESAMPLE\4PRESUMEACK"
+#endif
 
 #define CANGLINKMODE	3 /* (uint32_t) get bits */
 #define CANSLINKMODE	4 /* (uint32_t) set bits */
