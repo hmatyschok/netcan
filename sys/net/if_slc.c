@@ -258,18 +258,19 @@ slc_rint(struct tty *tp, char c, int flags)
 		goto bad;
 	}
 	
-	*mtod(m, u_char *) = c;
-	
-	m->m_data++;
-	m->m_len++;
-	m->m_pkthdr.len++;
-
 	if (m->m_len < MHLEN) {
 		if (c == SLC_HC_BEL || c == SLC_HC_CR) {
 			m->m_data = m->m_pktdat;
 			error = slc_rxeof(slc);
-		} else 
+		} else {
+			*mtod(m, u_char *) = c;
+	
+			m->m_data++;
+			m->m_len++;
+			m->m_pkthdr.len++;
+
 			error = 0;
+		}
 	} else {
 		error = EFBIG;
 		goto bad;
