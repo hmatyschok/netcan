@@ -476,15 +476,15 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	
 	/* apply data, if any */
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) { /* XXX */
-		if (can_bin2hex(cf, bp) < 0)
+		if ((len = can_bin2hex(cf, bp)) < 0)
 			goto bad1;
 			
-		bp += cf->can_dlc;	
+		bp += len;	
 	}
 
 	/* finalize */
 	*bp = SLC_HC_CR;
-	bp += sizeof(u_char);
+	bp += 1;
 	
 	/* re-initialize mbuf(9) and copy back */
 	len = bp - buf; 

@@ -508,7 +508,7 @@ int
 can_bin2hex(struct can_frame *cf, u_char *buf)
 {
 	int len, i;
-	u_char *bp;
+	u_char *bp, *dp;
 	u_char c;
 	
 	if ((bp = buf) == NULL || cf == NULL) 
@@ -517,24 +517,27 @@ can_bin2hex(struct can_frame *cf, u_char *buf)
 	if ((len = cf->can_dlc) >= CAN_MAX_DLC)
 		return (-1);
 	
-	for (i = 0; i < len; i++) {
+	for (dp = bp, i = 0; i < len; i++) {
 		c = cf->can_data[i];
 
-		*bp = ((c & 0xf0) >> 4);
+		*dp = ((c & 0xf0) >> 4);
 		
-		if (isalpha(*bp) && islower(*bp)) 
-			*bp = toupper(*bp);
+		if (isalpha(*dp) && islower(*dp)) 
+			*dp = toupper(*dp);
 
-		bp += 1;
+		dp += 1;
 		
-		*bp = (c & 0x0f); 
+		*dp = (c & 0x0f); 
 		
-		if (isalpha(*bp) && islower(*bp)) 
-			*bp = toupper(*bp);
+		if (isalpha(*dp) && islower(*dp)) 
+			*dp = toupper(*dp);
 		
-		bp += 1;
+		dp += 1;
 	}
-	return (0);
+		
+	len = dp - bp;
+	
+	return (len);
 }
 
 int
