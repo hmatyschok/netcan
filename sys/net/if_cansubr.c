@@ -28,42 +28,6 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-/*-
- * Copyright (c) 2003-2009 Silicon Graphics International Corp.
- * Copyright (c) 2012 The FreeBSD Foundation
- * Copyright (c) 2014-2017 Alexander Motin <mav@FreeBSD.org>
- * All rights reserved.
- *
- * Portions of this software were developed by Edward Tomasz Napierala
- * under sponsorship from the FreeBSD Foundation.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions, and the following disclaimer,
- *    without modification.
- * 2. Redistributions in binary form must reproduce at minimum a disclaimer
- *    substantially similar to the "NO WARRANTY" disclaimer below
- *    ("Disclaimer") and any redistribution must be conditioned upon
- *    including a substantially similar Disclaimer requirement for further
- *    binary redistribution.
- *
- * NO WARRANTY
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * HOLDERS OR CONTRIBUTORS BE LIABLE FOR SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
- * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGES.
- *
- * $Id$
- */ 
 /*
  * Copyright (c) 2018, 2019 Henning Matyschok
  * All rights reserved.
@@ -538,9 +502,6 @@ can_mbuf_tag_clean(struct mbuf *m)
 
 /*
  * Utility functions.
- *
- * See sys/cam/ctl/ctl.c [@ line #4486] and the licence 
- * information on top of this file for further details. 
  */
  
 int
@@ -558,12 +519,12 @@ can_bin2hex(struct can_frame *cf, u_char *buf)
 	
 	for (i = 0; i < len; i++) {
 		c = cf->can_data[i];
-	
+
 		if (isdigit(c))
-			c -= '0';
+			c = toupper(c);
 		else if (isalpha(c)) 
-			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
-	
+			c = toupper(c);
+
 		*bp = ((c & 0xf0) >> 4);
 		bp += 1;
 		
@@ -586,17 +547,17 @@ can_hex2bin(u_char *buf, struct can_frame *cf)
 	if ((len = cf->can_dlc) >= CAN_MAX_DLC)
 		return (-1);
 	
-	for (i = 0; i < len; i++, bp++) {
+	for (i = 0; i < len; i++) {
 		c1 = *bp;
+		bp += 1;
 	
 		if (isdigit(c1))
 			c1 -= '0';
 		else if (isalpha(c1)) 
 			c1 -= (isupper(c1)) ? 'A' - 10 : 'a' - 10;
 
-		bp++;
-		
 		c0 = *bp;
+		bp += 1;
 	
 		if (isdigit(c0))
 			c0 -= '0';
@@ -629,12 +590,12 @@ can_id2hex(struct can_frame *cf, u_char *buf)
 	
 	for (ep = bp + len - 1; ep >= bp; ep--, id >>= 4) {
 		c = (id & 0x0f);
-		
+
 		if (isdigit(c))
-			c -= '0';
+			c = toupper(c);
 		else if (isalpha(c)) 
-			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
-		
+			c = toupper(c);
+	
 		*ep = c;	
 	}
 	return (len);
@@ -656,8 +617,9 @@ can_hex2id(u_char *buf, struct can_frame *cf)
 	else 
 		len = SLC_SFF_ID_LEN;
 	
-	for (u = v = 0, ep = bp + len - 1; bp <= ep; bp++, v <<= 4) {
+	for (u = v = 0, ep = bp + len - 1; bp <= ep; v <<= 4) {
 		c = *bp;
+		bp += 1;
 		
 		if (isdigit(c))
 			c -= '0';
