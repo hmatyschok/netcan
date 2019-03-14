@@ -520,15 +520,18 @@ can_bin2hex(struct can_frame *cf, u_char *buf)
 	for (i = 0; i < len; i++) {
 		c = cf->can_data[i];
 
-		if (isdigit(c))
-			c = toupper(c);
-		else if (isalpha(c)) 
-			c = toupper(c);
-
 		*bp = ((c & 0xf0) >> 4);
+		
+		if (isalpha(*bp)) 
+			*bp = toupper(*bp);
+
 		bp += 1;
 		
 		*bp = (c & 0x0f); 
+		
+		if (isalpha(*bp)) 
+			*bp = toupper(*bp);
+		
 		bp += 1;
 	}
 	return (0);
@@ -591,9 +594,7 @@ can_id2hex(struct can_frame *cf, u_char *buf)
 	for (ep = bp + len - 1; ep >= bp; ep--, id >>= 4) {
 		c = (id & 0x0f);
 
-		if (isdigit(c))
-			c = toupper(c);
-		else if (isalpha(c)) 
+		if (isalpha(c)) 
 			c = toupper(c);
 	
 		*ep = c;	
