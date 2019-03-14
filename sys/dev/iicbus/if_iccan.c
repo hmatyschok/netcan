@@ -264,7 +264,7 @@ icc_error(struct icc_softc *icc, uint8_t status)
 	}
 	error = 0; 
 	 
-	bzero(mtod(m, caddr_t), MHLEN);
+	(void)memset(mtod(m, caddr_t), 0, MHLEN);
 	cf = mtod(m, struct can_frame *);
 	cf->can_id |= CAN_ERR_FLAG;
 

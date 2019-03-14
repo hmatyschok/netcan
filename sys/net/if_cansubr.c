@@ -294,7 +294,7 @@ can_restart(struct ifnet *ifp)
 		goto done;
 	}
 	 
-	bzero(mtod(m, caddr_t), MHLEN);
+	(void)memset(mtod(m, caddr_t), 0, MHLEN);
 	
 	cf = mtod(m, struct can_frame *);
 	cf->can_id |= (CAN_ERR_FLAG | CAN_ERR_RESTARTED);

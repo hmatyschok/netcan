@@ -347,7 +347,7 @@ again:
 		goto done;
 	}
 	 
-	bzero(mtod(m, caddr_t), MHLEN);
+	(void)memset(mtod(m, caddr_t), 0, MHLEN);
 	cf = mtod(m, struct can_frame *);
 
 	/* fetch frame information */	
@@ -486,7 +486,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL))
 		return (ENOBUFS);
 	 
-	bzero(mtod(m, caddr_t), MHLEN);
+	(void)memset(mtod(m, caddr_t), 0, MHLEN);
 	cf = mtod(m, struct can_frame *);
 	cf->can_id |= CAN_ERR_FLAG;
 

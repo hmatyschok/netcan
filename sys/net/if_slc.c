@@ -451,7 +451,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 
 	cf = mtod(m, struct can_frame *);
 	
-	bzero((bp = buf), MHLEN);
+	(void)memset((bp = buf), 0, MHLEN);
 	
 	/* determine can(4) frame type */
 	if ((cf->can_id & CAN_RTR_FLAG) != 0) 
@@ -583,7 +583,7 @@ slc_rxeof(struct slc_softc *slc)
 	
 	slc->slc_ifbuf = NULL;
 
-	bzero((bp = buf), MHLEN);
+	(void)memset((bp = buf), 0, MHLEN);
 	cf = (struct can_frame *)bp;
 
 	/* determine can(4) frame type */
