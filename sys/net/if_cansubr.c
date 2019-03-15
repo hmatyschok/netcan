@@ -577,6 +577,8 @@ can_hex2bin(u_char *buf, struct can_frame *cf)
 			c0 -= '0';
 		else if (isalpha(c0)) 
 			c0 -= (isupper(c0)) ? 'A' - 10 : 'a' - 10;
+		else
+			return (-1);
 		
 		cf->can_data[i] = ((c1 << 4) | c0);
 	}
