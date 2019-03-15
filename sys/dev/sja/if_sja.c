@@ -37,7 +37,9 @@
 #include <net/if_types.h>
 
 /*
- * XXX: Well, work in progess ...
+ * XXX: Well, it's a work in progess, because
+ * XXX: there is a lots of work to accomplish 
+ * XXX: conformancy with AN97076. 
  */
 
 #include <dev/sja/if_sjareg.h>

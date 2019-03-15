@@ -53,7 +53,7 @@
 #include <net/if_slcvar.h>
 
 /*
- * Serial line CAN interface implemented by tty(4) hook.
+ * Serial line can(4) interface implemented by tty(4) hook.
  * 
  * XXX: It's a work in progress and should be understood as  
  * XXX: RAD prototype for the purpose of developing a tty(4) 
@@ -630,6 +630,7 @@ slc_rxeof(struct slc_softc *slc)
 			goto bad;
 		}
 	}
+
 	len = sizeof(struct can_frame);
 
 	/* reinitialize mbuf(9) and copy back */

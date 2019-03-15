@@ -31,7 +31,7 @@
 /*
  * linux/can/error.h
  *
- * Definitions of the CAN error messages to be filtered and passed to the user.
+ * Definitions of the can(4) error messages to be filtered and passed to the user.
  *
  * Author: Oliver Hartkopp <oliver.hartkopp@volkswagen.de>
  * Copyright (c) 2002-2007 Volkswagen Group Electronic Research
@@ -91,18 +91,13 @@
 #ifndef _NET_IF_CAN_H
 #define _NET_IF_CAN_H
 
-#define IFT_CAN 	IFT_PVC
+#define IFT_can(4) 	IFT_PVC
 
 /*
- * CAN frame delimeter
- */
-#define CAN_SOF_FLAG 	0x01
-#define CAN_EOF_FLAG 	0x80
-
-/*
- * CAN id structure
- * bits 0-28	: CAN identifier (11/29 bits, see bit 31)
- * bit2 29-31	: see below
+ * can(4) ID structure
+ * 
+ *  bits 0-28	: can(4) identifier (11/29 bits, see bit 31)
+ *  bit2 29-31	: see below
  */
 
 typedef uint32_t	canid_t;
@@ -114,16 +109,16 @@ typedef uint32_t	can_err_mask_t;
 #define CAN_ERR_FLAG 	0x20000000U	/* error message frame */
 #define CAN_FLAG_MASK 	0xe0000000U
 
-/* valid bits in CAN ID for frame formats */
+/* valid bits in can(4) ID for frame formats */
 #define CAN_SFF_MASK 	0x000007ffU /* standard frame format (SFF) */
 #define CAN_EFF_MASK 	0x1fffffffU /* extended frame format (EFF) */
 #define CAN_ERR_MASK 	0x1fffffffU /* error frame format */
 
-/* CAN SDU length and DLC definitions according to ISO 11898-1 */
+/* can(4) SDU length and DLC definitions according to ISO 11898-1 */
 #define CAN_MAX_DLC 	8
 #define CAN_MAX_DLEN 	8
 
-/* CAN header */
+/* can(4) header */
 struct can_hdr {
 	canid_t	ch_id;		/* ID + EFF/RTR/ERR flags */
 	uint8_t	ch_dlc; 	/* SDU length in byte (0 .. CAN_MAX_DLEN) */
@@ -136,7 +131,7 @@ struct can_hdr {
 #define CAN_RTR_FRM 	CAN_RTR_FLAG
 #define CAN_ERR_FRM 	CAN_ERR_FLAG
 
-/* CAN frame */
+/* can(4) frame */
 struct can_frame {
 	canid_t	can_id;		/* ID + EFF/RTR/ERR flags */
 	uint8_t	can_dlc;	/* SDU length in byte (0 .. CAN_MAX_DLEN) */
@@ -179,7 +174,7 @@ struct can_frame {
 				      /* the protocol-defined level of 127)  */
 #define CAN_ERR_DEV_ACTIVE		0x40 /* recovered to error active state */
 
-/* error in CAN protocol (type), data[2] */
+/* error in can(4) protocol (type), data[2] */
 #define CAN_ERR_PROTO_UNSPEC		0x00 /* unspecified */
 #define CAN_ERR_PROTO_BIT		0x01 /* single bit error */
 #define CAN_ERR_PROTO_FORM		0x02 /* frame format error */
@@ -190,7 +185,7 @@ struct can_frame {
 #define CAN_ERR_PROTO_ACTIVE		0x40 /* active error announcement */
 #define CAN_ERR_PROTO_TX		0x80 /* error occurred on transmission */
 
-/* error in CAN protocol (location), data[3] */
+/* error in can(4) protocol (location), data[3] */
 #define CAN_ERR_PROTO_LOC_UNSPEC		0x00 /* unspecified */
 #define CAN_ERR_PROTO_LOC_SOF		 0x03 /* start of frame */
 #define CAN_ERR_PROTO_LOC_ID28_21		0x02 /* ID bits 28 - 21 (SFF: 10 - 3) */
@@ -198,21 +193,21 @@ struct can_frame {
 #define CAN_ERR_PROTO_LOC_SRTR		0x04 /* substitute RTR (SFF: RTR) */
 #define CAN_ERR_PROTO_LOC_IDE		0x05 /* identifier extension */
 #define CAN_ERR_PROTO_LOC_ID17_13		0x07 /* ID bits 17-13 */
-#define CAN_ERR_PROTO_LOC_ID12_05		0x0F /* ID bits 12-5 */
-#define CAN_ERR_PROTO_LOC_ID04_00		0x0E /* ID bits 4-0 */
-#define CAN_ERR_PROTO_LOC_RTR		0x0C /* RTR */
-#define CAN_ERR_PROTO_LOC_RES1		0x0D /* reserved bit 1 */
+#define CAN_ERR_PROTO_LOC_ID12_05		0x0f /* ID bits 12-5 */
+#define CAN_ERR_PROTO_LOC_ID04_00		0x0e /* ID bits 4-0 */
+#define CAN_ERR_PROTO_LOC_RTR		0x0c /* RTR */
+#define CAN_ERR_PROTO_LOC_RES1		0x0d /* reserved bit 1 */
 #define CAN_ERR_PROTO_LOC_RES0		0x09 /* reserved bit 0 */
-#define CAN_ERR_PROTO_LOC_DLC		0x0B /* data length code */
-#define CAN_ERR_PROTO_LOC_DATA		0x0A /* data section */
+#define CAN_ERR_PROTO_LOC_DLC		0x0b /* data length code */
+#define CAN_ERR_PROTO_LOC_DATA		0x0a /* data section */
 #define CAN_ERR_PROTO_LOC_CRC_SEQ		0x08 /* CRC sequence */
 #define CAN_ERR_PROTO_LOC_CRC_DEL		0x18 /* CRC delimiter */
 #define CAN_ERR_PROTO_LOC_ACK		0x19 /* ACK slot */
-#define CAN_ERR_PROTO_LOC_ACK_DEL		0x1B /* ACK delimiter */
-#define CAN_ERR_PROTO_LOC_EOF		0x1A /* end of frame */
+#define CAN_ERR_PROTO_LOC_ACK_DEL		0x1b /* ACK delimiter */
+#define CAN_ERR_PROTO_LOC_EOF		0x1a /* end of frame */
 #define CAN_ERR_PROTO_LOC_INTERM		0x12 /* intermission */
 
-/* error status of CAN transceiver, data[4] */
+/* error status of can(4) transceiver, data[4] */
 #define CAN_ERR_TRX_UNSPEC		0x00 /* 0000 0000 */
 #define CAN_ERR_TRX_CANH_NO_WIRE    	   0x04 /* 0000 0100 */
 #define CAN_ERR_TRX_CANH_SHORT_TO_BAT 		0x05 /* 0000 0101 */
@@ -247,7 +242,7 @@ struct canfd_frame {
 
 #define CANFD_MTU         (sizeof(struct canfd_frame))
 
-/* Serial line CAN */
+/* serial line can(4) */
 #define SLC_CMD_LEN 	(sizeof(u_char))
 #define SLC_SFF_ID_LEN 	(sizeof(u_char) * 3)
 #define SLC_EFF_ID_LEN 	(sizeof(u_char) * 8)
@@ -265,7 +260,7 @@ struct canfd_frame {
 #define SLC_HC_DLC_SUP 	'9'
 
 /*
- * CAN ID based filter
+ * can(4) ID based filter
  * checks received can_id & can_filter.cf_mask against
  *   can_filter.cf_id & can_filter.cf_mask
  * valid flags for can_id:
@@ -287,7 +282,7 @@ struct can_tp {
 };
 
 /*
- * CAN bus link-layer related commands, from the SIOCSDRVSPEC
+ * can(4) bus link-layer related commands, from the SIOCSDRVSPEC
  */
 
 /* get timing capabilities from HW */
@@ -324,9 +319,9 @@ struct can_link_timings {
 #define CAN_LINKMODE_3SAMPLES		0x04    /* Triple sampling mode */
 #define CAN_LINKMODE_ONE_SHOT	0x08    /* One-shot mode */
 #define CAN_LINKMODE_BUS_ERR_REP	0x10	/* Bus-error reporting */
-#define CAN_LINKMODE_FD		0x20	/* CAN FD mode */
-#define CAN_LINKMODE_PRESUME_ACK	0x40    /* Ignore missing CAN ACKs */
-#define CAN_LINKMODE_FD_NON_ISO		0x80	/* CAN FD, non-ISO mode */
+#define CAN_LINKMODE_FD		0x20	/* can(4) FD mode */
+#define CAN_LINKMODE_PRESUME_ACK	0x40    /* Ignore missing can(4) ACKs */
+#define CAN_LINKMODE_FD_NON_ISO		0x80	/* can(4) FD, non-ISO mode */
 
 #if 0
 #define CAN_IFFBITS \ /* XXX: incomplete, ... work in progres. */
@@ -355,7 +350,7 @@ struct can_link_timings {
 #include <sys/time.h>
 
 /*
- * Common structure for CAN interface drivers maps to if_l2com.
+ * Common structure for can(4) interface drivers maps to if_l2com.
  * 
  * XXX: IFT_OTHER schould replaced by 
  * XXX:
