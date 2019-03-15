@@ -34,7 +34,7 @@
 #include <net/if_can.h>
 
 /*
- * Definitions for serial line CAN interface data structures.
+ * Definitions for serial line can(4) interface data structures.
  */
 
 #define SLC_MTU 	33 /* includes ext. CAN frame size */
@@ -47,16 +47,8 @@ struct slc_softc {
 	struct mbuf	*slc_ifbuf;
 	struct ifqueue	slc_outq;		/* queue of outgoing data */
 	size_t	slc_outqlen;	/* number of bytes in outq */
-	u_int	slc_flags;
 	TAILQ_ENTRY(slc_softc) slc_next;
 	struct mtx	slc_mtx;
 };
-
-/* internal flags */ 	/* XXX */
-#define	SLC_DETACHED	0x00000000U
-#define	SLC_ATTACHED	0x00000001U
-#define	SLC_CONNECTED	0x00000002U
-#define	SLC_ERROR 	0x00000004U
-#define	SLC_DEBUG 	0x00000008U
 #endif /* _KERNEL */
 #endif /* _NET_IF_SLCVAR_H_ */

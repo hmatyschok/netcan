@@ -60,7 +60,7 @@
  * XXX: device-driver class.
  * XXX:
  * XXX: See sys/sys/ttydevsw.h for further details.
- * 
+ *
  * Example - using uart(4) for MAC:
  * 
  *  a) create process, open(2) uart(4) device(9) 
@@ -70,6 +70,12 @@
  *  c) ifconfig slc0 create
  * 
  *  d) ifconfig slc0 stty cuau0
+ * 
+ * Finally, see the implementation of
+ * 
+ *  linux/drivers/net/can/slcan.c
+ * 
+ * for further details.
  */
 
 static struct if_clone *slc_cloner;
@@ -125,26 +131,409 @@ static struct cdevsw slc_cdevsw = {
 	.d_ioctl = 	slc_ioctl,
 	.d_name = 	slc_name,
 };
- 
+
+/* 
+ * Subr.
+ * 
+ */
+
 static void
-slc_ifinit(void *xsc)
+slc_destroy(struct slc_softc *slc)
+{
+	struct ifnet *ifp;
+	struct cdev *dev;
+	
+	/* destroy its ifnet(9) mapping */
+	ifp = slc->slc_ifp;
+	ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
+	ifp->if_flags &= ~IFF_UP;
+
+	can_ifdetach(ifp);
+	if_free(ifp);
+	
+	slc->slc_ifp = NULL;
+	
+	/* detach hook, if any and flush queue */
+	(void)slc_dtty(slc);
+	
+	mtx_destroy(&slc->slc_outq.ifq_mtx);
+	mtx_destroy(&slc->slc_mtx);
+	
+	/* destroy its device(9) mapping */
+	dev = slc->slc_dev;
+	destroy_dev(dev);
+	free(slc, M_SLC);
+}
+
+static struct tty *
+slc_encap(struct slc_softc *slc, struct mbuf **mp)
+{ 
+	struct ifnet *ifp;
+	struct tty *tp;
+	struct mbuf *m;
+	struct can_frame *cf;
+	u_char buf[MHLEN], *bp;
+	int len;
+	
+	mtx_lock(&slc->slc_mtx);
+	ifp = slc->slc_ifp;
+
+	if ((tp = slc->slc_tp) == NULL)
+		goto bad;
+	
+	/* get a writable copy, if any */
+	if (M_WRITABLE(*mp) == 0) {
+		if ((m = m_dup(*mp, M_NOWAIT)) == NULL)
+			goto bad1;
+			
+		m_freem(*mp);	
+		*mp = m;
+	} else
+		m = *mp;
+
+	cf = mtod(m, struct can_frame *);
+	
+	(void)memset((bp = buf), 0, MHLEN);
+	
+	/* determine can(4) frame type */
+	if ((cf->can_id & CAN_RTR_FLAG) != 0) 
+		*bp = SLC_HC_SFF_RTR;
+	else
+		*bp = SLC_HC_SFF_DATA;
+	
+	if ((cf->can_id & CAN_EFF_FLAG) != 0) 
+		*bp = toupper(*bp);
+		
+	bp += SLC_CMD_LEN;	
+
+	/* map id */
+	if ((len = can_id2hex(cf, bp)) < 0)
+		goto bad1;
+		
+	bp += len;
+	
+	/* map dlc */
+	*bp = cf->can_dlc + '0';
+	bp += SLC_DLC_LEN;
+	
+	/* apply data, if any */
+	if ((cf->can_id & CAN_RTR_FLAG) == 0) { /* XXX */
+		if ((len = can_bin2hex(cf, bp)) < 0)
+			goto bad1;
+			
+		bp += len;	
+	}
+
+	/* finalize */
+	*bp = SLC_HC_CR;
+	bp += 1;
+	
+	/* re-initialize mbuf(9) and copy back */
+	len = bp - buf; 
+	
+	m->m_len = m->m_pkthdr.len = len;
+	m->m_data = m->m_pktdat;
+
+	bcopy(buf, mtod(m, u_char *), len);
+	
+	/* enqueue, if any */
+	IF_LOCK(&slc->slc_outq);
+	
+	if (_IF_QFULL(&slc->slc_outq)) {
+		IF_UNLOCK(&slc->slc_outq);
+		goto bad1;
+	} 
+	
+	_IF_ENQUEUE(&slc->slc_outq, m);
+	slc->slc_outqlen += len;
+
+	IF_UNLOCK(&slc->slc_outq);
+	
+	/* do some statistics */
+	if_inc_counter(ifp, IFCOUNTER_OBYTES, len);
+	if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
+out:
+	mtx_unlock(&slc->slc_mtx);
+	return (tp);
+bad1:
+	tp = NULL;
+bad:
+	if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
+	
+	m_freem(*mp);
+	*mp = NULL;
+	goto out;
+}
+
+static int
+slc_rxeof(struct slc_softc *slc)
+{
+	struct ifnet *ifp;
+	struct mbuf *m;
+	u_char buf[MHLEN], *bp;
+	struct can_frame *cf;
+	int len, error = 0;
+	
+	mtx_assert(&slc->slc_mtx, MA_OWNED);
+	ifp = slc->slc_ifp;
+		
+	if ((m = slc->slc_ifbuf) == NULL) {
+		error = ENOBUFS;
+		goto out;
+	}
+	
+	slc->slc_ifbuf = NULL;
+
+	(void)memset((bp = buf), 0, MHLEN);
+	cf = (struct can_frame *)bp;
+
+	/* determine can(4) frame type */
+	switch (*mtod(m, u_char *)) {
+	case SLC_HC_SFF_RTR:
+		cf->can_id |= CAN_RTR_FLAG;
+					 	/* FALLTHROUGH */
+	case SLC_HC_SFF_DATA:
+		break;
+	case SLC_HC_EFF_RTR:
+		cf->can_id |= CAN_RTR_FLAG;
+					 	/* FALLTHROUGH */
+	case SLC_HC_EFF_DATA:
+		cf->can_id |= CAN_EFF_FLAG; 
+		break;
+	default:
+		error = EINVAL;
+		goto bad;
+	}
+	m_adj(m, SLC_CMD_LEN);
+	
+	/* fetch id */
+	if ((len = can_hex2id(mtod(m, u_char *), cf)) < 0) {
+		error = EINVAL;
+		goto bad;
+	}
+	m_adj(m, len);
+	
+	/* fetch dlc */
+	cf->can_dlc = *mtod(m, u_char *);
+	m_adj(m, SLC_DLC_LEN);
+	
+	if ((cf->can_dlc < SLC_HC_DLC_INF) || 
+		(cf->can_dlc > SLC_HC_DLC_SUP)) {
+		error = EMSGSIZE;
+		goto bad;
+	}
+	cf->can_dlc -= SLC_HC_DLC_INF;
+	
+	/* fetch data, if any */
+	if ((cf->can_id & CAN_RTR_FLAG) == 0) { 
+		if (can_hex2bin(mtod(m, u_char *), cf) < 0) {
+			error = EINVAL;
+			goto bad;
+		}
+	}
+
+	len = sizeof(struct can_frame);
+
+	/* reinitialize mbuf(9) and copy back */
+	m->m_len = m->m_pkthdr.len = len;
+	m->m_data = m->m_pktdat;
+
+	bcopy(buf, mtod(m, u_char *), len);
+	
+	/* pass can(4) frame to layer above */
+	m->m_pkthdr.rcvif = ifp;
+ 	mtx_unlock(&slc->slc_mtx);
+ 	(*ifp->if_input)(ifp, m);
+ 	mtx_lock(&slc->slc_mtx);
+out:
+	return (error);			
+bad:
+	if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
+	m_freem(m);
+	goto out;
+}
+
+static int 
+slc_dtty(struct slc_softc *slc)
+{
+	struct tty *tp;
+	int error;
+	
+	if ((tp = slc->slc_tp) != NULL) {
+		tty_lock(tp);
+		ttyhook_unregister(tp);
+		mtx_lock(&slc->slc_mtx);
+		slc->slc_tp = NULL;	
+		
+		if (slc->slc_ifbuf != NULL) {
+			m_freem(slc->slc_ifbuf);
+			slc->slc_ifbuf = NULL;
+		}
+		IF_DRAIN(&slc->slc_outq);
+		mtx_unlock(&slc->slc_mtx);
+		error = 0;
+	} else
+		error = ESRCH;
+	
+	if (slc->slc_ifp != NULL)
+		slc_ifinit(slc);
+	
+	return (error);
+}
+
+static int 
+slc_gtty(struct slc_softc *slc, void *data)
+{
+	dev_t *d = (dev_t *)data;
+	
+	if (slc->slc_tp != NULL)
+		*d = tty_udev(slc->slc_tp);	
+	else
+		*d = NODEV;
+
+	return (0);
+}
+
+static int 
+slc_stty(struct slc_softc *slc, void *data, struct thread *td)
+{
+	struct proc *p;
+	int fd;
+	int error;
+	
+	if (td == NULL) {
+		error = ESRCH;
+		goto out;
+	}
+	
+	if ((p = td->td_proc) == NULL) {
+		error = ESRCH;
+		goto out;
+	}
+	
+	if (p->p_flag & P_WEXIT) {
+		error = ESRCH;
+		goto out;
+	}
+	fd = *(int *)data;
+	
+	/* attach tty(4) hook on selected line */
+	mtx_lock(&slc->slc_mtx);
+	error = ttyhook_register(&slc->slc_tp, p, fd, &slc_hook, slc);
+	mtx_unlock(&slc->slc_mtx);
+out:
+	slc_ifinit(slc);
+	return (error);
+}
+
+/*- 
+ * Interface cloner.
+ * 
+ */
+
+static int
+slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 {
 	struct slc_softc *slc;
 	struct ifnet *ifp;
-
-	slc = (struct slc_softc *)xsc;
-	ifp = slc->slc_ifp;
+	struct cdev *dev;
 	
-	if (slc->slc_tp != NULL) 
-		ifp->if_flags |= IFF_UP;
-	else
-		ifp->if_flags &= ~IFF_UP;
-		
-	if ((ifp->if_flags & IFF_UP) != 0)
-		ifp->if_drv_flags |= IFF_DRV_RUNNING;
-	else
-		ifp->if_drv_flags &= ~IFF_DRV_RUNNING;		
+	slc = malloc(sizeof(*slc), M_SLC, M_WAITOK | M_ZERO);
+	if ((ifp = slc->slc_ifp = if_alloc(IFT_CAN)) == NULL) {
+		free(slc, M_SLC);
+		return (ENOSPC);
+	}
+	
+	/* initialize char-device */
+	dev = make_dev(&slc_cdevsw, unit,
+		    UID_ROOT, GID_WHEEL, 0600, "%s%d", slc_name, unit);
+	dev->si_drv1 = slc;
+	slc->slc_dev = dev;
+		    
+	/* initialize its protective lock */
+	mtx_init(&slc->slc_mtx, "slc_mtx", NULL, MTX_DEF);
+	
+	/* initialize queue for transmission */
+	mtx_init(&slc->slc_outq.ifq_mtx, "slc_outq_mtx", NULL, MTX_DEF);
+	IFQ_SET_MAXLEN(&slc->slc_outq, ifqmaxlen);
+	
+	/* attach */
+	mtx_lock(&slc_list_mtx);
+	TAILQ_INSERT_TAIL(&slc_list, slc, slc_next);
+	mtx_unlock(&slc_list_mtx);
+	
+	ifp->if_softc = slc;
+	
+	if_initname(ifp, slc_name, unit);
+	
+	ifp->if_flags = (IFF_POINTOPOINT | IFF_MULTICAST);
+	ifp->if_init = slc_ifinit;
+	ifp->if_start = slc_ifstart;
+	ifp->if_ioctl = slc_ifioctl;
+	
+	can_ifattach(ifp, NULL, 0);
+
+	ifp->if_mtu = SLC_MTU;	/* XXX */
+	
+	ifp->if_drv_flags |= IFF_DRV_RUNNING;
+	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
+	
+	return (0);
 }
+
+static void
+slc_ifclone_destroy(struct ifnet *ifp)
+{
+	struct slc_softc *slc;
+
+	slc = ifp->if_softc;
+	
+	mtx_lock(&slc_list_mtx);
+	TAILQ_REMOVE(&slc_list, slc, slc_next);
+	mtx_unlock(&slc_list_mtx);
+	slc_destroy(slc);
+}
+
+static int
+slc_modevent(module_t mod, int type, void *data) 
+{ 
+	struct slc_softc *slc;
+	int error;
+
+	switch (type) {
+	case MOD_LOAD:
+		mtx_init(&slc_list_mtx, "slc_list_mtx", NULL, MTX_DEF);
+		slc_cloner = if_clone_simple(slc_name, 
+		slc_ifclone_create, slc_ifclone_destroy, 0);
+		error = 0;
+		break;
+	case MOD_UNLOAD:
+		if_clone_detach(slc_cloner);
+		
+		mtx_lock(&slc_list_mtx);
+		while ((slc = TAILQ_FIRST(&slc_list)) != NULL) {
+			TAILQ_REMOVE(&slc_list, slc, slc_next);
+			mtx_unlock(&slc_list_mtx);
+			slc_destroy(slc);
+			mtx_lock(&slc_list_mtx);
+		}
+		mtx_unlock(&slc_list_mtx);
+		mtx_destroy(&slc_list_mtx);
+		error = 0;
+		break;
+	default:
+		error = EOPNOTSUPP;
+		break;
+	}
+	return (error);
+}
+
+DECLARE_MODULE(if_slc, slc_modevent, NULL);
+
+/*- 
+ * Interface-level routines. 
+ * 
+ */
 
 static void
 slc_ifstart(struct ifnet *ifp)
@@ -187,6 +576,26 @@ slc_ifstart(struct ifnet *ifp)
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 }
 
+static void
+slc_ifinit(void *xsc)
+{
+	struct slc_softc *slc;
+	struct ifnet *ifp;
+
+	slc = (struct slc_softc *)xsc;
+	ifp = slc->slc_ifp;
+	
+	if (slc->slc_tp != NULL) 
+		ifp->if_flags |= IFF_UP;
+	else
+		ifp->if_flags &= ~IFF_UP;
+		
+	if ((ifp->if_flags & IFF_UP) != 0)
+		ifp->if_drv_flags |= IFF_DRV_RUNNING;
+	else
+		ifp->if_drv_flags &= ~IFF_DRV_RUNNING;		
+}
+
 static int
 slc_ifioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
@@ -226,6 +635,11 @@ slc_ifioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 out:	
 	return (error);
 }
+
+/*- 
+ * Bottom-level routines.
+ * 
+ */
 
 static int
 slc_rint(struct tty *tp, char c, int flags)
@@ -395,392 +809,4 @@ slc_ioctl(struct cdev *dev, u_long cmd, caddr_t data, int flags,
 	return (error);
 }
 
-static void
-slc_destroy(struct slc_softc *slc)
-{
-	struct ifnet *ifp;
-	struct cdev *dev;
-	
-	/* destroy its ifnet(9) mapping */
-	ifp = slc->slc_ifp;
-	ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
-	ifp->if_flags &= ~IFF_UP;
-
-	can_ifdetach(ifp);
-	if_free(ifp);
-	
-	slc->slc_ifp = NULL;
-	
-	/* detach hook, if any and flush queue */
-	(void)slc_dtty(slc);
-	
-	mtx_destroy(&slc->slc_outq.ifq_mtx);
-	mtx_destroy(&slc->slc_mtx);
-	
-	/* destroy its device(9) mapping */
-	dev = slc->slc_dev;
-	destroy_dev(dev);
-	free(slc, M_SLC);
-}
-
-static struct tty *
-slc_encap(struct slc_softc *slc, struct mbuf **mp)
-{ 
-	struct ifnet *ifp;
-	struct tty *tp;
-	struct mbuf *m;
-	struct can_frame *cf;
-	u_char buf[MHLEN], *bp;
-	int len;
-	
-	mtx_lock(&slc->slc_mtx);
-	ifp = slc->slc_ifp;
-
-	if ((tp = slc->slc_tp) == NULL)
-		goto bad;
-	
-	/* get a writable copy, if any */
-	if (M_WRITABLE(*mp) == 0) {
-		if ((m = m_dup(*mp, M_NOWAIT)) == NULL)
-			goto bad1;
-			
-		m_freem(*mp);	
-		*mp = m;
-	} else
-		m = *mp;
-
-	cf = mtod(m, struct can_frame *);
-	
-	(void)memset((bp = buf), 0, MHLEN);
-	
-	/* determine can(4) frame type */
-	if ((cf->can_id & CAN_RTR_FLAG) != 0) 
-		*bp = SLC_HC_SFF_RTR;
-	else
-		*bp = SLC_HC_SFF_DATA;
-	
-	if ((cf->can_id & CAN_EFF_FLAG) != 0) 
-		*bp = toupper(*bp);
-		
-	bp += SLC_CMD_LEN;	
-
-	/* map id */
-	if ((len = can_id2hex(cf, bp)) < 0)
-		goto bad1;
-		
-	bp += len;
-	
-	/* map dlc */
-	*bp = cf->can_dlc + '0';
-	bp += SLC_DLC_LEN;
-	
-	/* apply data, if any */
-	if ((cf->can_id & CAN_RTR_FLAG) == 0) { /* XXX */
-		if ((len = can_bin2hex(cf, bp)) < 0)
-			goto bad1;
-			
-		bp += len;	
-	}
-
-	/* finalize */
-	*bp = SLC_HC_CR;
-	bp += 1;
-	
-	/* re-initialize mbuf(9) and copy back */
-	len = bp - buf; 
-	
-	m->m_len = m->m_pkthdr.len = len;
-	m->m_data = m->m_pktdat;
-
-	bcopy(buf, mtod(m, u_char *), len);
-	
-	/* enqueue, if any */
-	IF_LOCK(&slc->slc_outq);
-	
-	if (_IF_QFULL(&slc->slc_outq)) {
-		IF_UNLOCK(&slc->slc_outq);
-		goto bad1;
-	} 
-	
-	_IF_ENQUEUE(&slc->slc_outq, m);
-	slc->slc_outqlen += len;
-
-	IF_UNLOCK(&slc->slc_outq);
-	
-	/* do some statistics */
-	if_inc_counter(ifp, IFCOUNTER_OBYTES, len);
-	if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
-out:
-	mtx_unlock(&slc->slc_mtx);
-	return (tp);
-bad1:
-	tp = NULL;
-bad:
-	if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
-	
-	m_freem(*mp);
-	*mp = NULL;
-	goto out;
-}
-
-static int 
-slc_dtty(struct slc_softc *slc)
-{
-	struct tty *tp;
-	int error;
-	
-	if ((tp = slc->slc_tp) != NULL) {
-		tty_lock(tp);
-		ttyhook_unregister(tp);
-		mtx_lock(&slc->slc_mtx);
-		slc->slc_tp = NULL;	
-		
-		if (slc->slc_ifbuf != NULL) {
-			m_freem(slc->slc_ifbuf);
-			slc->slc_ifbuf = NULL;
-		}
-		IF_DRAIN(&slc->slc_outq);
-		mtx_unlock(&slc->slc_mtx);
-		error = 0;
-	} else
-		error = ESRCH;
-	
-	if (slc->slc_ifp != NULL)
-		slc_ifinit(slc);
-	
-	return (error);
-}
-
-static int 
-slc_gtty(struct slc_softc *slc, void *data)
-{
-	dev_t *d = (dev_t *)data;
-	
-	if (slc->slc_tp != NULL)
-		*d = tty_udev(slc->slc_tp);	
-	else
-		*d = NODEV;
-
-	return (0);
-}
-
-static int
-slc_rxeof(struct slc_softc *slc)
-{
-	struct ifnet *ifp;
-	struct mbuf *m;
-	u_char buf[MHLEN], *bp;
-	struct can_frame *cf;
-	int len, error = 0;
-	
-	mtx_assert(&slc->slc_mtx, MA_OWNED);
-	ifp = slc->slc_ifp;
-		
-	if ((m = slc->slc_ifbuf) == NULL) {
-		error = ENOBUFS;
-		goto out;
-	}
-	
-	slc->slc_ifbuf = NULL;
-
-	(void)memset((bp = buf), 0, MHLEN);
-	cf = (struct can_frame *)bp;
-
-	/* determine can(4) frame type */
-	switch (*mtod(m, u_char *)) {
-	case SLC_HC_SFF_RTR:
-		cf->can_id |= CAN_RTR_FLAG;
-					 	/* FALLTHROUGH */
-	case SLC_HC_SFF_DATA:
-		break;
-	case SLC_HC_EFF_RTR:
-		cf->can_id |= CAN_RTR_FLAG;
-					 	/* FALLTHROUGH */
-	case SLC_HC_EFF_DATA:
-		cf->can_id |= CAN_EFF_FLAG; 
-		break;
-	default:
-		error = EINVAL;
-		goto bad;
-	}
-	m_adj(m, SLC_CMD_LEN);
-	
-	/* fetch id */
-	if ((len = can_hex2id(mtod(m, u_char *), cf)) < 0) {
-		error = EINVAL;
-		goto bad;
-	}
-	m_adj(m, len);
-	
-	/* fetch dlc */
-	cf->can_dlc = *mtod(m, u_char *);
-	m_adj(m, SLC_DLC_LEN);
-	
-	if ((cf->can_dlc < SLC_HC_DLC_INF) || 
-		(cf->can_dlc > SLC_HC_DLC_SUP)) {
-		error = EMSGSIZE;
-		goto bad;
-	}
-	cf->can_dlc -= SLC_HC_DLC_INF;
-	
-	/* fetch data, if any */
-	if ((cf->can_id & CAN_RTR_FLAG) == 0) { 
-		if (can_hex2bin(mtod(m, u_char *), cf) < 0) {
-			error = EINVAL;
-			goto bad;
-		}
-	}
-
-	len = sizeof(struct can_frame);
-
-	/* reinitialize mbuf(9) and copy back */
-	m->m_len = m->m_pkthdr.len = len;
-	m->m_data = m->m_pktdat;
-
-	bcopy(buf, mtod(m, u_char *), len);
-	
-	/* pass can(4) frame to layer above */
-	m->m_pkthdr.rcvif = ifp;
- 	mtx_unlock(&slc->slc_mtx);
- 	(*ifp->if_input)(ifp, m);
- 	mtx_lock(&slc->slc_mtx);
-out:
-	return (error);			
-bad:
-	if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
-	m_freem(m);
-	goto out;
-}
-
-/* 
- * Attach tty(4) hook on selected line 
- */
-static int 
-slc_stty(struct slc_softc *slc, void *data, struct thread *td)
-{
-	struct proc *p;
-	int fd;
-	int error;
-	
-	if (td == NULL) {
-		error = ESRCH;
-		goto out;
-	}
-	
-	if ((p = td->td_proc) == NULL) {
-		error = ESRCH;
-		goto out;
-	}
-	
-	if (p->p_flag & P_WEXIT) {
-		error = ESRCH;
-		goto out;
-	}
-	fd = *(int *)data;
-	mtx_lock(&slc->slc_mtx);
-	error = ttyhook_register(&slc->slc_tp, p, fd, &slc_hook, slc);
-	mtx_unlock(&slc->slc_mtx);
-out:
-	slc_ifinit(slc);
-	return (error);
-}
-
-static int
-slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
-{
-	struct slc_softc *slc;
-	struct ifnet *ifp;
-	struct cdev *dev;
-	
-	slc = malloc(sizeof(*slc), M_SLC, M_WAITOK | M_ZERO);
-	if ((ifp = slc->slc_ifp = if_alloc(IFT_CAN)) == NULL) {
-		free(slc, M_SLC);
-		return (ENOSPC);
-	}
-	
-	/* initialize char-device */
-	dev = make_dev(&slc_cdevsw, unit,
-		    UID_ROOT, GID_WHEEL, 0600, "%s%d", slc_name, unit);
-	dev->si_drv1 = slc;
-	slc->slc_dev = dev;
-		    
-	/* initialize its protective lock */
-	mtx_init(&slc->slc_mtx, "slc_mtx", NULL, MTX_DEF);
-	
-	/* initialize queue for transmission */
-	mtx_init(&slc->slc_outq.ifq_mtx, "slc_outq_mtx", NULL, MTX_DEF);
-	IFQ_SET_MAXLEN(&slc->slc_outq, ifqmaxlen);
-	
-	/* attach */
-	mtx_lock(&slc_list_mtx);
-	TAILQ_INSERT_TAIL(&slc_list, slc, slc_next);
-	mtx_unlock(&slc_list_mtx);
-	
-	ifp->if_softc = slc;
-	
-	if_initname(ifp, slc_name, unit);
-	
-	ifp->if_flags = IFF_POINTOPOINT | IFF_MULTICAST;
-	ifp->if_init = slc_ifinit;
-	ifp->if_start = slc_ifstart;
-	ifp->if_ioctl = slc_ifioctl;
-	
-	can_ifattach(ifp, NULL, 0);
-
-	ifp->if_mtu = SLC_MTU;
-	
-	ifp->if_drv_flags |= IFF_DRV_RUNNING;
-	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
-	
-	return (0);
-}
-
-static void
-slc_ifclone_destroy(struct ifnet *ifp)
-{
-	struct slc_softc *slc;
-
-	slc = ifp->if_softc;
-	
-	mtx_lock(&slc_list_mtx);
-	TAILQ_REMOVE(&slc_list, slc, slc_next);
-	mtx_unlock(&slc_list_mtx);
-	slc_destroy(slc);
-}
-
-static int
-slc_modevent(module_t mod, int type, void *data) 
-{ 
-	struct slc_softc *slc;
-	int error;
-
-	switch (type) {
-	case MOD_LOAD:
-		mtx_init(&slc_list_mtx, "slc_list_mtx", NULL, MTX_DEF);
-		slc_cloner = if_clone_simple(slc_name, 
-		slc_ifclone_create, slc_ifclone_destroy, 0);
-		error = 0;
-		break;
-	case MOD_UNLOAD:
-		if_clone_detach(slc_cloner);
-		
-		mtx_lock(&slc_list_mtx);
-		while ((slc = TAILQ_FIRST(&slc_list)) != NULL) {
-			TAILQ_REMOVE(&slc_list, slc, slc_next);
-			mtx_unlock(&slc_list_mtx);
-			slc_destroy(slc);
-			mtx_lock(&slc_list_mtx);
-		}
-		mtx_unlock(&slc_list_mtx);
-		mtx_destroy(&slc_list_mtx);
-		error = 0;
-		break;
-	default:
-		error = EOPNOTSUPP;
-		break;
-	}
-	return (error);
-}
-
-DECLARE_MODULE(if_slc, slc_modevent, NULL);
 MODULE_DEPEND(if_slc, can, 1, 1, 1);

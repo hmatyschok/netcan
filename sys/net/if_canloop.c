@@ -221,13 +221,7 @@ canlo_start(struct ifnet *ifp)
 
 		m->m_pkthdr.rcvif = ifp;	
 		
-#ifdef CAN
 		(*ifp->if_input)(ifp, m);
-#else
-		(void)printf("%s: %s: can't handle can(4) frame\n", 
-			__func__, ifp->if_xname);
-		m_freem(m);
-#endif 	/* ! CAN */
 	}								
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 }
