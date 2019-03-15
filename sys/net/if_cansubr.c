@@ -567,6 +567,8 @@ can_hex2bin(u_char *buf, struct can_frame *cf)
 			c1 -= '0';
 		else if (isalpha(c1)) 
 			c1 -= (isupper(c1)) ? 'A' - 10 : 'a' - 10;
+		else
+			return (-1);
 
 		c0 = *bp;
 		bp += 1;
@@ -635,6 +637,8 @@ can_hex2id(u_char *buf, struct can_frame *cf)
 			c -= '0';
 		else if (isalpha(c)) 
 			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
+		else
+			return (-1);
 		
 		v |= (c & 0x0f);
 		u = v;
