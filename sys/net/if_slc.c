@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2018 Henning Matyschok
+ * Copyright (c) 2018, 2019 Henning Matyschok
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -132,7 +132,7 @@ static struct cdevsw slc_cdevsw = {
 	.d_name = 	slc_name,
 };
 
-/* 
+/*- 
  * Subr.
  * 
  */
@@ -217,7 +217,7 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 	bp += SLC_DLC_LEN;
 	
 	/* apply data, if any */
-	if ((cf->can_id & CAN_RTR_FLAG) == 0) { /* XXX */
+	if ((cf->can_id & CAN_RTR_FLAG) == 0) {
 		if ((len = can_bin2hex(cf, bp)) < 0)
 			goto bad1;
 			
@@ -625,7 +625,7 @@ slc_ifioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 			break;
 		}
 		break;			
-	case SIOCSIFFLAGS:
+	case SIOCSIFFLAGS:	/* XXX */
 		slc_ifinit(slc);
 		break;
 	default:
