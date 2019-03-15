@@ -182,7 +182,7 @@ static moduledata_t canlo_mod = {
 };
 
 static void
-canlo_ifinit(void *xsc)
+canlo_init(void *xsc)
 {
 	struct canlo_softc *slc;
 	struct ifnet *ifp;
