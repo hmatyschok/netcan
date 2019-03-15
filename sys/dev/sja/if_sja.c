@@ -38,7 +38,7 @@
 
 /*
  * XXX: Well, it's a work in progess, because
- * XXX: there is a lots of work to accomplish 
+ * XXX: there is a lot of work to accomplish 
  * XXX: conformancy with AN97076. 
  */
 
@@ -95,14 +95,14 @@ sja_reset(struct sja_softc *sja)
 	csc = ifp->if_l2com;
 	var = sja->sja_var;
 
-	getmicrotime(&tv0);
-	getmicrotime(&tv);
-
 	/* disable interrupts, if any */
 	SJA_WRITE_1(sja->sja_dev, var, SJA_IER, SJA_IER_OFF);
 
 	/* fetch contents of status register */
 	status = SJA_READ_1(sja->sja_dev, var, SJA_MOD);
+	
+	getmicrotime(&tv0);
+	getmicrotime(&tv);
 	
 	/* set reset mode, until break-condition takes place */
 	for (error = EIO; sja_timercmp(&tv0, &tv, 100); ) {
@@ -149,11 +149,11 @@ sja_normal_mode(struct sja_softc *sja)
 	/* clear interrupt flags */
 	status = SJA_READ_1(sja->sja_dev, var, SJA_IR);
 	
-	getmicrotime(&tv0);
-	getmicrotime(&tv);
-	
 	/* fetch contents of status register */
 	status = SJA_READ_1(sja->sja_dev, var, SJA_MOD);
+	
+	getmicrotime(&tv0);
+	getmicrotime(&tv);
 	
 	/* set normal mode and enable interrupts, if any */
 	for (error = EIO; sja_timercmp(&tv0, &tv, 100); ) {
@@ -343,6 +343,7 @@ sja_rxeof(struct sja_softc *sja)
 	SJA_LOCK_ASSERT(sja);
 	ifp = sja->sja_ifp;
 	var = sja->sja_var;
+	
 again:	
 	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL)) {
 		if_inc_counter(ifp, IFCOUNTER_IQDROPS, 1);
@@ -743,10 +744,10 @@ sja_init_locked(struct sja_softc *sja)
 	/* disable interrupts and abort pending transmission, if any */
 	sja_stop(sja);
 
-	/* force controller into reset mode */
 	getmicrotime(&tv0);
 	getmicrotime(&tv);
-	
+
+	/* force controller into reset mode */	
 	for (; sja_timercmp(&tv0, &tv, 100);) {
 		SJA_WRITE_1(sja->sja_dev, var, SJA_MOD, SJA_MOD_RM);
 		DELAY(10);
@@ -782,11 +783,10 @@ sja_init_locked(struct sja_softc *sja)
 		/* clear interrupt flags */
 		status = SJA_READ_1(sja->sja_dev, var, SJA_IR);
 
-		/* leave reset mode */
 		getmicrotime(&tv0);
 		getmicrotime(&tv);
 	
-		/* force controller into normal mode */ 
+		/* leave reset mode and force controller into normal mode */ 
 		for (; sja_timercmp(&tv0, &tv, 100);) {
 			status = SJA_MOD_RM;
 	

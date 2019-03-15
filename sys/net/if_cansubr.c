@@ -504,6 +504,8 @@ can_mbuf_tag_clean(struct mbuf *m)
  * Utility functions.
  */
  
+static const char can_hex_tbl[] = "0123456789ABCDEF";
+
 int
 can_bin2hex(struct can_frame *cf, u_char *buf)
 {
@@ -525,6 +527,8 @@ can_bin2hex(struct can_frame *cf, u_char *buf)
 		if (isalpha(*dp) && islower(*dp)) 
 			*dp = toupper(*dp);
 
+		*dp = can_hex_tbl[*dp];
+
 		dp += 1;
 		
 		*dp = (c & 0x0f); 
@@ -532,9 +536,11 @@ can_bin2hex(struct can_frame *cf, u_char *buf)
 		if (isalpha(*dp) && islower(*dp)) 
 			*dp = toupper(*dp);
 		
+		*dp = can_hex_tbl[*dp];
+		
 		dp += 1;
 	}
-		
+	
 	len = dp - bp;
 	
 	return (len);
@@ -600,7 +606,7 @@ can_id2hex(struct can_frame *cf, u_char *buf)
 		if (isalpha(c) && islower(c)) 
 			c = toupper(c);
 	
-		*ep = c;	
+		*ep = can_hex_tbl[c];	
 	}
 	return (len);
 }
