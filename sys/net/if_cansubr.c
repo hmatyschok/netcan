@@ -289,7 +289,7 @@ can_restart(struct ifnet *ifp)
 	struct can_frame *cf;
 	int error = 0;
 		
-	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL)) {
+	if ((m = m_gethdr(M_NOWAIT, MT_DATA)) == NULL) {
 		error = ENOBUFS;
 		goto done;
 	}
