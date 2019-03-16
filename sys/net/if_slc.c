@@ -87,7 +87,7 @@ static TAILQ_HEAD(slc_head, slc_softc) slc_list =
 	
 static MALLOC_DEFINE(M_SLC, "slc", "Serial line can(4) Interface"); 
  
-/* Subr. */
+/* common subr. */
 static void 	slc_destroy(struct slc_softc *);
 static struct tty *	slc_encap(struct slc_softc *, struct mbuf **);
 static int 	slc_rxeof(struct slc_softc *); 
@@ -95,16 +95,16 @@ static int 	slc_gtty(struct slc_softc *, void *);
 static int 	slc_stty(struct slc_softc *, void *, struct thread *); 
 static int 	slc_dtty(struct slc_softc *);
  
-/* Interface cloner */
+/* interface cloner */
 static void 	slc_ifclone_destroy(struct ifnet *); 
 static int 	slc_ifclone_create(struct if_clone *, int, caddr_t);
 
-/* Interface-level routines. */
+/* interface-level routines. */
 static void 	slc_ifinit(void *);
 static int 	slc_ifioctl(struct ifnet *, u_long, caddr_t);
 static void 	slc_ifstart(struct ifnet *);
 
-/* Bottom-level routines */
+/* bottom-level routines */
 static th_getc_inject_t 	slc_txeof;
 static th_getc_poll_t 	slc_txeof_poll;
 static th_rint_t 	slc_rint;
@@ -229,7 +229,7 @@ slc_destroy(struct slc_softc *slc)
 }
 
 /*
- * Subr. on generic interface-layer.
+ * Subr. maps to ifnet(9) structure.
  */
 
 static void
@@ -293,7 +293,7 @@ out:
 }
 
 /*
- * Subr. on char-device.
+ * Subr. maps to cdevsw{}.
  */
  
 static int
@@ -302,6 +302,13 @@ slc_open(struct cdev *dev, int flag, int mode, struct thread *td)
 	
 	return (0);
 }
+
+static int
+slc_close(struct cdev *dev, int flag, int mode, struct thread *td)
+{
+	
+	return (0);
+} 
  
 static int
 slc_ioctl(struct cdev *dev, u_long cmd, caddr_t data, int flags,
@@ -402,21 +409,14 @@ out:
 	return (error);
 }
 
-static int
-slc_close(struct cdev *dev, int flag, int mode, struct thread *td)
-{
-	
-	return (0);
-} 
-
 /*
  * Rx path of can(4) frame:
  * 
  *  (a) Handoff single characters by ttydisc_rint(9) by callback of
- *      slc_rint(9) maps to th_rint(9) on ttyhook(4) structure, when 
+ *      slc_rint(9) maps to th_rint(9) on tty(4) hook structure, when 
  *      e. g. uart_intr(9) on SER_INT_RXREADY event takes place. 
  * 
- *  (b) Dring runtime of slc_intr(9), the rx'd characters are stored 
+ *  (b) During runtime of slc_intr(9), the rx'd characters are stored 
  *      on the data field of the allocated mbuf(9) maps to slc_ifbuf 
  *      on slc_softc{} until break condition takes place. 
  *
@@ -438,7 +438,7 @@ slc_close(struct cdev *dev, int flag, int mode, struct thread *td)
  *       #3 If CR or BEL caracters are parsed on input stream.   
  * 
  *  (c) During runtime of slx_rxeof(9), the can(4) frame gets 
- *      decapsulated and passed to protocol layer by calling 
+ *      decapsulated and passed to protocol layer by call of 
  *      can_ifinput(9).         
  */
  
