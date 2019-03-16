@@ -587,19 +587,20 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 	struct sja_data *var;
 	struct mbuf *m;
 	struct can_frame *cf;
-	uint8_t status;
-	uint8_t addr;
-	int i;
+	uint8_t status, addr;
+	int len, i, error;
 	
 	SJA_LOCK_ASSERT(sja);
 	var = sja->sja_var;
 	
 	/* get a writable copy, if any */
 	if (M_WRITABLE(*mp) == 0) {
-		if ((m = m_dup(*mp, M_NOWAIT)) == NULL)
-			return (ENOBUFS);
-		
+		if ((m = m_dup(*mp, M_NOWAIT)) == NULL) {
+			error = ENOBUFS;
+			goto out;
+		}
 		m_freem(*mp);
+		*mp = m;
 	} else
 		m = *mp;
 		
@@ -618,7 +619,7 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 
 	SJA_WRITE_1(sja->sja_dev, var, SJA_FI, status);
 	
-	/* map id */
+	/* map can(4) ID */
 	if ((cf->can_id & CAN_EFF_FLAG) != 0) { 
 		cf->can_id &= CAN_EFF_MASK;
 		cf->can_id <<= 3;
@@ -635,13 +636,15 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 		addr = SJA_DATA_SFF;
 	}
 	
-	for (i = 0; i < cf->can_dlc; addr++, i++) 
+	/* copy can(4) SDU into TX buffer */ 
+	for (len = cf->can_dlc, error = i = 0; i < len; addr++, i++) 
 		SJA_WRITE_1(sja->sja_dev, var, addr, cf->can_data[i]);
-
-	m_freem(m); /* XXX */
+		
+out:
+	m_freem(*mp); 
 	*mp = NULL;
-
-	return (0);
+	
+	return (error);
 }
 
 /*
