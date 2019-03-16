@@ -79,7 +79,7 @@ struct canlo_softc {
 };
 
 /*
- * Loopback interface driver for the can(4) protocol
+ * Loopback interface driver for the can(4) protocol.
  */
 
 static int		canlo_ioctl(struct ifnet *, u_long, caddr_t);
@@ -151,35 +151,6 @@ canlo_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 
 	return (0);
 }
-
-static int
-canlo_modevent(module_t mod, int type, void *data)
-{
-	int error;
-
-	switch (type) {
-	case MOD_LOAD:
-		mtx_init(&canlo_list_mtx, "canlo_list_mtx", NULL, MTX_DEF);
-		canlo_cloner = if_clone_simple(canlo_name, 
-			canlo_clone_create, canlo_clone_destroy, 0);
-		error = 0;
-	case MOD_UNLOAD:
-		if_clone_detach(canlo_cloner);
-		mtx_destroy(&canlo_list_mtx);
-		error = 0;
-		break;
-	default:
-		error = EOPNOTSUPP;
-		break;
-	}
-	return (error);
-}
-
-static moduledata_t canlo_mod = {
-	"if_canlo",
-	canlo_modevent,
-	0
-};
 
 static void
 canlo_init(void *xsc)
@@ -256,6 +227,35 @@ canlo_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 	}
 	return (error);
 }
+
+static int
+canlo_modevent(module_t mod, int type, void *data)
+{
+	int error;
+
+	switch (type) {
+	case MOD_LOAD:
+		mtx_init(&canlo_list_mtx, "canlo_list_mtx", NULL, MTX_DEF);
+		canlo_cloner = if_clone_simple(canlo_name, 
+			canlo_clone_create, canlo_clone_destroy, 0);
+		error = 0;
+	case MOD_UNLOAD:
+		if_clone_detach(canlo_cloner);
+		mtx_destroy(&canlo_list_mtx);
+		error = 0;
+		break;
+	default:
+		error = EOPNOTSUPP;
+		break;
+	}
+	return (error);
+}
+
+static moduledata_t canlo_mod = {
+	"if_canlo",
+	canlo_modevent,
+	0
+};
 
 DECLARE_MODULE(if_canlo, canlo_mod, SI_SUB_PSEUDO, SI_ORDER_ANY);
 MODULE_DEPEND(if_canlo, can, 1, 1, 1);

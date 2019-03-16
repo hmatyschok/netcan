@@ -826,28 +826,18 @@ slc_txeof_poll(struct tty *tp)
 
 static int
 slc_modevent(module_t mod, int type, void *data) 
-{ 
-	struct slc_softc *slc;
+{
 	int error;
 
 	switch (type) {
 	case MOD_LOAD:
 		mtx_init(&slc_list_mtx, "slc_list_mtx", NULL, MTX_DEF);
 		slc_cloner = if_clone_simple(slc_name, 
-		slc_ifclone_create, slc_ifclone_destroy, 0);
+			slc_ifclone_create, slc_ifclone_destroy, 0);
 		error = 0;
 		break;
 	case MOD_UNLOAD:
 		if_clone_detach(slc_cloner);
-		
-		mtx_lock(&slc_list_mtx);
-		while ((slc = TAILQ_FIRST(&slc_list)) != NULL) {
-			TAILQ_REMOVE(&slc_list, slc, slc_next);
-			mtx_unlock(&slc_list_mtx);
-			slc_destroy(slc);
-			mtx_lock(&slc_list_mtx);
-		}
-		mtx_unlock(&slc_list_mtx);
 		mtx_destroy(&slc_list_mtx);
 		error = 0;
 		break;
