@@ -588,17 +588,17 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 	struct mbuf *m;
 	struct can_frame *cf;
 	uint8_t status, addr;
-	int len, i, error;
+	int i, len;
 	
 	SJA_LOCK_ASSERT(sja);
 	var = sja->sja_var;
 	
 	/* get a writable copy, if any */
 	if (M_WRITABLE(*mp) == 0) {
-		if ((m = m_dup(*mp, M_NOWAIT)) == NULL) {
-			error = ENOBUFS;
-			goto out;
-		}
+		/* if not, put mbuf(9) back on TX queue */
+		if ((m = m_dup(*mp, M_NOWAIT)) == NULL) 
+			return (ENOBUFS);
+			
 		m_freem(*mp);
 		*mp = m;
 	} else
@@ -637,14 +637,13 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 	}
 	
 	/* copy can(4) SDU into TX buffer */ 
-	for (len = cf->can_dlc, error = i = 0; i < len; addr++, i++) 
+	for (i = 0, len = cf->can_dlc; i < len; addr++, i++) 
 		SJA_WRITE_1(sja->sja_dev, var, addr, cf->can_data[i]);
 		
-out:
 	m_freem(*mp); 
 	*mp = NULL;
 	
-	return (error);
+	return (0);
 }
 
 /*
@@ -687,7 +686,7 @@ sja_start_locked(struct ifnet *ifp)
 		if (sja_encap(sja, &m) != 0) {
 			if (m == NULL)
 				break;
-			
+				 
 			IFQ_DRV_PREPEND(&ifp->if_snd, m);
 			ifp->if_drv_flags |= IFF_DRV_OACTIVE;
 			break;
