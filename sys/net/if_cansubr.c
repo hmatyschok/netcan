@@ -395,7 +395,7 @@ can_set_netlink(struct ifnet *ifp, struct ifdrv *ifd)
 			error = copyin(ifd->ifd_data, 
 				&csc->csc_timings, ifd->ifd_len);
 		
-		error = (*ifp->if_ioctl)(ifp, SIOCSDRVSPEC, ifd);
+		error = (*ifp->if_ioctl)(ifp, SIOCSDRVSPEC, (caddr_t)ifd);
 		break;
 	case CANSLINKMODE:
 	case CANCLINKMODE: 	/* FALLTHROUGH */
