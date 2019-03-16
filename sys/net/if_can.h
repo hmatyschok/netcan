@@ -91,7 +91,7 @@
 #ifndef _NET_IF_CAN_H
 #define _NET_IF_CAN_H
 
-#define IFT_can(4) 	IFT_PVC
+#define IFT_CAN 	IFT_PVC
 
 /*
  * can(4) ID structure
