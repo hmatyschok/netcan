@@ -132,40 +132,10 @@ static struct cdevsw slc_cdevsw = {
 	.d_name = 	slc_name,
 };
 
-static int
-slc_modevent(module_t mod, int type, void *data) 
-{ 
-	struct slc_softc *slc;
-	int error;
-
-	switch (type) {
-	case MOD_LOAD:
-		mtx_init(&slc_list_mtx, "slc_list_mtx", NULL, MTX_DEF);
-		slc_cloner = if_clone_simple(slc_name, 
-		slc_ifclone_create, slc_ifclone_destroy, 0);
-		error = 0;
-		break;
-	case MOD_UNLOAD:
-		if_clone_detach(slc_cloner);
-		
-		mtx_lock(&slc_list_mtx);
-		while ((slc = TAILQ_FIRST(&slc_list)) != NULL) {
-			TAILQ_REMOVE(&slc_list, slc, slc_next);
-			mtx_unlock(&slc_list_mtx);
-			slc_destroy(slc);
-			mtx_lock(&slc_list_mtx);
-		}
-		mtx_unlock(&slc_list_mtx);
-		mtx_destroy(&slc_list_mtx);
-		error = 0;
-		break;
-	default:
-		error = EOPNOTSUPP;
-		break;
-	}
-	return (error);
-}
-
+/*
+ * Subr. on ifclone(4).
+ */
+ 
 static int
 slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 {
@@ -216,6 +186,7 @@ slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 	return (0);
 }
 
+
 static void
 slc_ifclone_destroy(struct ifnet *ifp)
 {
@@ -258,7 +229,7 @@ slc_destroy(struct slc_softc *slc)
 }
 
 /*
- * Subr., interface-layer.
+ * Subr. on generic interface-layer.
  */
 
 static void
@@ -322,7 +293,7 @@ out:
 }
 
 /*
- * Subr., char-device.
+ * Subr. on char-device.
  */
  
 static int
@@ -332,13 +303,6 @@ slc_open(struct cdev *dev, int flag, int mode, struct thread *td)
 	return (0);
 }
  
-static int
-slc_close(struct cdev *dev, int flag, int mode, struct thread *td)
-{
-	
-	return (0);
-} 
-
 static int
 slc_ioctl(struct cdev *dev, u_long cmd, caddr_t data, int flags,
     struct thread *td)
@@ -438,8 +402,44 @@ out:
 	return (error);
 }
 
+static int
+slc_close(struct cdev *dev, int flag, int mode, struct thread *td)
+{
+	
+	return (0);
+} 
+
 /*
- * RX can(4) frame.
+ * Rx path - can(4) frame.
+ * 
+ *  (a) Handoff single characters by ttydisc_rint(9) by callback of
+ *      slc_rint(9) maps to th_rint(9) on ttyhook(4) structure, when 
+ *      e. g. uart_intr(9) on SER_INT_RXREADY event takes place. 
+ * 
+ *  (b) The rx'd characters are stored on the data field of the 
+ *      allocated mbuf(9) maps to slc_ifbuf on slc_softc{} until 
+ *      break condition during runtime of slc_intr(9) takes place. 
+ *
+ *       #1 When 
+ * 
+ *            UART_STAT_{FRAMERR,OVERRUN,PARERR} 
+ * 
+ *          error condition was indicated by 
+ * 
+ *            TRE_{FRAMING,OVERRUN,PARITY} 
+ * 
+ *          flags.
+ * 
+ *       #2 The amount of rx'd characters from the input 
+ *          stream exceeds the capacity of the mbuf(9).
+ * 
+ *      On both cases the mbuf(9) is released by m_freem(9).
+ * 
+ *       #3 If CR or BEL caracters are parsed on input stream.   
+ * 
+ *  (c) During runtime of slx_rxeof(9), the can(4) frame gets 
+ *      decapsulated and passed to protocol layer by calling 
+ *      can_ifinput(9).         
  */
  
 static int
@@ -804,7 +804,43 @@ slc_txeof_poll(struct tty *tp)
 	return (outqlen);
 }
 
+/*
+ * Modevent handler.
+ */
 
+static int
+slc_modevent(module_t mod, int type, void *data) 
+{ 
+	struct slc_softc *slc;
+	int error;
+
+	switch (type) {
+	case MOD_LOAD:
+		mtx_init(&slc_list_mtx, "slc_list_mtx", NULL, MTX_DEF);
+		slc_cloner = if_clone_simple(slc_name, 
+		slc_ifclone_create, slc_ifclone_destroy, 0);
+		error = 0;
+		break;
+	case MOD_UNLOAD:
+		if_clone_detach(slc_cloner);
+		
+		mtx_lock(&slc_list_mtx);
+		while ((slc = TAILQ_FIRST(&slc_list)) != NULL) {
+			TAILQ_REMOVE(&slc_list, slc, slc_next);
+			mtx_unlock(&slc_list_mtx);
+			slc_destroy(slc);
+			mtx_lock(&slc_list_mtx);
+		}
+		mtx_unlock(&slc_list_mtx);
+		mtx_destroy(&slc_list_mtx);
+		error = 0;
+		break;
+	default:
+		error = EOPNOTSUPP;
+		break;
+	}
+	return (error);
+}
 
 DECLARE_MODULE(if_slc, slc_modevent, NULL);
 MODULE_DEPEND(if_slc, can, 1, 1, 1);
