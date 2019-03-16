@@ -73,7 +73,7 @@
 #include <net/if_types.h>
 #include <net/if_can.h>
 
-struct canolo_softc {
+struct canlo_softc {
 	struct ifnet	*cs_ifp;
 	TAILQ_ENTRY(canlo_softc) cs_next;
 };
@@ -105,7 +105,7 @@ static const char canlo_name[] = "canlo";
 static void
 canlo_clone_destroy(struct ifnet *ifp)
 {
-	struct canlo_softc *cs
+	struct canlo_softc *cs;
 	
 	cs = (struct canlo_softc *)ifp->if_softc;
 	
@@ -184,11 +184,11 @@ static moduledata_t canlo_mod = {
 static void
 canlo_init(void *xsc)
 {
-	struct canlo_softc *slc;
+	struct canlo_softc *cs;
 	struct ifnet *ifp;
 
 	slc = (struct canlo_softc *)xsc;
-	ifp = slc->canlo_ifp;
+	ifp = cs->cs_ifp;
 	
 	ifp->if_drv_flags |= IFF_DRV_RUNNING;
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;	
