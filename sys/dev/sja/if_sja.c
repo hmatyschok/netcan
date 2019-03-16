@@ -410,14 +410,11 @@ sja_txeof(struct sja_softc *sja)
 	var = sja->sja_var;
 	
 	status = SJA_READ_1(sja->sja_dev, var, SJA_SR);
-	
-	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 		
 	if ((csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK) != 0 
-		&& (status & SJA_SR_TCS) == 0) {
+		&& (status & SJA_SR_TCS) == 0) 
 		if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
-		(*ifp->if_start)(ifp);
-	} else {
+	else {
 		status = SJA_READ_1(sja->sja_dev, var, SJA_FI); 
 		status &= SJA_FI_DLC;
 		
@@ -595,10 +592,10 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 	
 	/* get a writable copy, if any */
 	if (M_WRITABLE(*mp) == 0) {
-		/* if not, put mbuf(9) back on TX queue */
-		if ((m = m_dup(*mp, M_NOWAIT)) == NULL) 
-			return (ENOBUFS);
-			
+		if ((m = m_dup(*mp, M_NOWAIT)) == NULL) {
+			error = ENOBUFS;
+			goto out;
+		}
 		m_freem(*mp);
 		*mp = m;
 	} else
@@ -637,13 +634,14 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 	}
 	
 	/* copy can(4) SDU into TX buffer */ 
-	for (i = 0, len = cf->can_dlc; i < len; addr++, i++) 
+	for (error = i = 0, len = cf->can_dlc; i < len; addr++, i++) 
 		SJA_WRITE_1(sja->sja_dev, var, addr, cf->can_data[i]);
-		
+
+out:		
 	m_freem(*mp); 
 	*mp = NULL;
 	
-	return (0);
+	return (error);
 }
 
 /*
@@ -677,38 +675,36 @@ sja_start_locked(struct ifnet *ifp)
 	if ((ifp->if_drv_flags & (IFF_DRV_RUNNING | IFF_DRV_OACTIVE)) !=
 	    IFF_DRV_RUNNING)
 		return;
+	
+	ifp->if_drv_flags |= IFF_DRV_OACTIVE;
 			
 	for (;;) {
 		IFQ_DEQUEUE(&ifp->if_snd, m);
 		if (m == NULL) 
 			break;
 
-		if (sja_encap(sja, &m) != 0) {
-			if (m == NULL)
-				break;
-				 
-			IFQ_DRV_PREPEND(&ifp->if_snd, m);
-			ifp->if_drv_flags |= IFF_DRV_OACTIVE;
-			break;
-		}	
-		
 		/* IAP on bpf(4) */
-		can_bpf_mtap(ifp, m);		
+		can_bpf_mtap(ifp, m);
+
+		if (sja_encap(sja, &m) == 0) {
+			/* notify controller for transmission */
+			if ((csc->csc_linkmodes & CAN_LINKMODE_ONE_SHOT) != 0)
+				status = SJA_CMR_AT;
+			else 
+				status = 0x00;
+
+			if ((csc->csc_linkmodes & CAN_LINKMODE_LOOPBACK) != 0)
+				status |= SJA_CMR_SRR;
+			else
+				ststus |= SJA_CMR_TR;
+
+			SJA_WRITE_1(sja->sja_dev, var, SJA_CMR, status);
+			status = SJA_READ_1(sja->sja_dev, var, SJA_SR);
+		} else
+			if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
+	}
 	
-		/* notify controller for transmission */
-		if ((csc->csc_linkmodes & CAN_LINKMODE_ONE_SHOT) != 0)
-			status = SJA_CMR_AT;
-		else 
-			status = 0x00;
-
-		if ((csc->csc_linkmodes & CAN_LINKMODE_LOOPBACK) != 0)
-			status |= SJA_CMR_SRR;
-		else
-			ststus |= SJA_CMR_TR;
-
-		SJA_WRITE_1(sja->sja_dev, var, SJA_CMR, status);
-		status = SJA_READ_1(sja->sja_dev, var, SJA_SR);
-	}						
+	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;						
 }
 
 /*
