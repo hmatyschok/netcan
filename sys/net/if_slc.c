@@ -132,10 +132,102 @@ static struct cdevsw slc_cdevsw = {
 	.d_name = 	slc_name,
 };
 
-/*- 
- * Subr.
- * 
- */
+static int
+slc_modevent(module_t mod, int type, void *data) 
+{ 
+	struct slc_softc *slc;
+	int error;
+
+	switch (type) {
+	case MOD_LOAD:
+		mtx_init(&slc_list_mtx, "slc_list_mtx", NULL, MTX_DEF);
+		slc_cloner = if_clone_simple(slc_name, 
+		slc_ifclone_create, slc_ifclone_destroy, 0);
+		error = 0;
+		break;
+	case MOD_UNLOAD:
+		if_clone_detach(slc_cloner);
+		
+		mtx_lock(&slc_list_mtx);
+		while ((slc = TAILQ_FIRST(&slc_list)) != NULL) {
+			TAILQ_REMOVE(&slc_list, slc, slc_next);
+			mtx_unlock(&slc_list_mtx);
+			slc_destroy(slc);
+			mtx_lock(&slc_list_mtx);
+		}
+		mtx_unlock(&slc_list_mtx);
+		mtx_destroy(&slc_list_mtx);
+		error = 0;
+		break;
+	default:
+		error = EOPNOTSUPP;
+		break;
+	}
+	return (error);
+}
+
+static int
+slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
+{
+	struct slc_softc *slc;
+	struct ifnet *ifp;
+	struct cdev *dev;
+	
+	slc = malloc(sizeof(*slc), M_SLC, M_WAITOK | M_ZERO);
+	if ((ifp = slc->slc_ifp = if_alloc(IFT_CAN)) == NULL) {
+		free(slc, M_SLC);
+		return (ENOSPC);
+	}
+	
+	/* initialize char-device */
+	dev = make_dev(&slc_cdevsw, unit,
+		    UID_ROOT, GID_WHEEL, 0600, "%s%d", slc_name, unit);
+	dev->si_drv1 = slc;
+	slc->slc_dev = dev;
+		    
+	/* initialize its protective lock */
+	mtx_init(&slc->slc_mtx, "slc_mtx", NULL, MTX_DEF);
+	
+	/* initialize queue for transmission */
+	mtx_init(&slc->slc_outq.ifq_mtx, "slc_outq_mtx", NULL, MTX_DEF);
+	IFQ_SET_MAXLEN(&slc->slc_outq, ifqmaxlen);
+	
+	/* attach */
+	mtx_lock(&slc_list_mtx);
+	TAILQ_INSERT_TAIL(&slc_list, slc, slc_next);
+	mtx_unlock(&slc_list_mtx);
+	
+	ifp->if_softc = slc;
+	
+	if_initname(ifp, slc_name, unit);
+	
+	ifp->if_flags = (IFF_POINTOPOINT | IFF_MULTICAST);
+	ifp->if_init = slc_ifinit;
+	ifp->if_start = slc_ifstart;
+	ifp->if_ioctl = slc_ifioctl;
+	
+	can_ifattach(ifp, NULL, 0);
+
+	ifp->if_mtu = SLC_MTU;	/* XXX */
+	
+	ifp->if_drv_flags |= IFF_DRV_RUNNING;
+	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
+	
+	return (0);
+}
+
+static void
+slc_ifclone_destroy(struct ifnet *ifp)
+{
+	struct slc_softc *slc;
+
+	slc = ifp->if_softc;
+	
+	mtx_lock(&slc_list_mtx);
+	TAILQ_REMOVE(&slc_list, slc, slc_next);
+	mtx_unlock(&slc_list_mtx);
+	slc_destroy(slc);
+}
 
 static void
 slc_destroy(struct slc_softc *slc)
@@ -163,6 +255,392 @@ slc_destroy(struct slc_softc *slc)
 	dev = slc->slc_dev;
 	destroy_dev(dev);
 	free(slc, M_SLC);
+}
+
+/*
+ * Subr., interface-layer.
+ */
+
+static void
+slc_ifinit(void *xsc)
+{
+	struct slc_softc *slc;
+	struct ifnet *ifp;
+
+	slc = (struct slc_softc *)xsc;
+	ifp = slc->slc_ifp;
+	
+	if (slc->slc_tp != NULL) 
+		ifp->if_flags |= IFF_UP;
+	else
+		ifp->if_flags &= ~IFF_UP;
+		
+	if ((ifp->if_flags & IFF_UP) != 0)
+		ifp->if_drv_flags |= IFF_DRV_RUNNING;
+	else
+		ifp->if_drv_flags &= ~IFF_DRV_RUNNING;		
+}
+
+static int
+slc_ifioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
+{
+	struct slc_softc *slc;
+	struct ifdrv *ifd;
+	int error;
+
+	if ((slc = ifp->if_softc) == NULL) {
+		error = EINVAL;
+		goto out;
+	} 
+	ifd = (struct ifdrv *)data;
+	error = 0;
+
+	switch (cmd) {
+	case SIOCGDRVSPEC:
+	case SIOCSDRVSPEC:
+		switch (ifd->ifd_cmd) {
+		case TIOCGETD:
+			if (ifd->ifd_len != sizeof(dev_t))
+				error = EINVAL;
+			else
+				error = slc_gtty(slc, ifd->ifd_data);
+			break;
+		default:
+			error = EINVAL;
+			break;
+		}
+		break;			
+	case SIOCSIFFLAGS:	/* XXX */
+		slc_ifinit(slc);
+		break;
+	default:
+		error = can_ioctl(ifp, cmd, data);
+		break;
+	}
+out:	
+	return (error);
+}
+
+/*
+ * Subr., char-device.
+ */
+ 
+static int
+slc_open(struct cdev *dev, int flag, int mode, struct thread *td)
+{
+	
+	return (0);
+}
+ 
+static int
+slc_close(struct cdev *dev, int flag, int mode, struct thread *td)
+{
+	
+	return (0);
+} 
+
+static int
+slc_ioctl(struct cdev *dev, u_long cmd, caddr_t data, int flags,
+    struct thread *td)
+{
+	struct slc_softc *slc;
+	int error;
+
+	slc = dev->si_drv1;
+
+	switch (cmd) {
+	case TIOCSETD:
+		error = slc_stty(slc, data, td);
+		break;
+	case TIOCGETD:
+		error = slc_gtty(slc, data);
+		break;
+	case TIOCNOTTY:
+		error = slc_dtty(slc);
+		break;	
+	default:
+		error = ENOTTY;
+		break;
+	}
+	return (error);
+}
+
+static int 
+slc_dtty(struct slc_softc *slc)
+{
+	struct tty *tp;
+	int error;
+	
+	if ((tp = slc->slc_tp) != NULL) {
+		tty_lock(tp);
+		ttyhook_unregister(tp);
+		mtx_lock(&slc->slc_mtx);
+		slc->slc_tp = NULL;	
+		
+		if (slc->slc_ifbuf != NULL) {
+			m_freem(slc->slc_ifbuf);
+			slc->slc_ifbuf = NULL;
+		}
+		IF_DRAIN(&slc->slc_outq);
+		mtx_unlock(&slc->slc_mtx);
+		error = 0;
+	} else
+		error = ESRCH;
+	
+	if (slc->slc_ifp != NULL)
+		slc_ifinit(slc);
+	
+	return (error);
+}
+
+static int 
+slc_gtty(struct slc_softc *slc, void *data)
+{
+	dev_t *d = (dev_t *)data;
+	
+	if (slc->slc_tp != NULL)
+		*d = tty_udev(slc->slc_tp);	
+	else
+		*d = NODEV;
+
+	return (0);
+}
+
+static int 
+slc_stty(struct slc_softc *slc, void *data, struct thread *td)
+{
+	struct proc *p;
+	int fd;
+	int error;
+	
+	if (td == NULL) {
+		error = ESRCH;
+		goto out;
+	}
+	
+	if ((p = td->td_proc) == NULL) {
+		error = ESRCH;
+		goto out;
+	}
+	
+	if (p->p_flag & P_WEXIT) {
+		error = ESRCH;
+		goto out;
+	}
+	fd = *(int *)data;
+	
+	/* attach tty(4) hook on selected line */
+	mtx_lock(&slc->slc_mtx);
+	error = ttyhook_register(&slc->slc_tp, p, fd, &slc_hook, slc);
+	mtx_unlock(&slc->slc_mtx);
+out:
+	slc_ifinit(slc);
+	return (error);
+}
+
+/*
+ * RX can(4) frame.
+ */
+ 
+static int
+slc_rint(struct tty *tp, char c, int flags)
+{
+	struct slc_softc *slc;
+	struct mbuf *m;
+	int error;
+
+	tty_lock_assert(tp, MA_OWNED);
+
+	if ((slc = ttyhook_softc(tp)) == NULL) {
+		error = ENETDOWN;
+		goto out;
+	}
+
+	mtx_lock(&slc->slc_mtx);
+
+	/* allocate mbuf(9) and initialize */
+	if ((m = slc->slc_ifbuf) == NULL) {
+		if ((m = m_gethdr(M_NOWAIT, MT_DATA)) == NULL) {
+			error = ENOBUFS;
+			goto out1;
+		}
+		m->m_len = m->m_pkthdr.len = 0;
+		slc->slc_ifbuf = m;
+	}
+	
+	if (flags != 0) {
+		error = ECONNABORTED;	
+		goto bad;
+	}
+	
+	if (m->m_len < MHLEN) {
+		if (c == SLC_HC_BEL || c == SLC_HC_CR) {
+			m->m_data = m->m_pktdat;
+			error = slc_rxeof(slc);
+		} else {
+			*mtod(m, u_char *) = c;
+	
+			m->m_data++;
+			m->m_len++;
+			m->m_pkthdr.len++;
+
+			error = 0;
+		}
+	} else {
+		error = EFBIG;
+		goto bad;
+	}
+out1:	
+	mtx_unlock(&slc->slc_mtx);
+out:
+	return (error);
+bad:
+	m->m_data = m->m_pktdat;
+	m_freem(m);
+	
+	slc->slc_ifbuf = NULL;	
+	goto out1;
+}
+
+static size_t
+slc_rint_poll(struct tty *tp)
+{
+	
+	return (1);
+}
+
+static int
+slc_rxeof(struct slc_softc *slc)
+{
+	struct ifnet *ifp;
+	struct mbuf *m;
+	u_char buf[MHLEN], *bp;
+	struct can_frame *cf;
+	int len, error = 0;
+	
+	mtx_assert(&slc->slc_mtx, MA_OWNED);
+	ifp = slc->slc_ifp;
+		
+	if ((m = slc->slc_ifbuf) == NULL) {
+		error = ENOBUFS;
+		goto out;
+	}
+	
+	slc->slc_ifbuf = NULL;
+
+	(void)memset((bp = buf), 0, MHLEN);
+	cf = (struct can_frame *)bp;
+
+	/* determine can(4) frame type */
+	switch (*mtod(m, u_char *)) {
+	case SLC_HC_SFF_RTR:
+		cf->can_id |= CAN_RTR_FLAG;
+					 	/* FALLTHROUGH */
+	case SLC_HC_SFF_DATA:
+		break;
+	case SLC_HC_EFF_RTR:
+		cf->can_id |= CAN_RTR_FLAG;
+					 	/* FALLTHROUGH */
+	case SLC_HC_EFF_DATA:
+		cf->can_id |= CAN_EFF_FLAG; 
+		break;
+	default:
+		error = EINVAL;
+		goto bad;
+	}
+	m_adj(m, SLC_CMD_LEN);
+	
+	/* fetch id */
+	if ((len = can_hex2id(mtod(m, u_char *), cf)) < 0) {
+		error = EINVAL;
+		goto bad;
+	}
+	m_adj(m, len);
+	
+	/* fetch dlc */
+	cf->can_dlc = *mtod(m, u_char *);
+	m_adj(m, SLC_DLC_LEN);
+	
+	if ((cf->can_dlc < SLC_HC_DLC_INF) || 
+		(cf->can_dlc > SLC_HC_DLC_SUP)) {
+		error = EMSGSIZE;
+		goto bad;
+	}
+	cf->can_dlc -= SLC_HC_DLC_INF;
+	
+	/* fetch data, if any */
+	if ((cf->can_id & CAN_RTR_FLAG) == 0) { 
+		if (can_hex2bin(mtod(m, u_char *), cf) < 0) {
+			error = EINVAL;
+			goto bad;
+		}
+	}
+
+	len = sizeof(struct can_frame);
+
+	/* reinitialize mbuf(9) and copy back */
+	m->m_len = m->m_pkthdr.len = len;
+	m->m_data = m->m_pktdat;
+
+	bcopy(buf, mtod(m, u_char *), len);
+	
+	/* pass can(4) frame to layer above */
+	m->m_pkthdr.rcvif = ifp;
+ 	mtx_unlock(&slc->slc_mtx);
+ 	(*ifp->if_input)(ifp, m);
+ 	mtx_lock(&slc->slc_mtx);
+out:
+	return (error);			
+bad:
+	if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
+	m_freem(m);
+	goto out;
+}
+
+
+/*
+ * TX can(4) frame.
+ */
+
+static void
+slc_ifstart(struct ifnet *ifp)
+{
+	struct slc_softc *slc;
+	struct mbuf *m;
+	struct tty *tp;
+	
+	slc = ifp->if_softc;
+		
+	if ((ifp->if_drv_flags & (IFF_DRV_RUNNING | IFF_DRV_OACTIVE)) !=
+	    IFF_DRV_RUNNING)
+		return;
+			
+	ifp->if_drv_flags |= IFF_DRV_OACTIVE;
+	for (;;) {
+		IFQ_DEQUEUE(&ifp->if_snd, m);
+		if (m == NULL) 
+			break;
+
+		can_bpf_mtap(ifp, m);
+
+		/* 
+		 * Encode can(4) frame in its 
+		 *
+		 *  <type> <id> <dlc> <data>*
+		 * 
+		 * ASCII representation.
+		 */
+		if ((tp = slc_encap(slc, &m)) != NULL) {
+			/* notify the tty(4) */
+			tty_lock(tp);
+			
+			if (tty_gone(tp) == 0)
+				ttydevsw_outwakeup(tp);
+			
+			tty_unlock(tp);
+		}		
+	}								
+	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
 }
 
 static struct tty *
@@ -265,449 +743,6 @@ bad:
 	goto out;
 }
 
-static int
-slc_rxeof(struct slc_softc *slc)
-{
-	struct ifnet *ifp;
-	struct mbuf *m;
-	u_char buf[MHLEN], *bp;
-	struct can_frame *cf;
-	int len, error = 0;
-	
-	mtx_assert(&slc->slc_mtx, MA_OWNED);
-	ifp = slc->slc_ifp;
-		
-	if ((m = slc->slc_ifbuf) == NULL) {
-		error = ENOBUFS;
-		goto out;
-	}
-	
-	slc->slc_ifbuf = NULL;
-
-	(void)memset((bp = buf), 0, MHLEN);
-	cf = (struct can_frame *)bp;
-
-	/* determine can(4) frame type */
-	switch (*mtod(m, u_char *)) {
-	case SLC_HC_SFF_RTR:
-		cf->can_id |= CAN_RTR_FLAG;
-					 	/* FALLTHROUGH */
-	case SLC_HC_SFF_DATA:
-		break;
-	case SLC_HC_EFF_RTR:
-		cf->can_id |= CAN_RTR_FLAG;
-					 	/* FALLTHROUGH */
-	case SLC_HC_EFF_DATA:
-		cf->can_id |= CAN_EFF_FLAG; 
-		break;
-	default:
-		error = EINVAL;
-		goto bad;
-	}
-	m_adj(m, SLC_CMD_LEN);
-	
-	/* fetch id */
-	if ((len = can_hex2id(mtod(m, u_char *), cf)) < 0) {
-		error = EINVAL;
-		goto bad;
-	}
-	m_adj(m, len);
-	
-	/* fetch dlc */
-	cf->can_dlc = *mtod(m, u_char *);
-	m_adj(m, SLC_DLC_LEN);
-	
-	if ((cf->can_dlc < SLC_HC_DLC_INF) || 
-		(cf->can_dlc > SLC_HC_DLC_SUP)) {
-		error = EMSGSIZE;
-		goto bad;
-	}
-	cf->can_dlc -= SLC_HC_DLC_INF;
-	
-	/* fetch data, if any */
-	if ((cf->can_id & CAN_RTR_FLAG) == 0) { 
-		if (can_hex2bin(mtod(m, u_char *), cf) < 0) {
-			error = EINVAL;
-			goto bad;
-		}
-	}
-
-	len = sizeof(struct can_frame);
-
-	/* reinitialize mbuf(9) and copy back */
-	m->m_len = m->m_pkthdr.len = len;
-	m->m_data = m->m_pktdat;
-
-	bcopy(buf, mtod(m, u_char *), len);
-	
-	/* pass can(4) frame to layer above */
-	m->m_pkthdr.rcvif = ifp;
- 	mtx_unlock(&slc->slc_mtx);
- 	(*ifp->if_input)(ifp, m);
- 	mtx_lock(&slc->slc_mtx);
-out:
-	return (error);			
-bad:
-	if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
-	m_freem(m);
-	goto out;
-}
-
-static int 
-slc_dtty(struct slc_softc *slc)
-{
-	struct tty *tp;
-	int error;
-	
-	if ((tp = slc->slc_tp) != NULL) {
-		tty_lock(tp);
-		ttyhook_unregister(tp);
-		mtx_lock(&slc->slc_mtx);
-		slc->slc_tp = NULL;	
-		
-		if (slc->slc_ifbuf != NULL) {
-			m_freem(slc->slc_ifbuf);
-			slc->slc_ifbuf = NULL;
-		}
-		IF_DRAIN(&slc->slc_outq);
-		mtx_unlock(&slc->slc_mtx);
-		error = 0;
-	} else
-		error = ESRCH;
-	
-	if (slc->slc_ifp != NULL)
-		slc_ifinit(slc);
-	
-	return (error);
-}
-
-static int 
-slc_gtty(struct slc_softc *slc, void *data)
-{
-	dev_t *d = (dev_t *)data;
-	
-	if (slc->slc_tp != NULL)
-		*d = tty_udev(slc->slc_tp);	
-	else
-		*d = NODEV;
-
-	return (0);
-}
-
-static int 
-slc_stty(struct slc_softc *slc, void *data, struct thread *td)
-{
-	struct proc *p;
-	int fd;
-	int error;
-	
-	if (td == NULL) {
-		error = ESRCH;
-		goto out;
-	}
-	
-	if ((p = td->td_proc) == NULL) {
-		error = ESRCH;
-		goto out;
-	}
-	
-	if (p->p_flag & P_WEXIT) {
-		error = ESRCH;
-		goto out;
-	}
-	fd = *(int *)data;
-	
-	/* attach tty(4) hook on selected line */
-	mtx_lock(&slc->slc_mtx);
-	error = ttyhook_register(&slc->slc_tp, p, fd, &slc_hook, slc);
-	mtx_unlock(&slc->slc_mtx);
-out:
-	slc_ifinit(slc);
-	return (error);
-}
-
-/*- 
- * Interface cloner.
- * 
- */
-
-static int
-slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
-{
-	struct slc_softc *slc;
-	struct ifnet *ifp;
-	struct cdev *dev;
-	
-	slc = malloc(sizeof(*slc), M_SLC, M_WAITOK | M_ZERO);
-	if ((ifp = slc->slc_ifp = if_alloc(IFT_CAN)) == NULL) {
-		free(slc, M_SLC);
-		return (ENOSPC);
-	}
-	
-	/* initialize char-device */
-	dev = make_dev(&slc_cdevsw, unit,
-		    UID_ROOT, GID_WHEEL, 0600, "%s%d", slc_name, unit);
-	dev->si_drv1 = slc;
-	slc->slc_dev = dev;
-		    
-	/* initialize its protective lock */
-	mtx_init(&slc->slc_mtx, "slc_mtx", NULL, MTX_DEF);
-	
-	/* initialize queue for transmission */
-	mtx_init(&slc->slc_outq.ifq_mtx, "slc_outq_mtx", NULL, MTX_DEF);
-	IFQ_SET_MAXLEN(&slc->slc_outq, ifqmaxlen);
-	
-	/* attach */
-	mtx_lock(&slc_list_mtx);
-	TAILQ_INSERT_TAIL(&slc_list, slc, slc_next);
-	mtx_unlock(&slc_list_mtx);
-	
-	ifp->if_softc = slc;
-	
-	if_initname(ifp, slc_name, unit);
-	
-	ifp->if_flags = (IFF_POINTOPOINT | IFF_MULTICAST);
-	ifp->if_init = slc_ifinit;
-	ifp->if_start = slc_ifstart;
-	ifp->if_ioctl = slc_ifioctl;
-	
-	can_ifattach(ifp, NULL, 0);
-
-	ifp->if_mtu = SLC_MTU;	/* XXX */
-	
-	ifp->if_drv_flags |= IFF_DRV_RUNNING;
-	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
-	
-	return (0);
-}
-
-static void
-slc_ifclone_destroy(struct ifnet *ifp)
-{
-	struct slc_softc *slc;
-
-	slc = ifp->if_softc;
-	
-	mtx_lock(&slc_list_mtx);
-	TAILQ_REMOVE(&slc_list, slc, slc_next);
-	mtx_unlock(&slc_list_mtx);
-	slc_destroy(slc);
-}
-
-static int
-slc_modevent(module_t mod, int type, void *data) 
-{ 
-	struct slc_softc *slc;
-	int error;
-
-	switch (type) {
-	case MOD_LOAD:
-		mtx_init(&slc_list_mtx, "slc_list_mtx", NULL, MTX_DEF);
-		slc_cloner = if_clone_simple(slc_name, 
-		slc_ifclone_create, slc_ifclone_destroy, 0);
-		error = 0;
-		break;
-	case MOD_UNLOAD:
-		if_clone_detach(slc_cloner);
-		
-		mtx_lock(&slc_list_mtx);
-		while ((slc = TAILQ_FIRST(&slc_list)) != NULL) {
-			TAILQ_REMOVE(&slc_list, slc, slc_next);
-			mtx_unlock(&slc_list_mtx);
-			slc_destroy(slc);
-			mtx_lock(&slc_list_mtx);
-		}
-		mtx_unlock(&slc_list_mtx);
-		mtx_destroy(&slc_list_mtx);
-		error = 0;
-		break;
-	default:
-		error = EOPNOTSUPP;
-		break;
-	}
-	return (error);
-}
-
-DECLARE_MODULE(if_slc, slc_modevent, NULL);
-
-/*- 
- * Interface-level routines. 
- * 
- */
-
-static void
-slc_ifstart(struct ifnet *ifp)
-{
-	struct slc_softc *slc;
-	struct mbuf *m;
-	struct tty *tp;
-	
-	slc = ifp->if_softc;
-		
-	if ((ifp->if_drv_flags & (IFF_DRV_RUNNING | IFF_DRV_OACTIVE)) !=
-	    IFF_DRV_RUNNING)
-		return;
-			
-	ifp->if_drv_flags |= IFF_DRV_OACTIVE;
-	for (;;) {
-		IFQ_DEQUEUE(&ifp->if_snd, m);
-		if (m == NULL) 
-			break;
-
-		can_bpf_mtap(ifp, m);
-
-		/* 
-		 * Encode can(4) frame in its 
-		 *
-		 *  <type> <id> <dlc> <data>*
-		 * 
-		 * ASCII representation.
-		 */
-		if ((tp = slc_encap(slc, &m)) != NULL) {
-			/* notify the tty(4) */
-			tty_lock(tp);
-			
-			if (tty_gone(tp) == 0)
-				ttydevsw_outwakeup(tp);
-			
-			tty_unlock(tp);
-		}		
-	}								
-	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
-}
-
-static void
-slc_ifinit(void *xsc)
-{
-	struct slc_softc *slc;
-	struct ifnet *ifp;
-
-	slc = (struct slc_softc *)xsc;
-	ifp = slc->slc_ifp;
-	
-	if (slc->slc_tp != NULL) 
-		ifp->if_flags |= IFF_UP;
-	else
-		ifp->if_flags &= ~IFF_UP;
-		
-	if ((ifp->if_flags & IFF_UP) != 0)
-		ifp->if_drv_flags |= IFF_DRV_RUNNING;
-	else
-		ifp->if_drv_flags &= ~IFF_DRV_RUNNING;		
-}
-
-static int
-slc_ifioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
-{
-	struct slc_softc *slc;
-	struct ifdrv *ifd;
-	int error;
-
-	if ((slc = ifp->if_softc) == NULL) {
-		error = EINVAL;
-		goto out;
-	} 
-	ifd = (struct ifdrv *)data;
-	error = 0;
-
-	switch (cmd) {
-	case SIOCGDRVSPEC:
-	case SIOCSDRVSPEC:
-		switch (ifd->ifd_cmd) {
-		case TIOCGETD:
-			if (ifd->ifd_len != sizeof(dev_t))
-				error = EINVAL;
-			else
-				error = slc_gtty(slc, ifd->ifd_data);
-			break;
-		default:
-			error = EINVAL;
-			break;
-		}
-		break;			
-	case SIOCSIFFLAGS:	/* XXX */
-		slc_ifinit(slc);
-		break;
-	default:
-		error = can_ioctl(ifp, cmd, data);
-		break;
-	}
-out:	
-	return (error);
-}
-
-/*- 
- * Bottom-level routines.
- * 
- */
-
-static int
-slc_rint(struct tty *tp, char c, int flags)
-{
-	struct slc_softc *slc;
-	struct mbuf *m;
-	int error;
-
-	tty_lock_assert(tp, MA_OWNED);
-
-	if ((slc = ttyhook_softc(tp)) == NULL) {
-		error = ENETDOWN;
-		goto out;
-	}
-
-	mtx_lock(&slc->slc_mtx);
-
-	/* allocate mbuf(9) and initialize */
-	if ((m = slc->slc_ifbuf) == NULL) {
-		if ((m = m_gethdr(M_NOWAIT, MT_DATA)) == NULL) {
-			error = ENOBUFS;
-			goto out1;
-		}
-		m->m_len = m->m_pkthdr.len = 0;
-		slc->slc_ifbuf = m;
-	}
-	
-	if (flags != 0) {
-		error = ECONNABORTED;	
-		goto bad;
-	}
-	
-	if (m->m_len < MHLEN) {
-		if (c == SLC_HC_BEL || c == SLC_HC_CR) {
-			m->m_data = m->m_pktdat;
-			error = slc_rxeof(slc);
-		} else {
-			*mtod(m, u_char *) = c;
-	
-			m->m_data++;
-			m->m_len++;
-			m->m_pkthdr.len++;
-
-			error = 0;
-		}
-	} else {
-		error = EFBIG;
-		goto bad;
-	}
-out1:	
-	mtx_unlock(&slc->slc_mtx);
-out:
-	return (error);
-bad:
-	m->m_data = m->m_pktdat;
-	m_freem(m);
-	
-	slc->slc_ifbuf = NULL;	
-	goto out1;
-}
-
-static size_t
-slc_rint_poll(struct tty *tp)
-{
-	
-	return (1);
-}
-
 static size_t
 slc_txeof(struct tty *tp, void *buf, size_t len)
 {
@@ -769,44 +804,7 @@ slc_txeof_poll(struct tty *tp)
 	return (outqlen);
 }
 
-static int
-slc_open(struct cdev *dev, int flag, int mode, struct thread *td)
-{
-	
-	return (0);
-}
- 
-static int
-slc_close(struct cdev *dev, int flag, int mode, struct thread *td)
-{
-	
-	return (0);
-} 
 
-static int
-slc_ioctl(struct cdev *dev, u_long cmd, caddr_t data, int flags,
-    struct thread *td)
-{
-	struct slc_softc *slc;
-	int error;
 
-	slc = dev->si_drv1;
-
-	switch (cmd) {
-	case TIOCSETD:
-		error = slc_stty(slc, data, td);
-		break;
-	case TIOCGETD:
-		error = slc_gtty(slc, data);
-		break;
-	case TIOCNOTTY:
-		error = slc_dtty(slc);
-		break;	
-	default:
-		error = ENOTTY;
-		break;
-	}
-	return (error);
-}
-
+DECLARE_MODULE(if_slc, slc_modevent, NULL);
 MODULE_DEPEND(if_slc, can, 1, 1, 1);
