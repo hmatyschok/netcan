@@ -410,15 +410,15 @@ slc_close(struct cdev *dev, int flag, int mode, struct thread *td)
 } 
 
 /*
- * Rx path - can(4) frame.
+ * Rx path of can(4) frame:
  * 
  *  (a) Handoff single characters by ttydisc_rint(9) by callback of
  *      slc_rint(9) maps to th_rint(9) on ttyhook(4) structure, when 
  *      e. g. uart_intr(9) on SER_INT_RXREADY event takes place. 
  * 
- *  (b) The rx'd characters are stored on the data field of the 
- *      allocated mbuf(9) maps to slc_ifbuf on slc_softc{} until 
- *      break condition during runtime of slc_intr(9) takes place. 
+ *  (b) Dring runtime of slc_intr(9), the rx'd characters are stored 
+ *      on the data field of the allocated mbuf(9) maps to slc_ifbuf 
+ *      on slc_softc{} until break condition takes place. 
  *
  *       #1 When 
  * 
@@ -597,11 +597,27 @@ bad:
 	goto out;
 }
 
-
 /*
- * TX can(4) frame.
+ * Tx path of can(4) frame:
+ * 
+ *  (a) During runtime of can_ifoutput(9), the can(4) frame
+ *      is anqueued by if_transmit(9) on if_snd queue maps 
+ *      to the instance of generic ifnet(9) structure.
+ *      
+ *  (b) The slc_ifstart(9) subr. gets invoked and dequeues.
+ * 
+ *      During runtime of slc_encap(9), each can(4) frame is 
+ *      encoded as ASCII byte string and cached on slc_outq 
+ *      maps to slc_softc{}. 
+ *      
+ *      On success, the ttydevsw_outwakeup(9) invokes the 
+ *      tsw_outwakeup(9) callback function maps to the e. g. 
+ *      uart_tty_class(4).  
+ * 
+ *  (c) During runtime of ttydisc_getc(9), the cached ASCII
+ *      byte string is dequeued and injected by slc_txeof(9).
  */
-
+ 
 static void
 slc_ifstart(struct ifnet *ifp)
 {
