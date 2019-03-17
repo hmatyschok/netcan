@@ -377,9 +377,9 @@ struct can_ifsoftc {
 
 /* common subr. */
 int 	can_bin2hex(struct can_frame *, u_char *);
-int 	can_hex2bin(u_char *, struct can_frame *);
+int 	can_hex2bin(struct can_frame *, u_char *);
 int 	can_id2hex(struct can_frame *, u_char *);
-int 	can_hex2id(u_char *, struct can_frame *);
+int 	can_hex2id(struct can_frame *, u_char *);
 void 	can_mbuf_tag_clean(struct mbuf *);
 
 /* interface-layer */

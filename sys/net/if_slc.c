@@ -551,7 +551,7 @@ slc_rxeof(struct slc_softc *slc)
 	m_adj(m, SLC_CMD_LEN);
 	
 	/* fetch id */
-	if ((len = can_hex2id(mtod(m, u_char *), cf)) < 0) {
+	if ((len = can_hex2id(cf, mtod(m, u_char *))) < 0) {
 		error = EINVAL;
 		goto bad;
 	}
@@ -570,7 +570,7 @@ slc_rxeof(struct slc_softc *slc)
 	
 	/* fetch data, if any */
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) { 
-		if (can_hex2bin(mtod(m, u_char *), cf) < 0) {
+		if (can_hex2bin(cf, mtod(m, u_char *)) < 0) {
 			error = EINVAL;
 			goto bad;
 		}

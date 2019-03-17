@@ -547,13 +547,13 @@ can_bin2hex(struct can_frame *cf, u_char *buf)
 }
 
 int
-can_hex2bin(u_char *buf, struct can_frame *cf)
+can_hex2bin(struct can_frame *cf, u_char *buf)
 {
 	int len, i;
 	u_char *bp;
 	u_char c1, c0;
 	
-	if (cf == NULL || (bp = buf) == NULL)
+	if ((bp = buf) == NULL || cf == NULL)
 		return (-1);
 	
 	if ((len = cf->can_dlc) >= CAN_MAX_DLC)
@@ -616,14 +616,14 @@ can_id2hex(struct can_frame *cf, u_char *buf)
 }
 
 int
-can_hex2id(u_char *buf, struct can_frame *cf)
+can_hex2id(struct can_frame *cf, u_char *buf)
 {
 	int len;
 	canid_t u, v;
 	u_char *bp, *ep;
 	u_char c;
 	
-	if (cf == NULL || (bp = buf) == NULL)
+	if ((bp = buf) == NULL || cf == NULL)
 		return (-1);
 	
 	if ((cf->can_id & CAN_EFF_FLAG) != 0) 
