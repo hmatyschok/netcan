@@ -78,15 +78,6 @@
  * for further details.
  */
 
-static struct if_clone *slc_cloner;
-static const char slc_name[] = "slc"; 
-
-static struct mtx slc_list_mtx;
-static TAILQ_HEAD(slc_head, slc_softc) slc_list = 
-	TAILQ_HEAD_INITIALIZER(slc_list);
-	
-static MALLOC_DEFINE(M_SLC, "slc", "Serial line can(4) Interface"); 
- 
 /* common subr. */
 static void 	slc_destroy(struct slc_softc *);
 static struct tty *	slc_encap(struct slc_softc *, struct mbuf **);
@@ -115,6 +106,15 @@ static d_open_t 	slc_open;
 static d_close_t 	slc_close;
 static d_ioctl_t 	slc_ioctl;
 
+static struct if_clone *slc_cloner;
+static const char slc_name[] = "slc"; 
+
+static struct mtx slc_list_mtx;
+static TAILQ_HEAD(slc_head, slc_softc) slc_list = 
+	TAILQ_HEAD_INITIALIZER(slc_list);
+	
+static MALLOC_DEFINE(M_SLC, "slc", "Serial line can(4) Interface"); 
+ 
 /* tty(4) hook */
 static struct ttyhook slc_hook = {
 	.th_getc_inject = 	slc_txeof,

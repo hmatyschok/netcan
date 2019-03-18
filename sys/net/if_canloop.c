@@ -73,14 +73,14 @@
 #include <net/if_types.h>
 #include <net/if_can.h>
 
+/*
+ * Loopback interface driver for the can(4) protocol.
+ */
+
 struct canlo_softc {
 	struct ifnet	*cs_ifp;
 	TAILQ_ENTRY(canlo_softc) cs_next;
 };
-
-/*
- * Loopback interface driver for the can(4) protocol.
- */
 
 static int		canlo_ioctl(struct ifnet *, u_long, caddr_t);
 static void 	canlo_start(struct ifnet *);
@@ -89,9 +89,8 @@ static void 	canlo_init(void *);
 static void 	canlo_clone_destroy(struct ifnet *);
 static int 	canlo_clone_create(struct if_clone *, int, caddr_t);
 
-/*
- * Interface cloner and module(9) description.
- */ 
+static struct if_clone *canlo_cloner;
+static const char canlo_name[] = "canlo";
 
 static struct mtx canlo_list_mtx;
 static TAILQ_HEAD(canlo_head, canlo_softc) canlo_list = 
@@ -99,8 +98,9 @@ static TAILQ_HEAD(canlo_head, canlo_softc) canlo_list =
 	
 static MALLOC_DEFINE(M_CANLO, "canlo", "can(4) Loopback Interface"); 
 
-static struct if_clone *canlo_cloner;
-static const char canlo_name[] = "canlo";
+/*
+ * Interface cloner and module(9) description.
+ */ 
 
 static void
 canlo_clone_destroy(struct ifnet *ifp)
@@ -158,7 +158,7 @@ canlo_init(void *xsc)
 	struct canlo_softc *cs;
 	struct ifnet *ifp;
 
-	slc = (struct canlo_softc *)xsc;
+	cs = (struct canlo_softc *)xsc;
 	ifp = cs->cs_ifp;
 	
 	ifp->if_drv_flags |= IFF_DRV_RUNNING;
@@ -166,7 +166,7 @@ canlo_init(void *xsc)
 }
 
 /*
- * Dequeue for transmission.
+ * Dequeue and loop back can(4) frame.
  */
 static void
 canlo_start(struct ifnet *ifp)
