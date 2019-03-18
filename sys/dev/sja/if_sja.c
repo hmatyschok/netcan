@@ -212,6 +212,51 @@ sja_detach(device_t dev)
 	return (0);
 }
 
+static int
+sja_intr(void *arg)
+{
+	struct sja_softc *sja;
+	struct sja_data *var;
+	struct ifnet *ifp;
+	uint8_t status;
+	int n, error;
+	
+	sja = (struct sja_softc *)arg;
+
+	SJA_LOCK(sja);
+	
+	var = sja->sja_var;
+	ifp = sja->sja_ifp;
+
+	if ((ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
+		goto bad;
+	
+	status = SJA_READ_1(sja->sja_dev, var, SJA_IR);
+
+	for (n = 0; status != SJA_IR_OFF && n < 6; n++) { /* XXX */
+		
+		if ((status & SJA_IR_RI) != 0)
+			sja_rxeof(sja);
+			
+		if ((status & SJA_IR_TI) != 0)
+			sja_txeof(sja);
+			
+		if ((status & SJA_IR_ERR) != 0) {
+			if (sja_error(sja, status) != 0)
+				break;
+		}
+		intr = SJA_READ_1(sja->sja_dev, var, SJA_IR);	
+	}
+	error = FILTER_HANDLED;	
+done:
+	SJA_CLEAR_INTR(sja->sja_dev, var);
+	SJA_UNLOCK(sja);
+	return (error);
+bad:
+	error = FILTER_STRAY;
+	goto done;
+}
+
 /*
  * Copy can(4) frame from RX buffer into mbuf(9).
  */
@@ -277,50 +322,6 @@ done:	/* SJA1000, 6.4.4, note 4 */
 		goto again;
 }
 
-static int
-sja_intr(void *arg)
-{
-	struct sja_softc *sja;
-	struct sja_data *var;
-	struct ifnet *ifp;
-	uint8_t status;
-	int n, error;
-	
-	sja = (struct sja_softc *)arg;
-
-	SJA_LOCK(sja);
-	
-	var = sja->sja_var;
-	ifp = sja->sja_ifp;
-
-	if (ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
-		goto bad;
-	
-	status = SJA_READ_1(sja->sja_dev, var, SJA_IR);
-
-	for (n = 0; status != SJA_IR_OFF && n < 6; n++) { /* XXX */
-		
-		if ((status & SJA_IR_RI) != 0)
-			sja_rxeof(sja);
-			
-		if ((status & SJA_IR_TI) != 0)
-			sja_txeof(sja);
-			
-		if ((status & SJA_IR_ERR) != 0) {
-			if (sja_error(sja, status) != 0)
-				break;
-		}
-		intr = SJA_READ_1(sja->sja_dev, var, SJA_IR);	
-	}
-	error = FILTER_HANDLED;	
-done:
-	SJA_CLEAR_INTR(sja->sja_dev, var);
-	SJA_UNLOCK(sja);
-	return (error);
-bad:
-	error = FILTER_STRAY;
-	goto done;
-}
 
 static int 
 sja_error(struct sja_softc *sja, uint8_t intr)
