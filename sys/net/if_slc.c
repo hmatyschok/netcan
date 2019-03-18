@@ -436,7 +436,7 @@ out:
  * 
  *      On both cases the mbuf(9) is released by m_freem(9).
  * 
- *       #3 If CR or BEL caracters are parsed on input stream.   
+ *       #3 If CR or BEL characters are parsed on input stream.   
  * 
  *  (c) The can(4) frame gets decapsulated and passed to 
  *      protocol layer by call of can_ifinput(9) during 
@@ -641,11 +641,9 @@ slc_ifstart(struct ifnet *ifp)
 		can_bpf_mtap(ifp, m);
 
 		/* 
-		 * Encode can(4) frame in its 
-		 *
-		 *  <type> <id> <dlc> <data>*
-		 * 
-		 * ASCII representation.
+		 * Encode can(4) frame in its ASCII 
+		 * representation, see net/if_can.h 
+		 * for further details.
 		 */
 		if ((tp = slc_encap(slc, &m)) != NULL) {
 			/* notify the tty(4) */
