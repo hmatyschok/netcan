@@ -174,7 +174,7 @@ bad:
 }
 
 /*
- * Wrapper for tx can(4) frame by interface-layer.
+ * Enqueue can(4) frame and transmit.
  */
 static int
 can_ifoutput(struct ifnet *ifp, struct mbuf *m, 
@@ -501,7 +501,7 @@ can_mbuf_tag_clean(struct mbuf *m)
 }
 
 /*
- * Utility functions.
+ * Utility subr. for encoding / decoding can(4) ID and SDU.
  */
  
 static const char can_hex_tbl[] = "0123456789ABCDEF";
