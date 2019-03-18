@@ -233,7 +233,7 @@ struct can_frame {
 
 struct canfd_frame {
 	canid_t	can_id;		/* ID + EFF/RTR/ERR flags */
-	uint8_t	can_dlc;	/* SDU length in byte (0 .. CAN_MAX_DLEN) */
+	uint8_t	can_dlc;	/* SDU length in byte (0 .. CANFD_MAX_DLEN) */
 	uint8_t	__pad;
 	uint8_t	__res0;
 	uint8_t	__res1;
@@ -245,11 +245,11 @@ struct canfd_frame {
 /* 
  * ASCII representation of can(4) frame: 
  *
- *  <frm> ::= <type> <id> <dlc> <data> <hc>
+ *  <frm> ::= <type> <id> <dlc> <data> <hc>;'
  * 
  * encodes the 
  *
- *  <type> ::= "R" | "T" | "r" | "t"
+ *  <type> ::= "R" | "T" | "r" | "t";
  * 
  * by
  * 
@@ -263,36 +263,36 @@ struct canfd_frame {
  * 
  * with
  * 
- *  <id> ::= <sff> | <eff>
+ *  <id> ::= <sff> | <eff>;
  * 
  * where encodes the 11 identifier bits
  * 
- *  <sff> ::= 3 * <xdigit>
+ *  <sff> ::= 3 * <xdigit>;
  * 
  * or the 29 identifier bits
  * 
- *  <eff> ::= 8 * <xdigit>
+ *  <eff> ::= 8 * <xdigit>;
  * 
  * by
  * 
- *  <xdigit> ::= <digit> | "A" | "B" | "C" | "D" | "E" | "F"
+ *  <xdigit> ::= <digit> | "A" | "B" | "C" | "D" | "E" | "F";
  * 
  * and the 
  * 
- *  <dlc> ::= <digit>
+ *  <dlc> ::= <digit> - "9";
  * 
  * by
  * 
  *  <digit> ::= "0" | "1" | "2" | "3" | "4" | 
- *              "5" | "6" | "7" | "8" | "9"
+ *              "5" | "6" | "7" | "8" | "9";
  * 
  * and 
  * 
- *  <data> ::= <dlc> * <xdigit>
+ *  <data> ::= <dlc> * <xdigit>;
  *
  * with
  * 
- *  <hc> ::= "CR" | "BEL"
+ *  <hc> ::= "CR" | "BEL";
  * 
  * finally.
  */
