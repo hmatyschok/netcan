@@ -288,7 +288,7 @@ struct canfd_frame {
  * 
  * and 
  * 
- *  <data> ::= <dlc> * <xdigit>;
+ *  <data> ::= <dlc> * { <xdigit> <xdigit> };
  *
  * with
  * 
