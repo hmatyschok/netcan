@@ -79,7 +79,7 @@
 int can_output_cnt = 0;
 
 /*
- * Transmit CAN frames.
+ * Transmit can(4) frames.
  */
 int
 can_output(struct mbuf *m, struct canpcb *canp)
@@ -162,7 +162,6 @@ bad:
 
 /*
  * Called by [gs]etsockopt(2).
- *
  */
 int
 can_ctloutput(struct socket *so, struct sockopt *sopt)

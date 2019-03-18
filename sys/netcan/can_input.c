@@ -109,7 +109,7 @@ can_init(void)
 }
 
 /*
- * Process rx'd CAN frames by protocol-layer.
+ * Handoff rx'd can(4) frames from protocol- into socket-layer.
  */ 
 void 	
 can_nh_input(struct mbuf *m)
@@ -261,7 +261,8 @@ out:
 }
 
 /*
- * XXX: Yeah, I'll refactor this. 
+ * XXX: I'll refactor this. Those code-sections are from
+ * XXX: original implementation by the NetBSD project. 
  */
 #if 0
 static void
@@ -273,9 +274,6 @@ can_notify(struct canpcb *canp, int errno)
 	sowwakeup(canp->canp_so);
 }
 
-/*
- * XXX: Yeah, I'll refactor this. 
- */
 void 
 can_ctlinput(int cmd, struct sockaddr *sa, void *v)
 {

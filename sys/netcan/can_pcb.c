@@ -359,6 +359,10 @@ can_pcbnotifyall(struct canpcbinfo *pcbinfo, uint32_t faddr, int errno,
 }
 #endif
 
+/*
+ * XXX: I'll refactor this. Those code-sections are from
+ * XXX: original implementation by the NetBSD project. 
+ */
 #if 0
 
 /*
@@ -417,7 +421,7 @@ can_pcbstate(struct canpcb *canp, int state)
  * 
  * It returns true if mbuf is accepted, false otherwise.
  *
- * XXX: I'll refactor this, e. g. accept_filter(9).
+ * XXX: I'll refactor this, e. g. by utilizing the accept_filter(9) KPI.
  */
 int
 can_pcbfilter(struct canpcb *canp, struct mbuf *m)
