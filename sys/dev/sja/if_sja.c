@@ -46,9 +46,6 @@
 
 #include "sja_if.h"
 
-/*
- * Subr.
- */
 static void	sja_rxeof(struct sja_softc *);
 static void	sja_txeof(struct sja_softc *);
 static void	sja_error(struct sja_softc *, uint8_t);
@@ -77,118 +74,6 @@ static const struct can_link_timecaps sja_timecaps = {
 	.cltc_brp_inc =		1,
 	.cltc_linkmode_caps =		SJA_LINKMODE_CAPS,
 };
-
-/*
- * Force controller into reset mode.
- */
-static int 
-sja_reset(struct sja_softc *sja)
-{
-	struct ifnet *ifp;
-	struct can_ifsoftc *csc;
-	struct sja_data *var;
-	struct timeval tv0, tv;
-	uint8_t status;
-	int error;
-
-	ifp = sja->sja_ifp;
-	csc = ifp->if_l2com;
-	var = sja->sja_var;
-
-	/* disable interrupts, if any */
-	SJA_WRITE_1(sja->sja_dev, var, SJA_IER, SJA_IER_OFF);
-
-	/* fetch contents of status register */
-	status = SJA_READ_1(sja->sja_dev, var, SJA_MOD);
-	
-	getmicrotime(&tv0);
-	getmicrotime(&tv);
-	
-	/* set reset mode, until break-condition takes place */
-	for (error = EIO; sja_timercmp(&tv0, &tv, 100); ) {
-
-		if ((status & SJA_MOD_RM) != 0) {
-			csc->csc_flags = CAN_STATE_SUSPENDED;
-			error = 0;
-			break;
-		}
-
-		SJA_WRITE_1(sja->sja_dev, var, SJA_MOD, SJA_MOD_RM);
-		DELAY(10);
-		
-		status = SJA_READ_1(sja->sja_dev, var, SJA_MOD);
-		getmicrotime(&tv);
-	}
-	
-	return (error);
-}
-
-/*
- * Force controller in normal mode.
- */
-static int 
-sja_normal_mode(struct sja_softc *sja)
-{
-	struct ifnet *ifp;
-	struct can_ifsoftc *csc;
-	struct sja_data *var;
-	struct timeval tv0, tv;
-	uint8_t status;
-	int error;
-
-	ifp = sja->sja_ifp;
-	csc = ifp->if_l2com;
-	var = sja->sja_var;
-
-	/* flush error counters and error code capture */
-	SJA_WRITE_1(sja->sja_dev, var, SJA_TXERR, 0x00);
-	SJA_WRITE_1(sja->sja_dev, var, SJA_RXERR, 0x00);
-	
-	status = SJA_READ_1(sja->sja_dev, var, SJA_ECC);
-	
-	/* clear interrupt flags */
-	status = SJA_READ_1(sja->sja_dev, var, SJA_IR);
-	
-	/* fetch contents of status register */
-	status = SJA_READ_1(sja->sja_dev, var, SJA_MOD);
-	
-	getmicrotime(&tv0);
-	getmicrotime(&tv);
-	
-	/* set normal mode and enable interrupts, if any */
-	for (error = EIO; sja_timercmp(&tv0, &tv, 100); ) {
-
-		if ((status & SJA_MOD_RM) == 0) {
-			status = SJA_IER_ALL;
-			status &= ~SJA_IER_BEIE;
-
-			if ((csc->csc_linkmodes & CAN_LINKMODE_BUS_ERR_REP) == 0)
-				status &= ~SJA_IER_BEIE;
-			
-			SJA_WRITE_1(sja->sja_dev, var, SJA_IER, status);
-			
-			csc->csc_flags = CAN_STATE_ERROR_ACTIVE;
-			error = 0;
-			break;
-		}
-
-		status = SJA_MOD_RM;
-	
-		if ((csc->csc_linkmodes & CAN_LINKMODE_LISTENONLY) != 0)
-			status |= SJA_MOD_LOM;
-			
-		if ((csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK) != 0)
-			status |= SJA_MOD_STM;
-		
-		SJA_WRITE_1(sja->sja_dev, var, SJA_MOD, status);
-		DELAY(10);
-		
-		status = SJA_READ_1(sja->sja_dev, var, SJA_MOD);
-		getmicrotime(&tv);
-	}
-	
-	return (error);
-}
 
 static int
 sja_probe(device_t dev)
@@ -392,37 +277,6 @@ done:	/* SJA1000, 6.4.4, note 4 */
 		goto again;
 }
 
-/*
- * TX buffer released or TX complete.
- */
-static void 
-sja_txeof(struct sja_softc *sja)
-{
-	struct ifnet *ifp;
-	struct can_ifsoftc *csc;
-	struct sja_data *var; 
-	uint8_t status;
-	
-	SJA_LOCK_ASSERT(sja);
-
-	ifp = sja->sja_ifp;
-	csc = ifp->if_l2com;
-	var = sja->sja_var;
-	
-	status = SJA_READ_1(sja->sja_dev, var, SJA_SR);
-		
-	if ((csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK) != 0 
-		&& (status & SJA_SR_TCS) == 0) 
-		if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
-	else {
-		status = SJA_READ_1(sja->sja_dev, var, SJA_FI); 
-		status &= SJA_FI_DLC;
-		
-		if_inc_counter(ifp, IFCOUNTER_OBYTES, status);
-		if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
-	}
-}
-
 static int
 sja_intr(void *arg)
 {
@@ -576,8 +430,69 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 }
 
 /*
- * Copy can(4) frame into TX buffer.
+ * Tx can(4) frame.
  */
+ 
+static void
+sja_start(struct ifnet *ifp)
+{
+	struct sja_softc *sja;
+
+	sja = ifp->if_softc;
+	SJA_LOCK(sja);
+	sja_start_locked(ifp);
+	SJA_UNLOCK(sja);
+}
+
+static void
+sja_start_locked(struct ifnet *ifp)
+{
+	struct sja_softc *sja;
+	struct sja_data *var;
+	struct can_ifsoftc *csc;
+	struct mbuf *m;
+	uint8_t status;
+	
+	sja = ifp->if_softc;	
+	SJA_LOCK_ASSERT(sja);
+	var = sja->sja_var;	
+	csc = ifp->if_l2com;
+			
+	if ((ifp->if_drv_flags & (IFF_DRV_RUNNING | IFF_DRV_OACTIVE)) !=
+	    IFF_DRV_RUNNING)
+		return;
+	
+	ifp->if_drv_flags |= IFF_DRV_OACTIVE;
+			
+	for (;;) {
+		IFQ_DEQUEUE(&ifp->if_snd, m);
+		if (m == NULL) 
+			break;
+
+		/* IAP on bpf(4) */
+		can_bpf_mtap(ifp, m);
+
+		if (sja_encap(sja, &m) == 0) {
+			/* notify controller for transmission */
+			if ((csc->csc_linkmodes & CAN_LINKMODE_ONE_SHOT) != 0)
+				status = SJA_CMR_AT;
+			else 
+				status = 0x00;
+
+			if ((csc->csc_linkmodes & CAN_LINKMODE_LOOPBACK) != 0)
+				status |= SJA_CMR_SRR;
+			else
+				ststus |= SJA_CMR_TR;
+
+			SJA_WRITE_1(sja->sja_dev, var, SJA_CMR, status);
+			status = SJA_READ_1(sja->sja_dev, var, SJA_SR);
+		} else
+			if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
+	}
+	
+	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;						
+}
+
 static void 
 sja_encap(struct sja_softc *sja, struct mbuf **mp)
 {
@@ -644,72 +559,39 @@ out:
 	return (error);
 }
 
-/*
- * Transmit can(4) frame.
- */
-static void
-sja_start(struct ifnet *ifp)
+static void 
+sja_txeof(struct sja_softc *sja)
 {
-	struct sja_softc *sja;
-
-	sja = ifp->if_softc;
-	SJA_LOCK(sja);
-	sja_start_locked(ifp);
-	SJA_UNLOCK(sja);
-}
-
-static void
-sja_start_locked(struct ifnet *ifp)
-{
-	struct sja_softc *sja;
-	struct sja_data *var;
+	struct ifnet *ifp;
 	struct can_ifsoftc *csc;
-	struct mbuf *m;
+	struct sja_data *var; 
 	uint8_t status;
 	
-	sja = ifp->if_softc;	
 	SJA_LOCK_ASSERT(sja);
-	var = sja->sja_var;	
+
+	ifp = sja->sja_ifp;
 	csc = ifp->if_l2com;
-			
-	if ((ifp->if_drv_flags & (IFF_DRV_RUNNING | IFF_DRV_OACTIVE)) !=
-	    IFF_DRV_RUNNING)
-		return;
+	var = sja->sja_var;
 	
-	ifp->if_drv_flags |= IFF_DRV_OACTIVE;
-			
-	for (;;) {
-		IFQ_DEQUEUE(&ifp->if_snd, m);
-		if (m == NULL) 
-			break;
+	status = SJA_READ_1(sja->sja_dev, var, SJA_SR);
 
-		/* IAP on bpf(4) */
-		can_bpf_mtap(ifp, m);
-
-		if (sja_encap(sja, &m) == 0) {
-			/* notify controller for transmission */
-			if ((csc->csc_linkmodes & CAN_LINKMODE_ONE_SHOT) != 0)
-				status = SJA_CMR_AT;
-			else 
-				status = 0x00;
-
-			if ((csc->csc_linkmodes & CAN_LINKMODE_LOOPBACK) != 0)
-				status |= SJA_CMR_SRR;
-			else
-				ststus |= SJA_CMR_TR;
-
-			SJA_WRITE_1(sja->sja_dev, var, SJA_CMR, status);
-			status = SJA_READ_1(sja->sja_dev, var, SJA_SR);
-		} else
-			if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
+	/* TX buffer released or TX complete */
+	if ((csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK) != 0 
+		&& (status & SJA_SR_TCS) == 0) 
+		if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
+	else {
+		status = SJA_READ_1(sja->sja_dev, var, SJA_FI); 
+		status &= SJA_FI_DLC;
+		
+		if_inc_counter(ifp, IFCOUNTER_OBYTES, status);
+		if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
 	}
-	
-	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;						
 }
 
 /*
  * Initialize sja(4) controller. 
  */ 
+ 
 static void 
 sja_init(void *xsc)
 {
@@ -818,27 +700,7 @@ sja_init_locked(struct sja_softc *sja)
 	}
 }
 
-/*
- * Disable interrupts and abort pending transmission, if any.
- */
-static void 
-sja_stop(struct sja_softc *sja)
-{
-	struct ifnet *ifp;
-	
-	SJA_LOCK_ASSERT(sja);
-	ifp = sja->sja_ifp;
-
-	ifp->if_drv_flags |= ~(IFF_DRV_RUNNNING | IFF_DRV_OACTIVE);
-	
-	SJA_WRITE_1(sja->sja_dev, &sja->sja_var, SJA_IER, SJA_IER_OFF);
-	SJA_WRITE_1(sja->sja_dev, &sja->sja_var, SJA_CMR, SJA_CMR_AT);
-}
-
-/*
- * ...
- */
-
+/* ARGSUSED */
 static int
 sja_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
@@ -883,6 +745,116 @@ sja_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 	return (error);
 }
 
+/*
+ * Common subr.
+ */
+ 
+static int 
+sja_normal_mode(struct sja_softc *sja)
+{
+	struct ifnet *ifp;
+	struct can_ifsoftc *csc;
+	struct sja_data *var;
+	struct timeval tv0, tv;
+	uint8_t status;
+	int error;
+
+	ifp = sja->sja_ifp;
+	csc = ifp->if_l2com;
+	var = sja->sja_var;
+
+	/* flush error counters and error code capture */
+	SJA_WRITE_1(sja->sja_dev, var, SJA_TXERR, 0x00);
+	SJA_WRITE_1(sja->sja_dev, var, SJA_RXERR, 0x00);
+	
+	status = SJA_READ_1(sja->sja_dev, var, SJA_ECC);
+	
+	/* clear interrupt flags */
+	status = SJA_READ_1(sja->sja_dev, var, SJA_IR);
+	
+	/* fetch contents of status register */
+	status = SJA_READ_1(sja->sja_dev, var, SJA_MOD);
+	
+	getmicrotime(&tv0);
+	getmicrotime(&tv);
+	
+	/* set normal mode and enable interrupts, if any */
+	for (error = EIO; sja_timercmp(&tv0, &tv, 100); ) {
+
+		if ((status & SJA_MOD_RM) == 0) {
+			status = SJA_IER_ALL;
+			status &= ~SJA_IER_BEIE;
+
+			if ((csc->csc_linkmodes & CAN_LINKMODE_BUS_ERR_REP) == 0)
+				status &= ~SJA_IER_BEIE;
+			
+			SJA_WRITE_1(sja->sja_dev, var, SJA_IER, status);
+			
+			csc->csc_flags = CAN_STATE_ERROR_ACTIVE;
+			error = 0;
+			break;
+		}
+
+		status = SJA_MOD_RM;
+	
+		if ((csc->csc_linkmodes & CAN_LINKMODE_LISTENONLY) != 0)
+			status |= SJA_MOD_LOM;
+			
+		if ((csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK) != 0)
+			status |= SJA_MOD_STM;
+		
+		SJA_WRITE_1(sja->sja_dev, var, SJA_MOD, status);
+		DELAY(10);
+		
+		status = SJA_READ_1(sja->sja_dev, var, SJA_MOD);
+		getmicrotime(&tv);
+	}
+	
+	return (error);
+}
+
+static int 
+sja_reset(struct sja_softc *sja)
+{
+	struct ifnet *ifp;
+	struct can_ifsoftc *csc;
+	struct sja_data *var;
+	struct timeval tv0, tv;
+	uint8_t status;
+	int error;
+
+	ifp = sja->sja_ifp;
+	csc = ifp->if_l2com;
+	var = sja->sja_var;
+
+	/* disable interrupts, if any */
+	SJA_WRITE_1(sja->sja_dev, var, SJA_IER, SJA_IER_OFF);
+
+	/* fetch contents of status register */
+	status = SJA_READ_1(sja->sja_dev, var, SJA_MOD);
+	
+	getmicrotime(&tv0);
+	getmicrotime(&tv);
+	
+	/* set reset mode, until break-condition takes place */
+	for (error = EIO; sja_timercmp(&tv0, &tv, 100); ) {
+
+		if ((status & SJA_MOD_RM) != 0) {
+			csc->csc_flags = CAN_STATE_SUSPENDED;
+			error = 0;
+			break;
+		}
+
+		SJA_WRITE_1(sja->sja_dev, var, SJA_MOD, SJA_MOD_RM);
+		DELAY(10);
+		
+		status = SJA_READ_1(sja->sja_dev, var, SJA_MOD);
+		getmicrotime(&tv);
+	}
+	
+	return (error);
+}
+
 static int 
 sja_set_link_timings(struct sja_softc *sja)
 {
@@ -911,6 +883,22 @@ sja_set_link_timings(struct sja_softc *sja)
 	SJA_WRITE_1(sja->sja_dev, var, SJA_BTR1, btr1);
 
 	return (0);
+}
+
+static void 
+sja_stop(struct sja_softc *sja)
+{
+	struct ifnet *ifp;
+	
+	SJA_LOCK_ASSERT(sja);
+	ifp = sja->sja_ifp;
+
+	ifp->if_drv_flags |= ~(IFF_DRV_RUNNNING | IFF_DRV_OACTIVE);
+	
+	/* disable interrupts and abort pending transmission, if any. */
+	
+	SJA_WRITE_1(sja->sja_dev, &sja->sja_var, SJA_IER, SJA_IER_OFF);
+	SJA_WRITE_1(sja->sja_dev, &sja->sja_var, SJA_CMR, SJA_CMR_AT);
 }
 
 /*
