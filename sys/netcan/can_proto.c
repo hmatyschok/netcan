@@ -73,7 +73,7 @@
 #include <netcan/can_var.h>
 
 /*
- * CAN protocol family
+ * can(4) communication domain.
  */
 
 static struct pr_usrreqs nousrreqs;
@@ -81,7 +81,7 @@ static struct pr_usrreqs nousrreqs;
 #include <netcan/can.h>
 #include <netcan/can_var.h>
 
-FEATURE(can, "Controller Area Network protocol");
+FEATURE(can, "Controller Area Network communication domain");
 
 extern struct domain candomain;
 

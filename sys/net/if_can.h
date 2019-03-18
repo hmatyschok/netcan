@@ -242,7 +242,60 @@ struct canfd_frame {
 
 #define CANFD_MTU         (sizeof(struct canfd_frame))
 
-/* serial line can(4) */
+/* 
+ * ASCII representation of can(4) frame: 
+ *
+ *  <frm> ::= <type> <id> <dlc> <data> <hc>
+ * 
+ * encodes the 
+ *
+ *  <type> ::= "R" | "T" | "r" | "t"
+ * 
+ * by
+ * 
+ *   "R" denotes remote frame, extended frame format
+ * 
+ *   "T" denotes data frame, extendet frame format
+ * 
+ *   "r" denotes remote frame, base frame format
+ * 
+ *   "t" denotes data frame, base frame format
+ * 
+ * with
+ * 
+ *  <id> ::= <bff> | <eff>
+ * 
+ * where encodes the 11 identifier bits
+ * 
+ *  <bff> ::= 3 * <xdigit>
+ * 
+ * or the 29 identifier bits
+ * 
+ *  <eff> ::= 8 * <xdigit>
+ * 
+ * by
+ * 
+ *  <xdigit> ::= <digit> | "A" | "B" | "C" | "D" | "E" | "F"
+ * 
+ * and the 
+ * 
+ *  <dlc> ::= <digit>
+ * 
+ * by
+ * 
+ *  <digit> ::= "0" | "1" | "2" | "3" | "4" | 
+ *              "5" | "6" | "7" | "8" | "9"
+ * 
+ * and 
+ * 
+ *  <data> ::= <dlc> * <xdigit>
+ *
+ * with
+ * 
+ *  <hc> ::= "CR" | "BEL"
+ * 
+ * finally.
+ */
 #define SLC_CMD_LEN 	(sizeof(u_char))
 #define SLC_SFF_ID_LEN 	(sizeof(u_char) * 3)
 #define SLC_EFF_ID_LEN 	(sizeof(u_char) * 8)

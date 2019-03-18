@@ -320,8 +320,7 @@ bad:
 }
 
 /*
- * Called by [gs]etsockopt(2). 
- *
+ * Called by [gs]etsockopt(2).
  */
 static int
 rcan_getop(struct canpcb *canp, struct sockopt *sopt)
