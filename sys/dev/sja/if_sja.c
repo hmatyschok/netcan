@@ -31,6 +31,10 @@
 #include <sys/module.h>
 #include <sys/bus.h>
 
+#include <machine/bus.h>
+#include <sys/rman.h>
+#include <machine/resource.h>
+
 #include <net/if.h>
 #include <net/if_can.h>
 #include <net/if_var.h>
