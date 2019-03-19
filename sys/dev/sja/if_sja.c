@@ -250,7 +250,7 @@ sja_intr(void *arg)
 			if (sja_error(sja, status) != 0)
 				break;
 		}
-		intr = SJA_READ_1(sja->sja_dev, var, SJA_IR);	
+		status = SJA_READ_1(sja->sja_dev, var, SJA_IR);	
 	}
 	error = FILTER_HANDLED;	
 done:
