@@ -402,13 +402,13 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 		if (IS_SJA_ECC_BIT_ERR(flags))
 			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROTO_BIT;
 		else if (IS_SJA_ECC_FORM_ERR(flags))
-			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROT_FORM;
+			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROTO_FORM;
 		else if (IS_SJA_ECC_STUFF_ERR(flags))
-			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROT_STUFF;
+			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROTO_STUFF;
 			
 		/* map tx error condition, if any */ 
 		if ((flags & SJA_ECC_DIR) == 0)
-			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROT_TX;	
+			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROTO_TX;	
 	
 		/* map error location */
 		cf->can_data[CAN_ERR_DF_PROTO_LOC] |= flags & SJA_ECC_SEG;
