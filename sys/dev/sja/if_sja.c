@@ -280,7 +280,7 @@ sja_rxeof(struct sja_softc *sja)
 	var = sja->sja_var;
 	
 again:	
-	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL)) {
+	if ((m = m_gethdr(M_NOWAIT, MT_DATA)) == NULL) {
 		if_inc_counter(ifp, IFCOUNTER_IQDROPS, 1);
 		goto done;
 	}
@@ -294,10 +294,10 @@ again:
 	/* map id */
 	if ((status & SJA_FI_FF) != 0) {
 		cf->can_id = CAN_EFF_FLAG;
-		cf->can_id |= SJA_READ_4(sja, var, SJA_ID + 4) >> 3;
+		cf->can_id |= SJA_READ_4(sja->sja_dev, var, SJA_ID + 4) >> 3;
 		addr = SJA_DATA_EFF;
 	} else {
-		cf->can_id |= SJA_READ_2(sja, var, SJA_ID + 2) >> 5;
+		cf->can_id |= SJA_READ_2(sja->sja_dev, var, SJA_ID + 2) >> 5;
 		addr = SJA_DATA_SFF;
 	}	
 
@@ -343,7 +343,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	csc = ifp->if_l2com;
 	var = sja->sja_var;
 	
-	if ((m = m_gethdr(M_NOWAIT, MT_DATA) == NULL))
+	if ((m = m_gethdr(M_NOWAIT, MT_DATA)) == NULL)
 		return (ENOBUFS);
 	 
 	(void)memset(mtod(m, caddr_t), 0, MHLEN);
