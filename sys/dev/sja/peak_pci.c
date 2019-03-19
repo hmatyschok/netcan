@@ -127,11 +127,11 @@ peak_pci_attach(device_t dev)
 	/* determine cardinality of given channels */
 	csid = pci_read_config(dev, PCIR_SUBDEV_0, 4);
 
-	if (csid < PEAK_SUBDEV_DUAL_CHAN)	 /* 0x0004 */
+	if (csid < PEAK_SUBDEVID_DUAL_CHAN)	 /* 0x0004 */
 		sc->pk_chan_cnt = PEAK_UNI_CHAN;
-	else if (csid < PEAK_SUBDEV_TRIPLE_CHAN) 	/* 0x0010 */
+	else if (csid < PEAK_SUBDEVID_TRIPLE_CHAN) 	/* 0x0010 */
 		sc->pk_chan_cnt = PEAK_DUAL_CHAN;
-	else if (csid < PEAK_SUBDEV_QUAD_CHAN) 	/* 0x0012 */
+	else if (csid < PEAK_SUBDEVID_QUAD_CHAN) 	/* 0x0012 */
 		sc->pk_chan_cnt = PEAK_TRIPLE_CHAN;
 	else 
 		sc->pk_chan_cnt = PEAK_QUAD_CHAN;
