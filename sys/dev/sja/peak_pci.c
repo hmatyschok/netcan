@@ -115,7 +115,7 @@ peak_pci_attach(device_t dev)
 	struct peak_softc *sc;
 	struct sja_chan *chan;
 	struct sja_data *var;
-	uint32_t csid, cnt;
+	uint32_t csid;
 	uint16_t status;
 	int i, error = 0;
 	
@@ -259,7 +259,7 @@ peak_pci_detach(device_t dev)
 			
 		if (chan->sja_res != NULL) {
 			(void)bus_release_resource(dev, chan->sja_res_type, 
-				chan->sja_res);
+				chan->sja_res_id, chan->sja_res);
 		}
 	}
 	

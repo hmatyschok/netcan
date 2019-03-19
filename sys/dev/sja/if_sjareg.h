@@ -337,3 +337,6 @@ struct sja_softc {
 	(CAN_LINKMODE_LOOPBACK|CAN_LINKMODE_LISTENONLY| \
 	CAN_LINKMODE_3SAMPLES|CAN_LINKMODE_ONE_SHOT| \
 	CAN_LINKMODE_BUS_ERR_REP|CAN_LINKMODE_PRESUME_ACK)
+
+extern driver_t sja_driver;
+extern devclass_t sja_devclass;

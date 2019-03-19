@@ -984,7 +984,7 @@ static device_method_t sja_methods[] = {
 	DEVMETHOD_END
 };
 
-static driver_t sja_driver = {
+driver_t sja_driver = {
 	"sja",
 	sja_methods,
 	sizeof(struct sja_softc)
