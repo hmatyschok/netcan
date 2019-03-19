@@ -242,7 +242,7 @@ peak_pci_detach(device_t dev)
 	sc = device_get_softc(dev);
  
 	/* disable interrupts */
-	bus_write_2(sc->pk_res, PEAK_ICCR, 0x0000);
+	bus_write_2(sc->pk_res, PEAK_ICR_INT_GP, 0x0000);
  
 	/* detach each channel, if any */
 	for (i = 0; i < sc->pk_chan_cnt; i++) {
