@@ -275,7 +275,7 @@ peak_pci_detach(device_t dev)
  */
 
 static uint8_t
-peak_pci_read_1(device_t dev, sja_data_t sjad, int port)
+peak_pci_read_1(device_t dev, struct sja_data *var, int port)
 {
 	struct peak_softc *sc;
 	struct sja_chan *chan;

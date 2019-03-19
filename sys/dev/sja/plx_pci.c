@@ -685,7 +685,7 @@ plx_pci_detach(device_t dev)
  */
 
 static uint8_t
-plx_pci_read_1(device_t dev, sja_data_t sjad, int port)
+plx_pci_read_1(device_t dev, struct sja_data *var, int port)
 {
 	struct plx_softc *sc;
 	struct sja_chan *chan;

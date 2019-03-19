@@ -255,7 +255,7 @@ kvaser_pci_detach(device_t dev)
  */
 
 static uint8_t
-kvaser_pci_read_1(device_t dev, sja_data_t sjad, int port)
+kvaser_pci_read_1(device_t dev, struct sja_data *var, int port)
 {
 	struct kvaser_softc *sc;
 	struct sja_chan *chan;
