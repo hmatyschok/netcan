@@ -59,6 +59,8 @@
 #include <dev/sja/if_sjareg.h>
 #include <dev/sja/kvaser_pcireg.h>
 
+#include "sja_if.h"
+
 static const struct kvaser_type  kv_devs[] = {
 	{ KVASER_VENDORID0, PEAK_DEVICEID_PCI0, 
 		"KVASER PCAN PCI card 0" },

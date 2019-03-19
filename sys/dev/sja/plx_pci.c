@@ -59,6 +59,8 @@
 #include <dev/sja/if_sjareg.h>
 #include <dev/sja/plx_pcireg.h>
 
+#include "sja_if.h"
+
 /* 
  * Adlink PCI-7841/cPCI-7841 [SE] cards. 
  */ 

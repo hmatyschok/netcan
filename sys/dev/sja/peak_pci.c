@@ -48,8 +48,6 @@
 #include <dev/pci/pcireg.h>
 #include <dev/pci/pcivar.h>
 
-#include "sja_if.h"
-
 /*
  * Device driver(9) for PEAK PCAN PCI family 
  * cards implements proxy pattern on pci(4) 
@@ -60,6 +58,8 @@
 
 #include <dev/sja/if_sjareg.h>
 #include <dev/sja/peak_pcireg.h>
+
+#include "sja_if.h"
 
 static const struct peak_type pk_devs[] = {
 	{ PEAK_VENDORID, PEAK_DEVICEID_PCI, 
