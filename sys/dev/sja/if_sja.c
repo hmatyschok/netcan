@@ -372,7 +372,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 		
 			if (csc->csc_flags == CAN_STATE_BUS_OFF) {
 				ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
-				sja_init_locked(sc);
+				sja_init_locked(sja);
 			}
 	
 			cf->can_id |= CAN_ERR_DEV;
