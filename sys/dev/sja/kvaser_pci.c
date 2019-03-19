@@ -61,6 +61,10 @@
 
 #include "sja_if.h"
 
+static int	kvaser_pci_probe(device_t);
+static int	kvaser_pci_attach(device_t);
+static int	kvaser_pci_detach(device_t);
+
 static const struct kvaser_type  kv_devs[] = {
 	{ KVASER_VENDORID0, PEAK_DEVICEID_PCI0, 
 		"KVASER PCAN PCI card 0" },

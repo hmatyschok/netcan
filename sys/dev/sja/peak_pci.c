@@ -61,6 +61,10 @@
 
 #include "sja_if.h"
 
+static int	peak_pci_probe(device_t);
+static int	peak_pci_attach(device_t);
+static int	peak_pci_detach(device_t);
+
 static const struct peak_type pk_devs[] = {
 	{ PEAK_VENDORID, PEAK_DEVICEID_PCI, 
 		"PCAN PCI/PCIe card" },

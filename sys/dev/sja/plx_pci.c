@@ -61,6 +61,10 @@
 
 #include "sja_if.h"
 
+static int	plx_pci_probe(device_t);
+static int	plx_pci_attach(device_t);
+static int	plx_pci_detach(device_t);
+
 /* 
  * Adlink PCI-7841/cPCI-7841 [SE] cards. 
  */ 

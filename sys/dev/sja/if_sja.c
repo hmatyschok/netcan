@@ -46,6 +46,11 @@
 
 #include "sja_if.h"
 
+
+static int	sja_probe(device_t);
+static int	sja_attach(device_t);
+static int	sja_detach(device_t);
+
 static void	sja_rxeof(struct sja_softc *);
 static void	sja_txeof(struct sja_softc *);
 static void	sja_error(struct sja_softc *, uint8_t);
