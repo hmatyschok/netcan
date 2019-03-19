@@ -367,10 +367,10 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 		else
 			flags = CAN_STATE_ERROR_ACTIVE;
 		
-		if (flags != csc->can_flags) {
-			csc->can_flags = flags;
+		if (flags != csc->csc_flags) {
+			csc->csc_flags = flags;
 		
-			if (csc->can_flags == CAN_STATE_BUS_OFF) {
+			if (csc->csc_flags == CAN_STATE_BUS_OFF) {
 				ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
 				sja_init_locked(sc);
 			}
@@ -399,11 +399,11 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 		cf->can_id |= (CAN_ERR_PROTO | CAN_ERR_BE);
 
 		/* map error condition, if any */
-		if ((flags & SJA_ECC_ERR_MASK) == SJA_ECC_BE)
+		if (IS_SJA_ECC_BIT_ERR(flags))
 			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROTO_BIT;
-		else if ((flags & SJA_ECC_ERR_MASK) == SJA_ECC_FMT)
+		else if (IS_SJA_ECC_FORM_ERR(flags))
 			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROT_FORM;
-		else if ((flags & SJA_ECC_ERR_MASK) == ECC_STUFF)
+		else if (IS_SJA_ECC_STUFF_ERR(flags))
 			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROT_STUFF;
 			
 		/* map tx error condition, if any */ 
