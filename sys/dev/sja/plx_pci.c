@@ -670,7 +670,7 @@ plx_pci_detach(device_t dev)
 			
 		if (chan->sja_res != NULL) {
 			(void)bus_release_resource(dev, chan->sja_res_type, 
-				chan->sja_res);
+				chan->sja_res_id, chan->sja_res);
 		}
 	}
 	

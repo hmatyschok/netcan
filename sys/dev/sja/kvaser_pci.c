@@ -240,10 +240,12 @@ kvaser_pci_detach(device_t dev)
 	}
 	
 	if (sc->kv_res != NULL)
-		(void)bus_release_resource(dev, sc->kv_res_type, sc->kv_res);
+		(void)bus_release_resource(dev, sc->kv_res_type
+			sc->kv_res_id, sc->kv_res);
 	
 	if (sc->kv_cfg != NULL)
-		(void)bus_release_resource(dev, sc->kv_cfg_type, sc->kv_cfg);
+		(void)bus_release_resource(dev, sc->kv_cfg_type, 
+			sc->kv_cfg_id, sc->kv_cfg);
 
 	return (0);
 }

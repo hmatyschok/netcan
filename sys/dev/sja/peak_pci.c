@@ -264,7 +264,8 @@ peak_pci_detach(device_t dev)
 	}
 	
 	if (sc->pk_res != NULL)
-		(void)bus_release_resource(dev, sc->pk_res_type, sc->pk_res);
+		(void)bus_release_resource(dev, sc->pk_res_type, 
+			sc->pk_res_id, sc->pk_res);
 	
 	return (0);
 }
