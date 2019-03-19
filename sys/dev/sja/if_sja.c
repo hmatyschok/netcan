@@ -407,7 +407,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROT_STUFF;
 			
 		/* map tx error condition, if any */ 
-		if ((flags & ECC_DIR) == 0)
+		if ((flags & SJA_ECC_DIR) == 0)
 			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROT_TX;	
 	
 		/* map error location */
