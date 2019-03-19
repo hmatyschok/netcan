@@ -57,7 +57,7 @@ static int	sja_detach(device_t);
 
 static void	sja_rxeof(struct sja_softc *);
 static void	sja_txeof(struct sja_softc *);
-static void	sja_error(struct sja_softc *, uint8_t);
+static int	sja_error(struct sja_softc *, uint8_t);
 static int	sja_intr(void *);
 static void	sja_start(struct ifnet *);
 static void	sja_start_locked(struct ifnet *);
