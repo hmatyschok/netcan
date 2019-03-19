@@ -291,8 +291,6 @@
 /*
  * XXX: work in progress..
  */
-
-typedef struct sja_data *sja_data_t;
  
 struct sja_data {
 	int			sja_port;

@@ -282,7 +282,7 @@ peak_pci_read_1(device_t dev, sja_data_t sjad, int port)
 }
 
 static uint16_t
-peak_pci_read_2(device_t dev, sja_data_t var, int port)
+peak_pci_read_2(device_t dev, struct sja_data *var, int port)
 {
 	struct peak_softc *sc;
 	struct sja_chan *chan;
@@ -294,7 +294,7 @@ peak_pci_read_2(device_t dev, sja_data_t var, int port)
 }
 
 static uint32_t
-peak_pci_read_4(device_t dev, sja_data_t var, int port)
+peak_pci_read_4(device_t dev, struct sja_data *var, int port)
 {
 	struct peak_softc *sc;
 	struct sja_chan *chan;
@@ -306,7 +306,7 @@ peak_pci_read_4(device_t dev, sja_data_t var, int port)
 }
 
 static void
-peak_pci_write_1(device_t dev, sja_data_t var, int port, uint8_t val)
+peak_pci_write_1(device_t dev, struct sja_data *var, int port, uint8_t val)
 {
 	struct peak_softc *sc;
 	struct sja_chan *chan;
@@ -318,7 +318,7 @@ peak_pci_write_1(device_t dev, sja_data_t var, int port, uint8_t val)
 }
 
 static void
-peak_pci_write_2(device_t dev, sja_data_t var, int port, uint16_t val)
+peak_pci_write_2(device_t dev, struct sja_data *var, int port, uint16_t val)
 {
 	struct peak_softc *sc;
 	struct sja_chan *chan;
@@ -330,7 +330,7 @@ peak_pci_write_2(device_t dev, sja_data_t var, int port, uint16_t val)
 }
 
 static void
-peak_pci_write_4(device_t dev, sja_data_t var, int port, uint32_t val)
+peak_pci_write_4(device_t dev, struct sja_data *var, int port, uint32_t val)
 {
 	struct peak_softc *sc;
 	struct sja_chan *chan;
@@ -345,7 +345,7 @@ peak_pci_write_4(device_t dev, sja_data_t var, int port, uint32_t val)
  * Clear interrupt status. 
  */
 static void
-peak_pci_clear_intr(device_t dev, sja_data_t var)
+peak_pci_clear_intr(device_t dev, struct sja_data *var)
 {
 	struct peak_softc *sc;
 	struct sja_chan *chan;

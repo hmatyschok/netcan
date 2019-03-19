@@ -907,49 +907,49 @@ sja_stop(struct sja_softc *sja)
  */
 
 static uint8_t
-sja_read_1(device_t dev, sja_data_t var, int port)
+sja_read_1(device_t dev, struct sja_data *var, int port)
 {
 	
 	return (SJA_READ_1(device_get_parent(dev), var, port));	
 }
 
 static uint16_t
-sja_read_2(device_t dev, sja_data_t var, int port)
+sja_read_2(device_t dev, struct sja_data *var, int port)
 {
 	
 	return (SJA_READ_2(device_get_parent(dev), var, port));	
 }
 
 static uint32_t
-sja_read_4(device_t dev, sja_data_t var, int port)
+sja_read_4(device_t dev, struct sja_data *var, int port)
 {
 	
 	return (SJA_READ_4(device_get_parent(dev), var, port));	
 }
 
 static void
-sja_write_1(device_t dev, sja_data_t var, int port, uint8_t val)
+sja_write_1(device_t dev, struct sja_data *var, int port, uint8_t val)
 {
 	
 	SJA_WRITE_1(device_get_parent(dev), var, port, val);	
 }
 
 static void
-sja_write_2(device_t dev, sja_data_t var, int port, uint16_t val)
+sja_write_2(device_t dev, struct sja_data *var, int port, uint16_t val)
 {
 	
 	SJA_WRITE_2(device_get_parent(dev), var, port, val);	
 }
 
 static void
-sja_write_4(device_t dev, sja_data_t var, int port, uint32_t val)
+sja_write_4(device_t dev, struct sja_data *var, int port, uint32_t val)
 {
 	
 	SJA_WRITE_4(device_get_parent(dev), var, port, val);	
 }
 
 static void
-sja_clear_intr(device_t dev, sja_data_t var)
+sja_clear_intr(device_t dev, struct sja_data *var)
 {
 	
 	SJA_CLEAR_INTR(device_get_parent(dev), var);	

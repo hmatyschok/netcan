@@ -691,7 +691,7 @@ plx_pci_read_1(device_t dev, sja_data_t sjad, int port)
 }
 
 static uint16_t
-plx_pci_read_2(device_t dev, sja_data_t var, int port)
+plx_pci_read_2(device_t dev, struct sja_data *var, int port)
 {
 	struct plx_softc *sc;
 	struct sja_chan *chan;
@@ -703,7 +703,7 @@ plx_pci_read_2(device_t dev, sja_data_t var, int port)
 }
 
 static uint32_t
-plx_pci_read_4(device_t dev, sja_data_t var, int port)
+plx_pci_read_4(device_t dev, struct sja_data *var, int port)
 {
 	struct plx_softc *sc;
 	struct sja_chan *chan;
@@ -715,7 +715,7 @@ plx_pci_read_4(device_t dev, sja_data_t var, int port)
 }
 
 static void
-plx_pci_write_1(device_t dev, sja_data_t var, int port, uint8_t val)
+plx_pci_write_1(device_t dev, struct sja_data *var, int port, uint8_t val)
 {
 	struct plx_softc *sc;
 	struct sja_chan *chan;
@@ -727,7 +727,7 @@ plx_pci_write_1(device_t dev, sja_data_t var, int port, uint8_t val)
 }
 
 static void
-plx_pci_write_2(device_t dev, sja_data_t var, int port, uint16_t val)
+plx_pci_write_2(device_t dev, struct sja_data *var, int port, uint16_t val)
 {
 	struct plx_softc *sc;
 	struct sja_chan *chan;
@@ -739,7 +739,7 @@ plx_pci_write_2(device_t dev, sja_data_t var, int port, uint16_t val)
 }
 
 static void
-plx_pci_write_4(device_t dev, sja_data_t var, int port, uint32_t val)
+plx_pci_write_4(device_t dev, struct sja_data *var, int port, uint32_t val)
 {
 	struct plx_softc *sc;
 	struct sja_chan *chan;
