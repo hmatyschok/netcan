@@ -211,7 +211,7 @@ sja_detach(device_t dev)
 	}
 	
 	if (sja->sja_irq != NULL)
-		(void)bus_release_resource(dev, SYS_RES_IRQ, sja->sja_irq);
+		(void)bus_release_resource(dev, SYS_RES_IRQ, 0, sja->sja_irq);
 	
 	if (ifp != NULL)
 		if_free(ifp);
