@@ -363,9 +363,9 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 		if ((status & SJA_SR_BS) != 0)
 			flags = CAN_STATE_BUS_OFF;
 		else if ((status & SJA_SR_ES) != 0)
-			flags = CAN_STATE_ERROR_WARNING;
+			flags = CAN_STATE_ERR_WARN;
 		else
-			flags = CAN_STATE_ERROR_ACTIVE;
+			flags = CAN_STATE_ERR_ACTIVE;
 		
 		if (flags != csc->csc_flags) {
 			csc->csc_flags = flags;
@@ -703,7 +703,7 @@ sja_init_locked(struct sja_softc *sja)
 		
 		SJA_WRITE_1(sja->sja_dev, var, SJA_IER, status);
 			
-		csc->csc_flags = CAN_STATE_ERROR_ACTIVE;
+		csc->csc_flags = CAN_STATE_ERR_ACTIVE;
 	
 		ifp->if_drv_flags |= IFF_DRV_RUNNING;
 		ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
@@ -800,7 +800,7 @@ sja_normal_mode(struct sja_softc *sja)
 			
 			SJA_WRITE_1(sja->sja_dev, var, SJA_IER, status);
 			
-			csc->csc_flags = CAN_STATE_ERROR_ACTIVE;
+			csc->csc_flags = CAN_STATE_ERR_ACTIVE;
 			error = 0;
 			break;
 		}
