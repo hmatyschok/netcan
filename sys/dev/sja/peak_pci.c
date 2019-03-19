@@ -78,7 +78,7 @@ static const struct peak_type pk_devs[] = {
 		"PCAN-PCI/104 card" },
 	{ PEAK_VENDORID, PEAK_DEVICEID_MPCIE, 
 		"PCAN miniPCIe card" },
-	{ PEAK_VENDORID, PEAK_DEVICEID_PCIE, 
+	{ PEAK_VENDORID, PEAK_DEVICEID_OEM_PCIE, 
 		"PCAN-PCI Express OEM" },
 	{ PEAK_VENDORID, PEAK_DEVICEID_PCIEC34, 
 		"PCAN-PCI Express 34 card (one channel)" },
