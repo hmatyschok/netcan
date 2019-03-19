@@ -245,7 +245,7 @@ struct canfd_frame {
 /* 
  * ASCII representation of can(4) frame: 
  *
- *  <frm> ::= <type> <id> <dlc> <data> <hc>;'
+ *  <frm> ::= <type> <id> <dlc> <data> <hc>;
  * 
  * encodes the 
  *
