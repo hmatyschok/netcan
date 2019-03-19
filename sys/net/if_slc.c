@@ -55,11 +55,8 @@
 /*
  * Serial line can(4) interface implemented by tty(4) hook.
  * 
- * XXX: It's a work in progress and should be understood as  
- * XXX: RAD prototype for the purpose of developing a tty(4) 
- * XXX: device-driver class.
- * XXX:
- * XXX: See sys/sys/ttydevsw.h for further details.
+ * It should be understood as RAD prototype for the purpose for 
+ * implementing a tty(4) device-driver class.
  *
  * Example - using uart(4) for MAC:
  * 
@@ -601,7 +598,7 @@ bad:
 /*
  * Tx path of can(4) frame:
  * 
- *  (a) The can(4) frame is anqueued by if_transmit(9) on if_snd 
+ *  (a) The can(4) frame is enqueued by if_transmit(9) on if_snd 
  *      queue maps to the instance of generic ifnet(9) structure,
  *      when can_ifoutput(9) was called.
  *      
