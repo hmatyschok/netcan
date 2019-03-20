@@ -111,13 +111,13 @@ can_ifinput(struct ifnet *ifp, struct mbuf *m)
 	
 	if ((ifp->if_flags & IFF_UP) == 0) {
 		if_printf(ifp, "discard can(4) frame at !IFF_UP\n");
-		goto bad;
+		goto out;
 	}
 	
 #ifdef DIAGNOSTIC
 	if ((ifp->if_drv_flags & IFF_DRV_RUNNING) == 0) {
 		if_printf(ifp, "discard can(4) frame at !IFF_DRV_RUNNING\n");
-		goto bad;
+		goto out;
 	}
 #endif 	/* DIAGNOSTIC */
 	
@@ -125,13 +125,13 @@ can_ifinput(struct ifnet *ifp, struct mbuf *m)
 		if_printf(ifp, "discard can(4) frame"
 			" (len %u pkt len %u)\n",
 			m->m_len, m->m_pkthdr.len);
-		goto bad1;
+		goto out1;
 	}
 	
 	if (m->m_len < sizeof(struct can_frame)) {
 	    if ((m = m_pullup(m, sizeof(struct can_frame))) == NULL) {
 			if_printf(ifp, "m_pullup(9) failed, discard can(4) frame.");
-			goto bad1;
+			goto out1;
 		}
 	}
 #ifdef DIAGNOSTIC	
@@ -146,7 +146,7 @@ can_ifinput(struct ifnet *ifp, struct mbuf *m)
 		m_print(m, m->m_pkthdr.len);
 		break;
 	default:
-		goto bad1;
+		goto out1;
 	}
 #endif /* DIAGNOSTIC */
 	
@@ -164,12 +164,15 @@ can_ifinput(struct ifnet *ifp, struct mbuf *m)
 	if_inc_counter(ifp, IFCOUNTER_IPACKETS, 1);
 	if_inc_counter(ifp, IFCOUNTER_IBYTES, m->m_pkthdr.len);
 
+	if ((ifp->if_flags & IFF_MONITOR) != 0)
+		goto out;
+
 	M_SETFIB(m, ifp->if_fib);
 	netisr_dispatch(NETISR_CAN, m);
 	return;
-bad1:
+out1:
 	if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
-bad:
+out:
 	m_freem(m);
 }
 
