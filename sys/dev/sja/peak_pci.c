@@ -100,7 +100,7 @@ peak_pci_probe(device_t dev)
 	did = pci_get_device(dev);
 	
 	for (t = pk_devs, i = 0; i < nitems(pk_devs); i++, t++) {
-		if (t->pk_vid == vid && t->pk_did == did) {
+		if ((t->pk_vid == vid) && (t->pk_did == did)) {
 			device_set_desc(dev, t->pk_name);
 			error = BUS_PROBE_DEFAULT;
 			break;
@@ -139,7 +139,7 @@ peak_pci_attach(device_t dev)
 	pci_write_config(dev, PCIR_COMMAND, 4, 2);
 	pci_write_config(dev, PCIR_PCCARDIF_2, 4, 0);	
 
-	/* allocate resources for control registers and ports */ 
+	/* reserve resources for control registers and ports */ 
 	sc->pk_res_type = SYS_RES_MEMORY;
 	
 	sc->pk_res = bus_alloc_resource_anywhere(dev, sc->pk_res_type, 
@@ -206,9 +206,8 @@ peak_pci_attach(device_t dev)
 	for (i = 0; i < sc->pk_chan_cnt; i++) { 
 		chan = &sc->pk_chan[i];
 		var = &chan->sja_var;
-				
-		chan->sja_dev = device_add_child(dev, "sja", -1); 
-		if (chan->sja_dev == NULL) {
+
+		if ((chan->sja_dev = device_add_child(dev, "sja", -1)) == NULL) {
 			device_printf(dev, "couldn't map channels");
 			error = ENXIO;
 			goto fail;
@@ -283,7 +282,7 @@ peak_pci_read_1(device_t dev, struct sja_data *var, int port)
 	sc = device_get_softc(dev);
 	chan = &sc->pk_chan[var->sja_port];
 	
-	return (bus_read_1(chan->sja_res, port));
+	return (bus_read_1(chan->sja_res, (port << chan->sja_aln)));
 }
 
 static uint16_t
@@ -295,7 +294,7 @@ peak_pci_read_2(device_t dev, struct sja_data *var, int port)
 	sc = device_get_softc(dev);
 	chan = &sc->pk_chan[var->sja_port];
 	
-	return (bus_read_2(chan->sja_res, port));
+	return (bus_read_2(chan->sja_res, (port << chan->sja_aln)));
 }
 
 static uint32_t
@@ -307,7 +306,7 @@ peak_pci_read_4(device_t dev, struct sja_data *var, int port)
 	sc = device_get_softc(dev);
 	chan = &sc->pk_chan[var->sja_port];
 	
-	return (bus_read_4(chan->sja_res, port));
+	return (bus_read_4(chan->sja_res, (port << chan->sja_aln)));
 }
 
 static void
