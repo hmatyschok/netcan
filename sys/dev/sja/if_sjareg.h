@@ -322,6 +322,7 @@ struct sja_softc {
 	struct sja_data		*sja_var;
 	struct resource 	*sja_irq;
 	void	*sja_intr;
+	int		sja_if_flags;
 	struct mtx	sja_mtx;
 };
 #define	SJA_LOCK(sja)		mtx_lock(&(sja)->sja_mtx)

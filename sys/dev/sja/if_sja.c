@@ -66,6 +66,7 @@ static int	sja_ioctl(struct ifnet *, u_long, caddr_t);
 static void	sja_init(void *);
 static void	sja_init_locked(struct sja_softc *);
 static int	sja_reset(struct sja_softc *);
+static void	sja_rxfilter(struct sja_softc *);
 static int	sja_normal_mode(struct sja_softc *);
 static int 	sja_set_link_timings(struct sja_softc *);
 static void	sja_stop(struct sja_softc *);
@@ -732,12 +733,18 @@ sja_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 		break;
 	case SIOCSIFFLAGS:
 		SJA_LOCK(sja);
-		if ((ifp->if_flags & IFF_UP) != 0) 
-			sja_init_locked(sja);
-		else {
+		if ((ifp->if_flags & IFF_UP) != 0) {
+			if (ifp->if_drv_flags & IFF_DRV_RUNNING) {
+				if ((ifp->if_flags ^ sja->sja_if_flags) & 
+					(IFF_PROMISC | IFF_ALLMULTI))
+					sja_rxfilter(sja);
+				} else
+					sja_init_locked(sja);
+		} else {
 			if ((ifp->if_drv_flags & IFF_DRV_RUNNING) != 0)
 				sja_stop(sja);
 		}
+		sja->sja_if_flags = ifp->if_flags;
 		SJA_UNLOCK(sja);
 		break;
 	default:
@@ -852,6 +859,12 @@ sja_reset(struct sja_softc *sja)
 	}
 	
 	return (error);
+}
+
+static void
+sja_rxfilter(struct sja_softc *sja)
+{
+	
 }
 
 static int 
