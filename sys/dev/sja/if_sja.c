@@ -30,6 +30,7 @@
 #include <sys/malloc.h>
 #include <sys/module.h>
 #include <sys/bus.h>
+#include <sys/sockio.h>
 
 #include <machine/bus.h>
 #include <sys/rman.h>
@@ -68,6 +69,7 @@ static void	sja_init_locked(struct sja_softc *);
 static int	sja_reset(struct sja_softc *);
 static int	sja_normal_mode(struct sja_softc *);
 static int 	sja_set_link_timings(struct sja_softc *);
+stativ void	sja_stop(struct sja_softc *);
 
 /*
  * can(4) link timing capabilities 
@@ -330,7 +332,6 @@ done:	/* SJA1000, 6.4.4, note 4 */
 	if ((status & SJA_SR_RBS) != 0)
 		goto again;
 }
-
 
 static int 
 sja_error(struct sja_softc *sja, uint8_t intr)
@@ -879,15 +880,15 @@ sja_set_link_timings(struct sja_softc *sja)
 	
 	/* baud rate prescalar and synchroniziation jump */
 	btr0 = ((clt->clt_brp - 1) & SJA_BTR0_BRP_MASK);
-	btr0 |= (((clt->clt_sjw - 1) & SJA_BTR0_CLT_MASK) << 6);
+	btr0 |= (((clt->clt_sjw - 1) & SJA_BTR0_SJW_MASK) << 6);
 	
 	SJA_WRITE_1(sja->sja_dev, var, SJA_BTR0, btr0);
 	
 	/* time segments and sampling, if any */
 	btr1 = ((clt->clt_prop + clt->clt_ps1 - 1) & 0x0f);
-	btr1 |= (((clt->clt_sg2 - 1) & 0x07) << 4);
+	btr1 |= (((clt->clt_ps2 - 1) & 0x07) << 4);
 
-	if ((csc->csc_linkmodes & CAN_CTRLMODE_3_SAMPLES) != 0)
+	if ((csc->csc_linkmodes & CAN_LINKMODE_3SAMPLES) != 0)
 		btr1 |= SJA_BTR1_SAM;
 	
 	SJA_WRITE_1(sja->sja_dev, var, SJA_BTR1, btr1);
@@ -903,7 +904,7 @@ sja_stop(struct sja_softc *sja)
 	SJA_LOCK_ASSERT(sja);
 	ifp = sja->sja_ifp;
 
-	ifp->if_drv_flags |= ~(IFF_DRV_RUNNNING | IFF_DRV_OACTIVE);
+	ifp->if_drv_flags |= ~(IFF_DRV_RUNNING | IFF_DRV_OACTIVE);
 	
 	/* disable interrupts and abort pending transmission, if any. */
 	
