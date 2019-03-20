@@ -51,7 +51,7 @@
 /*
  * Device driver(9) for PLX90xx PCI-bridge 
  * cards implements proxy pattern on pci(4) 
- * bus for instances of the sja(4) contoller.
+ * bus for instances of sja(4).
  *
  * XXX: Well, work on progess ...
  */
@@ -587,9 +587,8 @@ plx_pci_attach(device_t dev)
 	for (i = 0; i < PLX_CHAN_MAX; i++) { 
 		chan = &sc->plx_chan[i];
 		var = &chan->sja_var;
-				
-		chan->sja_dev = device_add_child(dev, "sja", -1); 
-		if (chan->sja_dev == NULL) {
+				 
+		if ((chan->sja_dev = device_add_child(dev, "sja", -1)) == NULL) {
 			device_printf(dev, "couldn't map channels");
 			error = ENXIO;
 			goto fail;

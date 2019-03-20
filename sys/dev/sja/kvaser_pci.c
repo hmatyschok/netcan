@@ -51,7 +51,7 @@
 /*
  * Device driver(9) for KVASER PCAN PCI cards 
  * implements proxy pattern on pci(4) bus for 
- * instances of the sja(4) contoller.
+ * instances of sja(4).
  *
  * XXX: Well, work on progess ...
  */

@@ -51,7 +51,7 @@
 /*
  * Device driver(9) for PEAK PCAN PCI family 
  * cards implements proxy pattern on pci(4) 
- * bus for instances of the sja(4) contoller.
+ * bus for instances sja(4).
  *
  * XXX: Well, work on progess ...
  */

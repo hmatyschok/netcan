@@ -267,11 +267,11 @@ struct canfd_frame {
  * 
  * where encodes the 11 identifier bits
  * 
- *  <sff> ::= 3 * <xdigit>;
+ *  <sff> ::= 3 * { <xdigit> <xdigit> };
  * 
  * or the 29 identifier bits
  * 
- *  <eff> ::= 8 * <xdigit>;
+ *  <eff> ::= 8 * { <xdigit> <xdigit> };
  * 
  * by
  * 
