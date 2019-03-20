@@ -84,7 +84,7 @@ kvaser_pci_probe(device_t dev)
 	did = pci_get_device(dev);
 	
 	for (t = kv_devs, i = 0; i < nitems(kv_devs); i++, t++) {
-		if (t->kv_vid == vid && t->kv_did == did) {
+		if ((t->kv_vid == vid) && (t->kv_did == did)) {
 			device_set_desc(dev, t->kv_name);
 			error = BUS_PROBE_DEFAULT;
 			break;
@@ -160,9 +160,9 @@ kvaser_pci_attach(device_t dev)
 		var->sja_cdr = KVASER_CDR_DFLT;
 		var->sja_ocr = KVASER_OCR_DFLT;
 		var->sja_freq = KVASER_CLK_FREQ;
-	
-		sc->kv_chan_cnt = i;
 	}	
+	
+	sc->kv_chan_cnt = i;
 	
 	if (sc->kv_chan_cnt == 0) {
 		device_printf(dev, "couldn't map ports\n");
@@ -170,7 +170,7 @@ kvaser_pci_attach(device_t dev)
 		goto fail;
 	}
 
-	/* attach set of SJA1000 controller as its children */		
+	/* attach set of sja(4) controller as its children */		
 	for (i = 0; i < sc->kv_chan_cnt; i++) { 
 		chan = &sc->kv_chan[i];
 		var = &chan->sja_var;

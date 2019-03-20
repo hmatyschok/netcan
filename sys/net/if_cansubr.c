@@ -271,12 +271,12 @@ can_ifdetach(struct ifnet *ifp)
 void
 can_ifinit_timings(struct can_ifsoftc *csc)
 {
-	mtx_lock(&csc->csc_mtx);	
+	CSC_LOCK(csc);
 	
 	/* uninitialized parameters is all-one */
 	(void)memset(&csc->csc_timings, 0xff, 
 		sizeof(struct can_link_timings));
-	mtx_unlock(&csc->csc_mtx);
+	CSC_UNLOCK(csc);
 }
 
 /*
