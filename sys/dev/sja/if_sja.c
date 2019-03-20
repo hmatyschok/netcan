@@ -859,25 +859,25 @@ sja_set_link_timings(struct sja_softc *sja)
 {
 	struct can_ifsoftc *csc;
 	struct can_link_timings *clt;
-	uint8_t btr0, btr1;
+	uint8_t status;
 	
 	csc = sja->sja_ifp->if_l2com;
 	clt = &csc->csc_timings;
 	
 	/* baud rate prescalar and synchroniziation jump */
-	btr0 = ((clt->clt_brp - 1) & SJA_BTR0_BRP_MASK);
-	btr0 |= (((clt->clt_sjw - 1) & SJA_BTR0_SJW_MASK) << 6);
+	status = ((clt->clt_brp - 1) & SJA_BTR0_BRP_MASK);
+	status |= (((clt->clt_sjw - 1) & SJA_BTR0_SJW_MASK) << 6);
 	
-	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_BTR0, btr0);
+	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_BTR0, status);
 	
 	/* time segments and sampling, if any */
-	btr1 = ((clt->clt_prop + clt->clt_ps1 - 1) & 0x0f);
-	btr1 |= (((clt->clt_ps2 - 1) & 0x07) << 4);
+	status = ((clt->clt_prop + clt->clt_ps1 - 1) & 0x0f);
+	status |= (((clt->clt_ps2 - 1) & 0x07) << 4);
 
 	if ((csc->csc_linkmodes & CAN_LINKMODE_3SAMPLES) != 0)
-		btr1 |= SJA_BTR1_SAM;
+		status |= SJA_BTR1_SAM;
 	
-	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_BTR1, btr1);
+	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_BTR1, status);
 
 	return (0);
 }
