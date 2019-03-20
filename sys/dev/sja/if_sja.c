@@ -738,8 +738,9 @@ sja_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 				if ((ifp->if_flags ^ sja->sja_if_flags) & 
 					(IFF_PROMISC | IFF_ALLMULTI))
 					sja_rxfilter(sja);
-				} else
+				else
 					sja_init_locked(sja);
+			}
 		} else {
 			if ((ifp->if_drv_flags & IFF_DRV_RUNNING) != 0)
 				sja_stop(sja);
