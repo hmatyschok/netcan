@@ -121,7 +121,6 @@ sja_attach(device_t dev)
 		goto fail;
 	}
 	
-	
 	/* allocate and initialize ifnet(9) structure */
 	if ((ifp = sja->sja_ifp = if_alloc(IFT_CAN)) == NULL) {
 		device_printf(dev, "couldn't if_alloc(9)\n");
@@ -317,7 +316,7 @@ again:
 		cf->can_data[i] = SJA_READ_1(sja->sja_dev, sja->sja_var, addr);
 
 	/* pass can(4) frame to layer above */
-	m->m_len = m->m_pkthdr.len = sizeof(*cf);
+	m->m_len = m->m_pkthdr.len = sizeof(struct can_frame);
 	m->m_pkthdr.rcvif = ifp;
 
 	SJA_UNLOCK(sja);
@@ -429,7 +428,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 		sja->sja_var, SJA_TXERR);
 
 	/* pass can(4) frame to upper layer */
-	m->m_len = m->m_pkthdr.len = sizeof(*cf);
+	m->m_len = m->m_pkthdr.len = sizeof(struct can_frame);
 	m->m_pkthdr.rcvif = ifp;
 
 	SJA_UNLOCK(sja);
