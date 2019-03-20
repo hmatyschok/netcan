@@ -107,6 +107,9 @@ sja_attach(device_t dev)
 	
 	sja->sja_var = device_get_ivars(dev);
 	
+	mtx_init(&sja->sja_mtx, device_get_nameunit(dev), 
+		MTX_NETWORK_LOCK, MTX_DEF);	
+	
 	/* reserve interrupt resources */
 	rid = 0;
 	sja->sja_irq = bus_alloc_resource_any(dev, SYS_RES_IRQ, 
@@ -118,8 +121,6 @@ sja_attach(device_t dev)
 		goto fail;
 	}
 	
-	mtx_init(&sja->sja_mtx, device_get_nameunit(dev), 
-		MTX_NETWORK_LOCK, MTX_DEF);	
 	
 	/* allocate and initialize ifnet(9) structure */
 	if ((ifp = sja->sja_ifp = if_alloc(IFT_CAN)) == NULL) {
