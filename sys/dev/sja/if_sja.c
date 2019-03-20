@@ -110,13 +110,13 @@ sja_attach(device_t dev)
 	sja->sja_var = device_get_ivar(dev);
 	var = sja->sja_var;
 	
-	/* allocate interrupt */
+	/* reserve interrupt resources */
 	rid = 0;
 	sja->sja_irq = bus_alloc_resource_any(dev, SYS_RES_IRQ, 
 		&rid, RF_SHAREABLE | RF_ACTIVE);
 
 	if (sja->sja_irq == NULL) {
-		device_printf(dev, "couldn't map interrupt\n");
+		device_printf(dev, "couldn't reserve interrupt resources\n");
 		error = ENXIO;
 		goto fail;
 	}
@@ -142,8 +142,7 @@ sja_attach(device_t dev)
 	
 	can_ifattach(ifp, &sja_timecaps, var->sja_freq);
 	
-	IFQ_SET_MAXLEN(&ifp->if_snd, SJA_IFQ_MAXLEN);
-	ifp->if_snd.ifq_drv_maxlen = SJA_IFQ_MAXLEN;
+	IFQ_SET_MAXLEN(&ifp->if_snd, ifqmaxlen);
 	IFQ_SET_READY(&ifp->if_snd);
 
 	/* force into reset mode */

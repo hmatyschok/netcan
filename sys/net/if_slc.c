@@ -157,7 +157,8 @@ slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 	
 	/* initialize queue for transmission */
 	mtx_init(&slc->slc_outq.ifq_mtx, "slc_outq_mtx", NULL, MTX_DEF);
-	IFQ_SET_MAXLEN(&slc->slc_outq, ifqmaxlen);
+	IFQ_SET_MAXLEN(&ifp->if_snd, ifqmaxlen);
+	IFQ_SET_READY(&ifp->if_snd);
 	
 	/* attach */
 	mtx_lock(&slc_list_mtx);
