@@ -134,6 +134,7 @@ sja_attach(device_t dev)
 	
 	if_initname(ifp, device_get_name(dev), device_get_unit(dev));
 	
+	/* XXX: IFF_PROMISC maps to CAN_LINKMODE_LISTENONLY */
 	ifp->if_flags = (IFF_BROADCAST | IFF_SIMPLEX | IFF_MULTICAST);
 	
 	ifp->if_init = sja_init;
