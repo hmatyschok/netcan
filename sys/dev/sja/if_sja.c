@@ -62,7 +62,7 @@ static int	sja_error(struct sja_softc *, uint8_t);
 static int	sja_intr(void *);
 static void	sja_start(struct ifnet *);
 static void	sja_start_locked(struct ifnet *);
-static void	sja_encap(struct sja_softc *, struct mbuf **); 
+static int	sja_encap(struct sja_softc *, struct mbuf **); 
 static int	sja_ioctl(struct ifnet *, u_long, caddr_t);
 static void	sja_init(void *);
 static void	sja_init_locked(struct sja_softc *);
@@ -504,14 +504,14 @@ sja_start_locked(struct ifnet *ifp)
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;						
 }
 
-static void 
+static int 
 sja_encap(struct sja_softc *sja, struct mbuf **mp)
 {
 	struct sja_data *var;
 	struct mbuf *m;
 	struct can_frame *cf;
 	uint8_t status, addr;
-	int i, len;
+	int i, len, error;
 	
 	SJA_LOCK_ASSERT(sja);
 	var = sja->sja_var;
