@@ -215,6 +215,11 @@ can_ifoutput(struct ifnet *ifp, struct mbuf *m,
 		error = ENETDOWN;
 		goto bad;
 	}
+	
+	if ((ifp->if_flags & IFF_PROMISC) != 0) {
+		error = ENETDOWN;
+		goto bad;
+	}
 
 #ifdef DIAGNOSTIC
 		if_printf(ifp, "%s: ", __func__);
