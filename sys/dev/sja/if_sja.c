@@ -908,8 +908,8 @@ sja_stop(struct sja_softc *sja)
 	
 	/* disable interrupts and abort pending transmission, if any. */
 	
-	SJA_WRITE_1(sja->sja_dev, &sja->sja_var, SJA_IER, SJA_IER_OFF);
-	SJA_WRITE_1(sja->sja_dev, &sja->sja_var, SJA_CMR, SJA_CMR_AT);
+	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_IER, SJA_IER_OFF);
+	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_CMR, SJA_CMR_AT);
 }
 
 /*
