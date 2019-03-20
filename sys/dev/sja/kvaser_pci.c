@@ -66,7 +66,7 @@ static int	kvaser_pci_attach(device_t);
 static int	kvaser_pci_detach(device_t);
 
 static const struct kvaser_type  kv_devs[] = {
-	{ KVASER_VENDORID0, PEAK_DEVICEID_PCI0, 
+	{ KVASER_VENDORID0, KVASER_DEVICEID_PCI0, 
 		"KVASER PCAN PCI card 0" },
 	{ KVASER_VENDORID1, KVASER_DEVICEID_PCI1, 
 		"KVASER PCAN PCI card 1" },
@@ -80,8 +80,8 @@ kvaser_pci_probe(device_t dev)
 	uint16_t did, vid;
 	int	i, error = ENXIO;
 	
-	vendor = pci_get_vendor(dev);
-	devid = pci_get_device(dev);
+	vid = pci_get_vendor(dev);
+	did = pci_get_device(dev);
 	
 	for (t = kv_devs, i = 0; i < nitems(kv_devs); i++, t++) {
 		if (t->kv_vid == vid && t->kv_did == did) {
@@ -119,16 +119,16 @@ kvaser_pci_attach(device_t dev)
 		goto fail;
 	}
 	
-	sc->pk_res_id = PCIR_BAR(2); 
+	sc->kv_res_id = PCIR_BAR(2); 
 	
-	status = pci_read_config(dev, sc->pk_res_id, 4);
-	sc->pk_res_type = (PCI_BAR_IO(status) != 0) ? 
+	status = pci_read_config(dev, sc->kv_res_id, 4);
+	sc->kv_res_type = (PCI_BAR_IO(status) != 0) ? 
 		SYS_RES_IOPORT : SYS_RES_MEMORY;
 	
-	sc->pk_res = bus_alloc_resource_anywhere(dev, 
-		sc->pk_res_type, &sc->pk_res_id, 
+	sc->kv_res = bus_alloc_resource_anywhere(dev, 
+		sc->kv_res_type, &sc->kv_res_id, 
 			KVASER_PCI_RES_SIZE, RF_ACTIVE);
-	if (sc->pk_res == NULL) {
+	if (sc->kv_res == NULL) {
 		device_printf(dev, "couldn't map CMR\n");
 		error = ENXIO;
 		goto fail;
@@ -230,17 +230,17 @@ kvaser_pci_detach(device_t dev)
 	(void)bus_generic_detach(dev);
 	
 	/* release bound resources */
-	for (i = 0; i < sc->pkv_chan_cnt; i++) {
+	for (i = 0; i < sc->kv_chan_cnt; i++) {
 		chan = &sc->kv_chan[i];
 			
-		if (var->sja_res != NULL) {
+		if (chan->sja_res != NULL) {
 			(void)bus_release_resource(dev, chan->sja_res_type, 
 				chan->sja_res_id, chan->sja_res);
 		}
 	}
 	
 	if (sc->kv_res != NULL)
-		(void)bus_release_resource(dev, sc->kv_res_type
+		(void)bus_release_resource(dev, sc->kv_res_type,
 			sc->kv_res_id, sc->kv_res);
 	
 	if (sc->kv_cfg != NULL)
