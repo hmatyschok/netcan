@@ -493,7 +493,7 @@ sja_start_locked(struct ifnet *ifp)
 			if ((csc->csc_linkmodes & CAN_LINKMODE_LOOPBACK) != 0)
 				status |= SJA_CMR_SRR;
 			else
-				ststus |= SJA_CMR_TR;
+				status |= SJA_CMR_TR;
 
 			SJA_WRITE_1(sja->sja_dev, var, SJA_CMR, status);
 			status = SJA_READ_1(sja->sja_dev, var, SJA_SR);
