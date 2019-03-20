@@ -51,7 +51,6 @@
 
 #include "sja_if.h"
 
-
 static int	sja_probe(device_t);
 static int	sja_attach(device_t);
 static int	sja_detach(device_t);
@@ -69,7 +68,7 @@ static void	sja_init_locked(struct sja_softc *);
 static int	sja_reset(struct sja_softc *);
 static int	sja_normal_mode(struct sja_softc *);
 static int 	sja_set_link_timings(struct sja_softc *);
-stativ void	sja_stop(struct sja_softc *);
+static void	sja_stop(struct sja_softc *);
 
 /*
  * can(4) link timing capabilities 
@@ -107,7 +106,7 @@ sja_attach(device_t dev)
 	sja = device_get_softc(dev);
 	sja->sja_dev = dev; 
 	
-	sja->sja_var = device_get_ivar(dev);
+	sja->sja_var = device_get_ivars(dev);
 	var = sja->sja_var;
 	
 	/* reserve interrupt resources */
@@ -142,13 +141,11 @@ sja_attach(device_t dev)
 	ifp->if_ioctl = sja_ioctl;
 		
 	/* initialize queue for transmission */
-	mtx_init(&slc->slc_outq.ifq_mtx, "sja_outq_mtx", NULL, MTX_DEF);
 	IFQ_SET_MAXLEN(&ifp->if_snd, ifqmaxlen);
 	IFQ_SET_READY(&ifp->if_snd);
 	
 	can_ifattach(ifp, &sja_timecaps, var->sja_freq);
 
-	
 	/* force into reset mode */
 	if ((error = sja_reset(sja)) != 0) {
 		device_printf(dev, "couldn't reset\n");

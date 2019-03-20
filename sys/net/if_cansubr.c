@@ -227,7 +227,7 @@ bad:
 }
 
 void
-can_ifattach(struct ifnet *ifp, struct can_link_timecaps *cltc, 
+can_ifattach(struct ifnet *ifp, const struct can_link_timecaps *cltc, 
 	uint32_t freq)
 {
 	struct can_ifsoftc *csc;
@@ -246,7 +246,7 @@ can_ifattach(struct ifnet *ifp, struct can_link_timecaps *cltc,
 	mtx_init(&csc->csc_mtx, "csc_mtx", NULL, MTX_DEF);
 	
 	if (cltc != NULL) {
-		bcopy(cltc, &csc->csc_timecaps, 
+		bcopy(&csc->csc_timecaps, cltc 
 			sizeof(struct can_link_timecaps));
 		csc->csc_timecaps.cltc_clock_freq = freq;
 	}
