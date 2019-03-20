@@ -139,12 +139,15 @@ sja_attach(device_t dev)
 	ifp->if_init = sja_init;
 	ifp->if_start = sja_start;
 	ifp->if_ioctl = sja_ioctl;
-	
-	can_ifattach(ifp, &sja_timecaps, var->sja_freq);
-	
+		
+	/* initialize queue for transmission */
+	mtx_init(&slc->slc_outq.ifq_mtx, "sja_outq_mtx", NULL, MTX_DEF);
 	IFQ_SET_MAXLEN(&ifp->if_snd, ifqmaxlen);
 	IFQ_SET_READY(&ifp->if_snd);
+	
+	can_ifattach(ifp, &sja_timecaps, var->sja_freq);
 
+	
 	/* force into reset mode */
 	if ((error = sja_reset(sja)) != 0) {
 		device_printf(dev, "couldn't reset\n");
