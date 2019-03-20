@@ -243,13 +243,13 @@ can_ifattach(struct ifnet *ifp, const struct can_link_timecaps *cltc,
 	KASSERT((ifp->if_l2com != NULL),
 	    ("%s: ifp->if_l2com == NULL", __func__));
 	csc = ifp->if_l2com; 
-	mtx_init(&csc->csc_mtx, "csc_mtx", NULL, MTX_DEF);
 	
 	if (cltc != NULL) {
 		bcopy(cltc, &csc->csc_timecaps 
 			sizeof(struct can_link_timecaps));
 		csc->csc_timecaps.cltc_clock_freq = freq;
 	}
+	mtx_init(&csc->csc_mtx, "csc_mtx", NULL, MTX_DEF);
 	
 	if_printf(ifp, "Index: %d\n", ifp->if_index);
 }
