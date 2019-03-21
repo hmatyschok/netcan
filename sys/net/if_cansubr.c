@@ -94,8 +94,7 @@ static int 	can_ifoutput(struct ifnet *, struct mbuf *,
 	const struct sockaddr *, struct route *);
 
 /*
- * Process a received can(4) frame, the packet is 
- * in the mbuf(9) chain with the CAN header.
+ * Process a received can(4) frame by netisr(9).
  */
 static void
 can_ifinput(struct ifnet *ifp, struct mbuf *m)
@@ -162,6 +161,7 @@ can_ifinput(struct ifnet *ifp, struct mbuf *m)
 	if_inc_counter(ifp, IFCOUNTER_IPACKETS, 1);
 	if_inc_counter(ifp, IFCOUNTER_IBYTES, m->m_pkthdr.len);
 
+	/* clear mbuf(9), if monitor mode enabled */ 
 	if ((ifp->if_flags & IFF_MONITOR) != 0)
 		goto out;
 
@@ -213,15 +213,15 @@ can_ifoutput(struct ifnet *ifp, struct mbuf *m,
 		error = ENETDOWN;
 		goto bad;
 	}
-
+	
 	if ((ifp->if_flags & IFF_PROMISC) != 0) {
 		error = ENETDOWN;
 		goto bad;
 	}
 
 #ifdef DIAGNOSTIC
-		if_printf(ifp, "%s: ", __func__);
-		m_print(m, m->m_pkthdr.len);
+	if_printf(ifp, "%s: ", __func__);
+	m_print(m, m->m_pkthdr.len);
 #endif /* DIAGNOSTiC */
 
 	error = (*ifp->if_transmit)(ifp, m);
@@ -472,7 +472,7 @@ can_mbuf_tag_clean(struct mbuf *m)
 }
 
 /*
- * Utility subr. for encoding / decoding can(4) ID and SDU.
+ * Subr. for encoding / decoding can(4) ID and SDU.
  */
  
 static const char can_hex_tbl[] = "0123456789ABCDEF";

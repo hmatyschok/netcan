@@ -697,13 +697,13 @@ slc_encap(struct slc_softc *slc, struct mbuf **mp)
 		
 	bp += SLC_CMD_LEN;	
 
-	/* map id */
+	/* map ID */
 	if ((len = can_id2hex(cf, bp)) < 0)
 		goto bad1;
 		
 	bp += len;
 
-	/* map dlc */
+	/* map DLC */
 	*bp = cf->can_dlc + '0';
 	bp += SLC_DLC_LEN;
 

@@ -55,11 +55,6 @@ struct peak_type {
 #define PEAK_SUBDEVID_TRIPLE_CHAN		0x0010
 #define PEAK_SUBDEVID_QUAD_CHAN		0x0012
 
-#define PEAK_UNI_CHAN		1
-#define PEAK_DUAL_CHAN		2
-#define PEAK_TRIPLE_CHAN	3
-#define PEAK_QUAD_CHAN		4
-
 /*
  * Important register.
  */ 
@@ -93,6 +88,11 @@ struct peak_type {
 
 #define PEAK_CFG_SIZE		0x1000	/* Size of the config PCI bar */
 #define PEAK_CHAN_SIZE		0x0400	/* Size used by the channel */
+
+#define PEAK_UNI_CHAN		1
+#define PEAK_DUAL_CHAN		2
+#define PEAK_TRIPLE_CHAN	3
+#define PEAK_QUAD_CHAN		4
 
 struct peak_softc {
 	device_t 	pk_dev;
