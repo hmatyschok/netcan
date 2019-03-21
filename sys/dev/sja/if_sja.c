@@ -865,7 +865,7 @@ sja_reset(struct sja_softc *sja)
 static void
 sja_rxfilter(struct sja_softc *sja)
 {
-	
+
 }
 
 static int 

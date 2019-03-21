@@ -368,7 +368,7 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 				error = EINVAL;
 			else
 				error = copyout(&csc->csc_timecaps, 
-				ifd->ifd_data, ifd->ifd_len);
+					ifd->ifd_data, ifd->ifd_len);
 			break;
 		case CANGLINKTIMINGS:
 
@@ -394,7 +394,10 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 				error = copyin(ifd->ifd_data, 
 					&csc->csc_timings, ifd->ifd_len);
 
-				error = (*ifp->if_ioctl)(ifp, SIOCSDRVSPEC, (caddr_t)ifd);
+			if (error != 0)
+				break;
+				
+			error = (*ifp->if_ioctl)(ifp, cmd, (caddr_t)ifd);
 			break;
 		case CANSLINKMODE:
 		case CANCLINKMODE: 	/* FALLTHROUGH */
@@ -418,6 +421,7 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 			else
 				csc->csc_linkmodes &= ~mode;
 
+			(*ifp->if_init)(ifp);
 			break;
 		case CANSRESTART:
 
