@@ -468,7 +468,6 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 		error = can_set_netlink(ifp, ifd);
 		break;
 	default:
-		error = EINVAL;
 		break;
 	}
 	return (error);
