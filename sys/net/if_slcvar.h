@@ -44,7 +44,7 @@ struct slc_softc {
 	struct ifnet	*slc_ifp;
 	struct cdev	*slc_dev;
 	struct tty	*slc_tp;		/* pointer to tty structure */
-	struct mbuf	*slc_ifbuf;		/* 
+	struct mbuf	*slc_ifbuf;		
 	struct ifqueue	slc_outq;		/* queue of outgoing data */
 	size_t	slc_outqlen;	/* number of bytes in outq */
 	TAILQ_ENTRY(slc_softc) slc_next;

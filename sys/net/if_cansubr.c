@@ -251,7 +251,7 @@ can_ifattach(struct ifnet *ifp, const struct can_link_timecaps *cltc,
 	csc = ifp->if_l2com; 
 	
 	if (cltc != NULL) {
-		bcopy(cltc, &csc->csc_timecaps 
+		bcopy(cltc, &csc->csc_timecaps, 
 			sizeof(struct can_link_timecaps));
 		csc->csc_timecaps.cltc_clock_freq = freq;
 	}
