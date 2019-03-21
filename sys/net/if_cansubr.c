@@ -421,7 +421,7 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 			else
 				csc->csc_linkmodes &= ~mode;
 
-			(*ifp->if_init)(ifp);
+			error = can_restart(ifp);
 			break;
 		case CANSRESTART:
 
