@@ -23,10 +23,10 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
- 
+
 /*
  * General constants.
- * 
+ *
  * PLX90xx PCI-bridge card vendor ID.
  */
 #define PLX_VENDORID_ADLINK			0x144A
@@ -143,5 +143,5 @@ struct plx_softc {
 	int			plx_res_type;
 
 	/* set of sja(4) controller */
-	struct sja_chan		plx_chan[PLX_CHAN_MAX]; 
+	struct sja_chan		plx_chan[PLX_CHAN_MAX];
 };

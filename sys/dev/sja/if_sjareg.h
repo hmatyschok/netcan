@@ -100,7 +100,7 @@
 #define SJA_IR_EI		0x04 	/* error warning interrupt */
 #define SJA_IR_DOI		0x08 	/* data overrun interrupt */
 #define SJA_IR_WUI		0x10 	/* wake-up interrupt */
-#define SJA_IR_EPI		0x20 	/* error passive interrupt */ 
+#define SJA_IR_EPI		0x20 	/* error passive interrupt */
 #define SJA_IR_ALI		0x40 	/* arbitration lost interrupt */
 #define SJA_IR_BEI		0x80 	/* bus error interrupt */
 
@@ -118,14 +118,14 @@
 #define SJA_IER_EIE		0x04 	/* error warning interrupt */
 #define SJA_IER_DOIE		0x08 	/* data overrun interrupt */
 #define SJA_IER_WUIE		0x10 	/* wake-up interrupt */
-#define SJA_IER_EPIE		0x20 	/* error passive interrupt */ 
+#define SJA_IER_EPIE		0x20 	/* error passive interrupt */
 #define SJA_IER_ALIE		0x40 	/* arbitration lost interrupt */
 #define SJA_IER_BEIE		0x80 	/* bus error interrupt */
 
-#define SJA_IER_OFF		0x00 
+#define SJA_IER_OFF		0x00
 #define SJA_IER_ALL		0xff
 
-/* 
+/*
  * SJA1000, 6.4.8 Arbitration Lost Capature Register [ALC] 
  */
 #define SJA_ALC_BIT0		0x01 	/* ALC in 2^0 + 1 bit of id */
@@ -139,22 +139,22 @@
 #define SJA_ALC_VAL(reg)		((reg) & SJA_ALC_MASK)
 #endif
 
-/* 
- * SJA1000, 6.4.9 Error Code Capature Register [ECC] 
- */ 
-#define SJA_ECC_SEG		0x1f 
+/*
+ * SJA1000, 6.4.9 Error Code Capature Register [ECC]
+ */
+#define SJA_ECC_SEG		0x1f
 #define SJA_ECC_DIR		0x20 	/* error occured during reception */
 
-#define SJA_ECC_ERR_MASK 	0xc0 
+#define SJA_ECC_ERR_MASK 	0xc0
 
 #define SJA_ECC_BE		0x00		/* bit error */
 #define SJA_ECC_SOF		0x03		/* start of frame */
 #define SJA_ECC_FMT		0x04		/* format error */
-#define SJA_ECC_ID28TO21		0x02		/* id bits 28 ... 21 */ 
+#define SJA_ECC_ID28TO21		0x02		/* id bits 28 ... 21 */
 #define SJA_ECC_ID20TO18		0x06		/* id bits 28 ... 21 */
 #define SJA_ECC_SRTR		0x04		/* bit SRTR */
 #define SJA_ECC_IDE		0x05		/* bit IDE */
-#define SJA_ECC_ID17TO13		0x07		/* id bits 17 ... 13 */ 
+#define SJA_ECC_ID17TO13		0x07		/* id bits 17 ... 13 */
 #define SJA_ECC_ID12TO05		0x0f		/* id bits 12 ... 5 */
 #define SJA_ECC_ID04TO00		0x0e		/* id bits 4 ... 0 */
 #define SJA_ECC_RTR		0x0c		/* bit RTR */
@@ -175,7 +175,7 @@
 #define SJA_ECC_SEG 	0x1f		/* segment flag */
 
 #define IS_SJA_ECC_BIT_ERR(reg) \
-	(((reg) & SJA_ECC_ERR_MASK) == 0x00) 	
+	(((reg) & SJA_ECC_ERR_MASK) == 0x00)
 #define IS_SJA_ECC_FORM_ERR(reg) \
 	(((reg) & SJA_ECC_ERR_MASK) == 0x40)
 #define IS_SJA_ECC_STUFF_ERR(reg) \
@@ -184,22 +184,22 @@
 	(((reg) & SJA_ECC_ERR_MASK) == 0xc0)
 
 #define IS_SJA_ECC_TX_ERR(reg) \
-	(((reg) & SJA_ECC_DIR) == 0x00) 	
+	(((reg) & SJA_ECC_DIR) == 0x00)
 #define IS_SJA_ECC_RX_ERR(reg) \
 	(((reg) & SJA_ECC_DIR) == 0x20)
 
-/* 
- * SJA1000, 6.4.10 Error Warning Limit Register [EWLR] 
+/*
+ * SJA1000, 6.4.10 Error Warning Limit Register [EWLR]
  */
 #define SJA_EWL_DFLT		0x96
 
-/* 
- * SJA1000, 6.4.11 RX Error Counter Register [RXERR] 
+/*
+ * SJA1000, 6.4.11 RX Error Counter Register [RXERR]
  */
 #define SJA_RXERR_DFLT		0x00
 
-/* 
- * SJA1000, 6.4.12 TX Error Counter Register [TXERR] 
+/*
+ * SJA1000, 6.4.12 TX Error Counter Register [TXERR]
  */
 #define SJA_TXERR_DFLT		0x00
 
@@ -295,14 +295,14 @@
 struct sja_data {
 	int			sja_port;
 	
-	/* default parameter */ 
+	/* default parameter */
 	uint8_t		sja_cdr;
 	uint8_t		sja_ocr;
 	uint32_t		sja_freq;
 };
 
 struct sja_chan {
-	device_t 	sja_dev;	
+	device_t 	sja_dev;
 	
 	/* allocated resources */
 	struct resource		*sja_res;

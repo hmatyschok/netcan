@@ -995,6 +995,6 @@ driver_t sja_driver = {
 	sizeof(struct sja_softc)
 };
 
-devclass_t sja_devclass; 
+devclass_t sja_devclass;
 
 MODULE_VERSION(sja, 1);

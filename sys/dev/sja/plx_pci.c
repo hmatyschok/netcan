@@ -49,8 +49,8 @@
 #include <dev/pci/pcivar.h>
 
 /*
- * Device driver(9) for PLX90xx PCI-bridge 
- * cards implements proxy pattern on pci(4) 
+ * Device driver(9) for PLX90xx PCI-bridge
+ * cards implements proxy pattern on pci(4)
  * bus for instances of sja(4).
  *
  * XXX: Well, work on progess ...
@@ -67,30 +67,30 @@ static int	plx_pci_detach(device_t);
 
 /* 
  * Adlink PCI-7841/cPCI-7841 [SE] cards. 
- */ 
+ */
 static struct plx_data plx_adlink = {
 	.plx_res = {
 		.plx_bar =	PCIR_BAR(0),
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
-	
+
 	.plx_chan[0] = {
 		.plx_bar =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
-	
+
 	.plx_chan[1] = {
 		.plx_bar =	PCIR_BAR(2),
 		.plx_off =	0x80,
 		.plx_cnt = 	0x80,
 	},
-	
+
 	.plx_icr_read =	1,
 	.plx_icr_addr =	PLX_ICR,
 	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
-	
+
 	.plx_tcr_addr =	PLX_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
 	.plc_tcr_rcr =	0, 
@@ -105,23 +105,23 @@ static struct plx_data plx_esd_200 = {
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
-	
+
 	.plx_chan[0] = {
 		.plx_bar =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
-	
+
 	.plx_chan[1] = {
 		.plx_bar =	PCIR_BAR(2),
 		.plx_off =	0x100,
 		.plx_cnt = 	0x80,
 	},
-	
+
 	.plx_icr_read = 1,
 	.plx_icr_addr = PLX_ICR,
 	.plx_icr = (PLX_ICR_INT0_ENB | PLC_ICR_PINT_ENB),
-	
+
 	.plx_tcr_addr =	PLX_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
 	.plc_tcr_rcr =	0,
@@ -136,23 +136,23 @@ static struct plx_data plx_esd_266 = {
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
-	
+
 	.plx_chan[0] = {
 		.plx_bar =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
-	
+
 	.plx_chan[1] = {
 		.plx_bar =	PCIR_BAR(2),
 		.plx_off =	0x100,
 		.plx_cnt = 	0x80,
 	},
-	
+
 	.plx_icr_read = 0,
 	.plx_icr_addr = PLX_9056_ICR,
 	.plx_icr = (PLX_9056_ICR_INT0_ENB | PLX_9056_ICR_PINT_ENB),
-	
+
 	.plx_tcr_addr =	PLX_9056_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
 	.plc_tcr_rcr =	PLX_9056_TCR_RCR,
@@ -167,23 +167,23 @@ static struct plx_data plx_esd_2000 = {
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
-	
+
 	.plx_chan[0] = {
 		.plx_bar =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
-	
+
 	.plx_chan[1] = {
 		.plx_bar =	PCIR_BAR(2),
 		.plx_off =	0x100,
 		.plx_cnt = 	0x80,
 	},
-	
+
 	.plx_icr_read = 0,
 	.plx_icr_addr = PLX_9056_ICR,
 	.plx_icr = (PLX_9056_ICR_INT0_ENB | PLX_9056_ICR_PINT_ENB),
-	
+
 	.plx_tcr_addr =	PLX_9056_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
 	.plc_tcr_rcr =	PLX_9056_TCR_RCR,
@@ -198,23 +198,23 @@ static struct plx_data plx_ixxat = {
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
-	
+
 	.plx_chan[0] = {
 		.plx_bar =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
-	
+
 	.plx_chan[1] = {
 		.plx_bar =	PCIR_BAR(2),
 		.plx_off =	0x200,
 		.plx_cnt = 	0x80,
 	},
-	
+
 	.plx_icr_read = 1,
 	.plx_icr_addr = PLX_ICR,
 	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
-	
+
 	.plx_tcr_addr =	PLX_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
 	.plc_tcr_rcr =	0,
@@ -229,23 +229,23 @@ static struct plx_data plx_marathon_pci = {
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
-	
+
 	.plx_chan[0] = {
 		.plx_bar =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
-	
+
 	.plx_chan[1] = {
 		.plx_bar =	PCIR_BAR(4),
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
-	
+
 	.plx_icr_read = 1,
 	.plx_icr_addr = PLX_ICR,
 	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
-	
+
 	.plx_tcr_addr =	PLX_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
 	.plc_tcr_rcr =	0,
@@ -260,23 +260,23 @@ static struct plx_data plx_marathon_pcie = {
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
-	
+
 	.plx_chan[0] = {
 		.plx_bar =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
-	
+
 	.plx_chan[1] = {
 		.plx_bar =	PCIR_BAR(3),
 		.plx_off =	0x80,
 		.plx_cnt = 	0,
 	},
-	
+
 	.plx_icr_read = 0,
 	.plx_icr_addr = PLX_9056_ICR,
 	.plx_icr = (PLX_9056_ICR_INT0_ENB | PLX_9056_ICR_PINT_ENB),
-	
+
 	.plx_tcr_addr =	PLX_9056_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
 	.plc_tcr_rcr =	PLX_9056_TCR_RCR,
@@ -291,23 +291,23 @@ static struct plx_data plx_tews = {
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
-	
+
 	.plx_chan[0] = {
 		.plx_bar =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
-	
+
 	.plx_chan[1] = {
 		.plx_bar =	PCIR_BAR(2),
 		.plx_off =	0x100,
 		.plx_cnt = 	0x80,
 	},
-	
+
 	.plx_icr_read = 1,
 	.plx_icr_addr = PLX_ICR,
 	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
-	
+
 	.plx_tcr_addr =	PLX_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
 	.plc_tcr_rcr =	0,
@@ -322,23 +322,23 @@ static struct plx_data plx_cti = {
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
-	
+
 	.plx_chan[0] = {
 		.plx_bar =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
-	
+
 	.plx_chan[1] = {
 		.plx_bar =	PCIR_BAR(2),
 		.plx_off =	0x100,
 		.plx_cnt = 	0x80,
 	},
-	
+
 	.plx_icr_read = 1,
 	.plx_icr_addr = PLX_ICR,
 	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
-	
+
 	.plx_tcr_addr =	PLX_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
 	.plc_tcr_rcr =	0,
@@ -353,23 +353,23 @@ static struct plx_data plx_elcus = {
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
-	
+
 	.plx_chan[0] = {
 		.plx_bar =	PCIR_BAR(2),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
-	
+
 	.plx_chan[1] = {
 		.plx_bar =	PCIR_BAR(3),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
-	
+
 	.plx_icr_read = 1,
 	.plx_icr_addr = PLX_ICR,
 	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
-	
+
 	.plx_tcr_addr =	PLX_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
 	.plc_tcr_rcr =	0,
@@ -384,23 +384,23 @@ static struct plx_data plx_moxa = {
 		.plx_off =	0,
 		.plx_cnt = 	0,
 	},
-	
+
 	.plx_chan[0] = {
 		.plx_bar =	PCIR_BAR(0),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
-	
+
 	.plx_chan[1] = {
 		.plx_bar =	PCIR_BAR(1),
 		.plx_off =	0,
 		.plx_cnt = 	0x80,
 	},
-	
+
 	.plx_icr_read = 1,
 	.plx_icr_addr = PLX_ICR,
 	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_INT1_ENB | PLX_ICR_PINT_ENB),
-	
+
 	.plx_tcr_addr =	PLX_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
 	.plc_tcr_rcr =	0,
@@ -465,12 +465,12 @@ plx_pci_match(device_t dev)
 	uint16_t did, vid;
 	uint16_t sub_did, sub_vid;
 	int	i;
-	
+
 	vid = pci_get_vendor(dev);
 	did = pci_get_device(dev);
 	sub_vid = pci_get_subvendor(dev);
 	sub_did = pci_get_subdevice(dev);
-	
+
 	for (t = plx_devs, i = 0; i < nitems(plx_devs); i++, t++) {
 		if ((t->plx_vid == vid) && (t->plx_did == did) 
 			&& ((t->plx_sub_vid == sub_vid) || 
@@ -522,72 +522,72 @@ plx_pci_attach(device_t dev)
 	}
 
 	sc->plx_id = t->plx_id;
-	
+
 	/* allocate resources for control registers and ports */
 	res = &sc->plx_id->plx_res;
-	
+
 	sc->plx_res_id = res->plx_bar + res->plx_off; 
-	
+
 	status = pci_read_config(dev, res->plx_bar, 4);
-	sc->plx_res_type = (PCI_BAR_IO(status) != 0) ? 
+	sc->plx_res_type = (PCI_BAR_IO(status) != 0) ?
 		SYS_RES_IOPORT : SYS_RES_MEMORY;
-	
+
 	if (res->plx_cnt == 0) {
-		sc->plx_res = bus_alloc_resource_any(dev, sc->plx_res_type, 
+		sc->plx_res = bus_alloc_resource_any(dev, sc->plx_res_type,
 			&sc->plx_res_id, RF_ACTIVE);
 	} else {
 		sc->plx_res = bus_alloc_resource_anywhere(dev, 
 			sc->plx_res_type, &sc->plx_res_id, 
 				res->plx_cnt, RF_ACTIVE);
 	}
-	
+
 	if (sc->plx_res == NULL) {
 		device_printf(dev, "couldn't map ICR / TCR\n");
 		error = ENXIO;
 		goto fail;
 	}
-	
-	for (i = 0; i < PLX_CHAN_MAX; i++) { 
-		res = &sc->plx_id->plx_chan[i]; 
+
+	for (i = 0; i < PLX_CHAN_MAX; i++) {
+		res = &sc->plx_id->plx_chan[i];
 		chan = &sc->plx_chan[i];
 		var = &chan->sja_var;
 
 		chan->sja_res_id = res->plx_bar;
 		status = pci_read_config(dev, chan->sja_res_id, 4);
-		
-		chan->sja_res_type = (PCI_BAR_IO(status) != 0) ? 
+
+		chan->sja_res_type = (PCI_BAR_IO(status) != 0) ?
 			SYS_RES_IOPORT : SYS_RES_MEMORY;
-		
+
 		chan->sja_res_id += res->plx_off;
-		
+
 		if (res->plx_cnt == 0) {
-			chan->sja_res = bus_alloc_resource_any(dev, 
-				chan->sja_res_type, &chan->sja_res_id, 
+			chan->sja_res = bus_alloc_resource_any(dev,
+				chan->sja_res_type, &chan->sja_res_id,
 					RF_ACTIVE);
 		} else {
-			chan->sja_res = bus_alloc_resource_anywhere(dev, 
-				chan->sja_res_type, &chan->sja_res_id, 
+			chan->sja_res = bus_alloc_resource_anywhere(dev,
+				chan->sja_res_type, &chan->sja_res_id,
 					res->plx_cnt, RF_ACTIVE);
 		}
-		
+
 		if (chan->sja_res == NULL) {
 			device_printf(dev, "couldn't map port %i\n", i);
 			error = ENXIO;
 			goto fail;
 		}
-		
+
 		var->var_port = i;
-		
+
 		var->var_cdr = PLX_CDR_DFLT;
 		var->var_ocr = PLX_OCR_DFLT;
 		var->var_freq = PLX_CLK_FREQ;
-	}	
+	}
 	
-	/* attach set of sja(4) controller as its children */		
+	/* attach set of sja(4) controller as its children */
 	for (i = 0; i < PLX_CHAN_MAX; i++) { 
 		chan = &sc->plx_chan[i];
 		var = &chan->sja_var;
-				 
+
 		if ((chan->sja_dev = device_add_child(dev, "sja", -1)) == NULL) {
 			device_printf(dev, "couldn't map channels");
 			error = ENXIO;
@@ -595,20 +595,20 @@ plx_pci_attach(device_t dev)
 		}
 		device_set_ivars(chan->sja_dev, var);
 	}
-	
+
 	if ((error = bus_generic_attach(dev)) != 0) {
 		device_printf(dev, "failed to attach ports\n");
 		goto fail;
 	}
-	
+
 	/* enable interrupts */
 	if ((status = sc->plx_id->plx_icr_read) != 0)
 		status = bus_read_4(sc->plx_res, sc->plx_id->plx_icr_addr);
-		
+
 	status |= sc->plx_id->plx_icr;
-	
+
 	bus_write_4(sc->plx_res, sc->plx_id->plx_icr_addr, status);
-out:	
+out:
 	return (error);
 fail:
 	(void)plx_pci_detach(dev);
@@ -642,17 +642,17 @@ plx_pci_detach(device_t dev)
 		if (sc->plx_id->plx_tcr_rcr != 0) {
 			status |= sc->plx_id->plx_tcr_rcr;
 			bus_write_4(sc->plx_res, sc->plx_id->plx_tcr_addr, status);
-	
+
 			DELAY(10000);	/* XXX: ... */
 
 			status &= ~(sc->plx_id->plx_tcr_rcr);
 			bus_write_4(sc->plx_res, sc->plx_id->plx_tcr_addr, status);	
 		}
-	
+
 		/* disable interrupts */
 		bus_write_4(sc->plx_res, sc->plx_id->plx_icr_addr, 0);
 	}
-	
+
 	/* detach each channel, if any */
 	for (i = 0; i < PLX_CHAN_MAX; i++) {
 		chan = &sc->plx_chan[i];
@@ -672,7 +672,7 @@ plx_pci_detach(device_t dev)
 				chan->sja_res_id, chan->sja_res);
 		}
 	}
-	
+
 	if (sc->plx_res != NULL)
 		(void)bus_release_resource(dev, sc->plx_res_type, sc->plx_res);
 
@@ -688,10 +688,10 @@ plx_pci_read_1(device_t dev, struct sja_data *var, int port)
 {
 	struct plx_softc *sc;
 	struct sja_chan *chan;
-	
+
 	sc = device_get_softc(dev);
 	chan = &sc->plx_chan[var->sja_port];
-	
+
 	return (bus_read_1(chan->sja_res, port));
 }
 
@@ -700,10 +700,10 @@ plx_pci_read_2(device_t dev, struct sja_data *var, int port)
 {
 	struct plx_softc *sc;
 	struct sja_chan *chan;
-	
+
 	sc = device_get_softc(dev);
 	chan = &sc->plx_chan[var->sja_port];
-	
+
 	return (bus_read_2(chan->sja_res, port));
 }
 
@@ -712,10 +712,10 @@ plx_pci_read_4(device_t dev, struct sja_data *var, int port)
 {
 	struct plx_softc *sc;
 	struct sja_chan *chan;
-	
+
 	sc = device_get_softc(dev);
 	chan = &sc->plx_chan[var->sja_port];
-	
+
 	return (bus_read_4(chan->sja_res, port));
 }
 
@@ -724,10 +724,10 @@ plx_pci_write_1(device_t dev, struct sja_data *var, int port, uint8_t val)
 {
 	struct plx_softc *sc;
 	struct sja_chan *chan;
-	
+
 	sc = device_get_softc(dev);
 	chan = &sc->plx_chan[var->sja_port];
-	
+
 	bus_write_1(chan->sja_res, port, val));
 }
 
@@ -736,10 +736,10 @@ plx_pci_write_2(device_t dev, struct sja_data *var, int port, uint16_t val)
 {
 	struct plx_softc *sc;
 	struct sja_chan *chan;
-	
+
 	sc = device_get_softc(dev);
 	chan = &sc->plx_chan[var->sja_port];
-	
+
 	bus_write_2(chan->sja_res, port, val));
 }
 
@@ -748,10 +748,10 @@ plx_pci_write_4(device_t dev, struct sja_data *var, int port, uint32_t val)
 {
 	struct plx_softc *sc;
 	struct sja_chan *chan;
-	
+
 	sc = device_get_softc(dev);
 	chan = &sc->plx_chan[var->sja_port];
-	
+
 	bus_write_4(chan->sja_res, port, val));	
 }
 
@@ -768,11 +768,11 @@ static device_method_t plx_pci_methods[] = {
 	DEVMETHOD(sja_read_1,	plx_pci_read_1),
 	DEVMETHOD(sja_read_2,	plx_pci_read_2),
 	DEVMETHOD(sja_read_4,	plx_pci_read_4),
-	
+
 	DEVMETHOD(sja_write_1,	plx_pci_write_1),
 	DEVMETHOD(sja_write_2,	plx_pci_write_2),
 	DEVMETHOD(sja_write_4,	plx_pci_write_4),
-		
+
 	DEVMETHOD_END
 };
 

@@ -181,28 +181,28 @@ peak_pci_attach(device_t dev)
 			chan->sja_flags = PEAK_ICR_INT_GP2;
 		else 
 			chan->sja_flags = PEAK_ICR_INT_GP3;
-		
+
 		var->sja_port = i;
 		var->sja_cdr = PEAK_CDR_DFLT;
 		var->sja_ocr = PEAK_OCR_DFLT;
 		var->sja_freq = PEAK_CLK_FREQ;
-	}	
-	
+	}
+
 	/* set-up GPIO control register, if any */
 	bus_write_2(sc->pk_res, PEAK_GPIO_ICR_IO, PEAK_GPIO_ICR_IO_ENB);
-	
+
 	/* enable all channels, if any */
 	bus_write_1(sc->pk_res, PEAK_GPIO_ICR, PEAK_GPIO_ICR_ENB);
-	
+
 	/* toggle reset */
 	bus_write_1(sc->pk_res, PEAK_MISC_CR, PEAK_MISC_CR_TOG_RST);
 	DELAY(60);
-	
+
 	/* leave parport mux mode */
 	bus_write_1(sc->pk_res, PEAK_MISC_CR, PEAK_MISC_CR_PP_EPP);
 	status = bus_read_2(sc->pk_res, PEAK_ICR_INT_GP);
 
-	/* attach set of sja(4) controller as its children */		
+	/* attach set of sja(4) controller as its children */
 	for (i = 0; i < sc->pk_chan_cnt; i++) { 
 		chan = &sc->pk_chan[i];
 		var = &chan->sja_var;
@@ -216,15 +216,15 @@ peak_pci_attach(device_t dev)
 		
 		status |= chan->sja_flags;
 	}
-	
+
 	if ((error = bus_generic_attach(dev)) != 0) {
 		device_printf(dev, "failed to attach ports\n");
 		goto fail;
 	}
-	
+
 	/* enable interrupts */
 	bus_write_2(sc->pk_res, PEAK_ICR_INT_GP, status);
-out:	
+out:
 	return (error);
 fail:
 	(void)peak_pci_detach(dev);
@@ -237,12 +237,12 @@ peak_pci_detach(device_t dev)
 	struct peak_softc *sc;
 	struct sja_chan *chan;
 	int i;
- 
+
 	sc = device_get_softc(dev);
- 
+
 	/* disable interrupts */
 	bus_write_2(sc->pk_res, PEAK_ICR_INT_GP, 0x0000);
- 
+
 	/* detach each channel, if any */
 	for (i = 0; i < sc->pk_chan_cnt; i++) {
 		chan = &sc->pk_chan[i];
@@ -257,15 +257,15 @@ peak_pci_detach(device_t dev)
 		chan = &sc->pk_chan[i];
 			
 		if (chan->sja_res != NULL) {
-			(void)bus_release_resource(dev, chan->sja_res_type, 
+			(void)bus_release_resource(dev, chan->sja_res_type,
 				chan->sja_res_id, chan->sja_res);
 		}
 	}
-	
+
 	if (sc->pk_res != NULL)
-		(void)bus_release_resource(dev, sc->pk_res_type, 
+		(void)bus_release_resource(dev, sc->pk_res_type,
 			sc->pk_res_id, sc->pk_res);
-	
+
 	return (0);
 }
 
@@ -278,10 +278,10 @@ peak_pci_read_1(device_t dev, struct sja_data *var, int port)
 {
 	struct peak_softc *sc;
 	struct sja_chan *chan;
-	
+
 	sc = device_get_softc(dev);
 	chan = &sc->pk_chan[var->sja_port];
-	
+
 	return (bus_read_1(chan->sja_res, (port << chan->sja_aln)));
 }
 
@@ -290,10 +290,10 @@ peak_pci_read_2(device_t dev, struct sja_data *var, int port)
 {
 	struct peak_softc *sc;
 	struct sja_chan *chan;
-	
+
 	sc = device_get_softc(dev);
 	chan = &sc->pk_chan[var->sja_port];
-	
+
 	return (bus_read_2(chan->sja_res, (port << chan->sja_aln)));
 }
 
@@ -302,10 +302,10 @@ peak_pci_read_4(device_t dev, struct sja_data *var, int port)
 {
 	struct peak_softc *sc;
 	struct sja_chan *chan;
-	
+
 	sc = device_get_softc(dev);
 	chan = &sc->pk_chan[var->sja_port];
-	
+
 	return (bus_read_4(chan->sja_res, (port << chan->sja_aln)));
 }
 
@@ -314,10 +314,10 @@ peak_pci_write_1(device_t dev, struct sja_data *var, int port, uint8_t val)
 {
 	struct peak_softc *sc;
 	struct sja_chan *chan;
-	
+
 	sc = device_get_softc(dev);
 	chan = &sc->pk_chan[var->sja_port];
-	
+
 	bus_write_1(chan->sja_res, (port << chan->sja_aln), val);
 }
 
@@ -326,10 +326,10 @@ peak_pci_write_2(device_t dev, struct sja_data *var, int port, uint16_t val)
 {
 	struct peak_softc *sc;
 	struct sja_chan *chan;
-	
+
 	sc = device_get_softc(dev);
 	chan = &sc->pk_chan[var->sja_port];
-	
+
 	bus_write_2(chan->sja_res, (port << chan->sja_aln), val);
 }
 
@@ -338,10 +338,10 @@ peak_pci_write_4(device_t dev, struct sja_data *var, int port, uint32_t val)
 {
 	struct peak_softc *sc;
 	struct sja_chan *chan;
-	
+
 	sc = device_get_softc(dev);
 	chan = &sc->pk_chan[var->sja_port];
-	
+
 	bus_write_4(chan->sja_res, (port << chan->sja_aln), val);	
 }
 
@@ -356,11 +356,11 @@ peak_pci_clear_intr(device_t dev, struct sja_data *var)
 	uint16_t flags, status;
 
 	sc = device_get_softc(dev);
-	
+
 	chan = &sc->pk_chan[var->sja_port];	
 	flags = chan->sja_flags;
 	status = bus_read_2(sc->pk_res, PEAK_ICR);
-	
+
 	if (status & flags)
 		bus_write_2(sc->pk_res, PEAK_ICR, flags);
 }
@@ -373,18 +373,18 @@ static device_method_t peak_pci_methods[] = {
 	DEVMETHOD(device_probe, 	peak_pci_probe),
 	DEVMETHOD(device_attach,	peak_pci_attach),
 	DEVMETHOD(device_detach,	peak_pci_detach),
-	
+
 	/* sja(4) interface */
 	DEVMETHOD(sja_read_1,	peak_pci_read_1),
 	DEVMETHOD(sja_read_2,	peak_pci_read_2),
 	DEVMETHOD(sja_read_4,	peak_pci_read_4),
-	
+
 	DEVMETHOD(sja_write_1,	peak_pci_write_1),
 	DEVMETHOD(sja_write_2,	peak_pci_write_2),
 	DEVMETHOD(sja_write_4,	peak_pci_write_4),
-	
+
 	DEVMETHOD(sja_clear_intr,	peak_pci_clear_intr),
-	
+
 	DEVMETHOD_END
 };
 
@@ -400,5 +400,5 @@ DRIVER_MODULE(peak_pci, pci, peak_pci_driver, peak_pci_devclass, 0, 0);
 DRIVER_MODULE(sja, peak_pci, sja_driver, sja_devclass, 0, 0);
 
 MODULE_DEPEND(peak_pci, pci, 1, 1, 1);
-MODULE_DEPEND(peak_pci, sja, 1, 1, 1); 
+MODULE_DEPEND(peak_pci, sja, 1, 1, 1);
 MODULE_DEPEND(peak_pci, can, 1, 1, 1);
