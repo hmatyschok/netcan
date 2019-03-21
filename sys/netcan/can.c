@@ -96,7 +96,7 @@ can_control(struct socket *so, u_long cmd, caddr_t data,
 	
 	if (ifp != NULL) {
 		if (ifp->if_ioctl != NULL) 
-			error = (*ifp->if_ioctl)(ifp, cmd, data);
+			error = can_ioctl(ifp, cmd, data);
 		else 
 			error = EOPNOTSUPP;	
 	} else 	
