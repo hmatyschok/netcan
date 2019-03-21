@@ -333,7 +333,7 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 	ifd = (struct ifdrv *)data;
 	error = 0;
 	
-	if ((ifp->if_flags & IFF_UP) != 0) {
+	if ((ifp->if_flags & IFF_UP) == 0) {
 		error = ENETDOWN;
 		goto out;
 	}
