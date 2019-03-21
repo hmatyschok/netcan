@@ -359,9 +359,11 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 				
 		break;	
 	case SIOCGDRVSPEC:
-	case SIOCSDRVSPEC:
+	case SIOCSDRVSPEC:		/* FALLTHROUGH */
+	
 		switch (ifd->ifd_cmd) {
 		case CANGLINKTIMECAP:
+		
 			if (ifd->ifd_len != sizeof(struct can_link_timecaps)) 
 				error = EINVAL;
 			else
@@ -369,6 +371,7 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 				ifd->ifd_data, ifd->ifd_len);
 			break;
 		case CANGLINKTIMINGS:
+		
 			if (ifd->ifd_len != sizeof(struct can_link_timings)) 
 				error = EINVAL;
 			else	
@@ -376,6 +379,7 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 					ifd->ifd_data, ifd->ifd_len);
 			break;
 		case CANGLINKMODE:
+		
 			if (ifd->ifd_len != sizeof(uint32_t))
 				error = EINVAL;
 			else 
@@ -383,6 +387,7 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 					ifd->ifd_data, ifd->ifd_len);
 			break;
 		case CANSLINKTIMINGS:
+		
 			if (ifd->ifd_len != sizeof(struct can_link_timings))
 				error = EINVAL;
 			else 
@@ -415,6 +420,7 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 
 			break;
 		case CANSRESTART:
+		
 			error = can_restart(ifp);
 			break;
 		default:
