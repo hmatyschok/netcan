@@ -102,7 +102,7 @@ LIST_HEAD(canpcbhead, canpcb);
 TAILQ_HEAD(canpcbqueue, canpcb);
 
 /* 
- * Set contains canpcb{}s maps to PF_CAN family on AF_CAN domain(9). 
+ * Set contains canpcb{}s maps to PF_CAN family on AF_CAN domain(9).
  */
 struct canpcbinfo {
 	TAILQ_ENTRY(canpcbinfo) cani_next;
@@ -137,26 +137,26 @@ TAILQ_HEAD(canpcbinfo_head, canpcbinfo);
 #define	sotocanpcb(so)		((struct canpcb *)(so)->so_pcb)
 
 #ifdef _KERNEL
-void 	can_losing(struct canpcb *);
-int 	can_pcballoc(struct socket *, struct canpcbinfo *);
-int 	can_pcbbind(struct canpcb *, struct sockaddr_can *, 
+void	can_losing(struct canpcb *);
+int	can_pcballoc(struct socket *, struct canpcbinfo *);
+int	can_pcbbind(struct canpcb *, struct sockaddr_can *,
 	struct ucred *);
-int 	can_pcbconnect(struct canpcb *, struct sockaddr_can *);
-void 	can_pcbdetach(struct canpcb *);
-void 	can_pcbdisconnect(struct canpcb *);
-void 	can_pcbfree(struct canpcb *);
-void 	can_pcbinfo_init(struct canpcbinfo *, const char *, 
+int	can_pcbconnect(struct canpcb *, struct sockaddr_can *);
+void	can_pcbdetach(struct canpcb *);
+void	can_pcbdisconnect(struct canpcb *);
+void	can_pcbfree(struct canpcb *);
+void	can_pcbinfo_init(struct canpcbinfo *, const char *,
 	const char *, uma_ctor, uma_dtor, int, int);
-int 	can_pcbnotify(struct canpcbinfo *, uint32_t, 
+int	can_pcbnotify(struct canpcbinfo *, uint32_t,
 	uint32_t, int, void (*)(struct canpcb *, int));
-void 	can_pcbnotifyall(struct canpcbinfo *, uint32_t, int, 
+void	can_pcbnotifyall(struct canpcbinfo *, uint32_t, int,
 	void (*)(struct canpcb *, int));
-void 	can_pcbpurgeif0(struct canpcbinfo *, struct ifnet *);
-void 	can_pcbpurgeif(struct canpcbinfo *, struct ifnet *);
-void 	can_pcbstate(struct canpcb *, int);
-struct sockaddr * 	can_sockaddr(struct canpcb *);
-int 	can_pcbsetfilter(struct canpcb *, struct can_filter *, int);
-int 	can_pcbfilter(struct canpcb *, struct mbuf *);
+void	can_pcbpurgeif0(struct canpcbinfo *, struct ifnet *);
+void	can_pcbpurgeif(struct canpcbinfo *, struct ifnet *);
+void	can_pcbstate(struct canpcb *, int);
+struct sockaddr *	can_sockaddr(struct canpcb *);
+int	can_pcbsetfilter(struct canpcb *, struct can_filter *, int);
+int	can_pcbfilter(struct canpcb *, struct mbuf *);
 
 /* refcount management */
 void	canp_ref(struct canpcb *);

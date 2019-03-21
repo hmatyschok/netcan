@@ -113,10 +113,10 @@ void
 rcan_init(void)
 {
 
-	can_pcbinfo_init(&rcan_pcbinfo, "rawcan", "rawcanp", 
+	can_pcbinfo_init(&rcan_pcbinfo, "rawcan", "rawcanp",
 		rcan_pcb_init, NULL, can_hashsize, can_hashsize);
 	EVENTHANDLER_REGISTER(maxsockets_change, rcan_zone_change, NULL,
-	    EVENTHANDLER_PRI_ANY);	
+	    EVENTHANDLER_PRI_ANY);
 }
 
 /*
@@ -130,7 +130,7 @@ rcan_attach(struct socket *so, int proto, struct thread *td)
 	int error;
 
 	canp = sotocanpcb(so);
-	KASSERT((canp == NULL), 
+	KASSERT((canp == NULL),
 		("%s: canp != NULL", __func__));
 
 	if (proto >= CANPROTO_NPROTO || proto < 0) {
@@ -192,7 +192,7 @@ rcan_bind(struct socket *so, struct sockaddr *nam, struct thread *td)
 	CANP_LOCK(canp);	
 	error = can_pcbbind(canp, scan, td->td_ucred);
 	CANP_UNLOCK(canp);
-out:	
+out:
 	return (error);
 }
 
@@ -289,13 +289,13 @@ rcan_send(struct socket *so, int flags, struct mbuf *m,
 			CANP_UNLOCK(canp);
 		}	
 	} else {
-		if ((so->so_state & SS_ISCONNECTED) == 0) 
+		if ((so->so_state & SS_ISCONNECTED) == 0)
 			error =  EDESTADDRREQ;
 		else
 			error = 0;
 	}
 	
-	if (error != 0) 
+	if (error != 0)
 		goto bad;
 	
 	error = can_output(m, canp);
@@ -356,7 +356,7 @@ rcan_setop(struct canpcb *canp, struct sockopt *sopt)
 
 	switch (sopt->sopt_name) {
 	case CAN_RAW_LOOPBACK:	
-		error = sooptcopyin(sopt, &optval, sizeof(optval), 
+		error = sooptcopyin(sopt, &optval, sizeof(optval),
 			sizeof(optval));
 		if (error == 0) {
 			CANP_LOCK(canp);
@@ -368,7 +368,7 @@ rcan_setop(struct canpcb *canp, struct sockopt *sopt)
 		}
 		break;
 	case CAN_RAW_RECV_OWN_MSGS: 
-		error = sooptcopyin(sopt, &optval, sizeof(optval), 
+		error = sooptcopyin(sopt, &optval, sizeof(optval),
 			sizeof(optval));
 		if (error == 0) {
 			CANP_LOCK(canp);
@@ -424,7 +424,7 @@ rcan_ctloutput(struct socket *so, struct sockopt *sopt)
 		}
 	} else
 		error = can_ctloutput(so, sopt);
-		
+
 	return (error);
 }
 
@@ -432,7 +432,7 @@ struct pr_usrreqs rcan_usrreqs = {
 	.pru_attach = 		rcan_attach,
 	.pru_detach = 		rcan_detach,
 	.pru_bind = 		rcan_bind,
-	.pru_control =		can_control,	
+	.pru_control =		can_control,
 	.pru_disconnect = 		rcan_disconnect,
 	.pru_shutdown = 		rcan_shutdown,
 	.pru_sockaddr = 		rcan_sockaddr,

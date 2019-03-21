@@ -87,12 +87,12 @@ can_control(struct socket *so, u_long cmd, caddr_t data,
 	ifd = (struct ifdrv *)data;
 	
 	if (ifp != NULL) {
-		if (ifp->if_ioctl != NULL) 
+		if (ifp->if_ioctl != NULL)
 			error = can_ioctl(ifp, cmd, data);
-		else 
-			error = EOPNOTSUPP;	
-	} else 	
+		else
+			error = EOPNOTSUPP;
+	} else
 		error = EADDRNOTAVAIL;
-	
+		
 	return (error);
 }

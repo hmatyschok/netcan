@@ -102,7 +102,7 @@ struct canpcbinfo_head can_pcbinfo_tbl;
 void
 can_init(void)
 {
-	
+
 	rw_init_flags(&can_pcbinfo_lock, "canpinfo", RW_RECURSE | RW_DUPOK);
 	TAILQ_INIT(&can_pcbinfo_tbl);
 	netisr_register(&can_nh);
@@ -111,14 +111,14 @@ can_init(void)
 /*
  * Handoff rx'd can(4) frames from protocol- into socket-layer.
  */ 
-void 	
+void
 can_nh_input(struct mbuf *m)
 {
 	struct sockaddr_can from;
 	struct m_tag	*sotag;
 	struct canpcb	*sender_canp;
 	struct ifnet 	*ifp;
-	int		rcv_ifindex; /* XXX */	
+	int		rcv_ifindex; /* XXX */
 #ifdef DIAGNOSTIC
 	struct can_hdr *ch; 
 #endif /* DIAGNOSTIC */
@@ -126,70 +126,70 @@ can_nh_input(struct mbuf *m)
 
 	M_ASSERTPKTHDR(m);
 	KASSERT((m->m_pkthdr.rcvif != NULL),
-	    ("%s: NULL interface pointer", __func__));
+		("%s: NULL interface pointer", __func__));
 #if 0
 	CANSTAT_INC(cans_total);
 #endif 
-	
+
 	if (m->m_pkthdr.len < sizeof(struct can_frame)) {
 #if 0
 		CANSTAT_INC(cans_tooshort);
 #endif	
 		goto out;
 	}
-	
+
 	if (m->m_len < sizeof(struct can_frame)) {
 	    if ((m = m_pullup(m, sizeof(struct can_frame))) == NULL) {
 #if 0
 		CANSTAT_INC(cans_toosmall);
-#endif	
+#endif
 			goto out;
 		}
 	}
-	
+
 	if ((sotag = m_tag_find(m, PACKET_TAG_ND_OUTGOING, NULL)) != NULL) {
 		sender_canp = *(struct canpcb **)(sotag + 1);
 		m_tag_delete(m, sotag);
 		
 		KASSERT((sender_canp != NULL),
 			("%s: sender_canp == NULL", __func__));
-		
+
 		/* if the sender doesn't want loopback, don't do it */
-		if ((sender_canp->canp_flags & CANP_NO_LOOPBACK) != 0) 
+		if ((sender_canp->canp_flags & CANP_NO_LOOPBACK) != 0)
 			goto out1;
 			
 	} else 
 		sender_canp = NULL;
-	
+
 	/* fetch interface index */
 	ifp = m->m_pkthdr.rcvif;
 	rcv_ifindex = ifp->if_index;
-	
+
 	(void)memset(&from, 0, sizeof(struct sockaddr_can));
-		
+
 	from.scan_ifindex = rcv_ifindex;
 	from.scan_len = sizeof(struct sockaddr_can);
 	from.scan_family = AF_CAN;
 
 #ifdef DIAGNOSTIC
 	ch = mtod(m, struct can_hdr *);
-	(void)printf("%s: type 0x%01x id 0x%08x dlc 0x%02x\n", 
+	(void)printf("%s: type 0x%01x id 0x%08x dlc 0x%02x\n",
 		__func__, (ch->ch_id & CAN_FLAG_MASK) >> 28, 
 		(ch->ch_id & CAN_EFF_MASK), ch->ch_dlc);
 #endif /* DIAGNOSTIC */
-	
+
 	rw_rlock(&can_pcbinfo_lock);
-	
+
 	/* XXX: Well, I'll refactor this, ...  */
 	TAILQ_FOREACH(cani, &can_pcbinfo_tbl, cani_next) {
 		struct canpcb   *canp;
-		
+
 		/* fetch PCB maps to interface by its index, if any */
 		TAILQ_FOREACH(canp, &cani->cani_queue, canp_queue) {
 			struct mbuf *mc;
-		
+
 			CANP_LOCK(canp);
-		
+
 			/* skip if we're detached */
 			if (canp->canp_state == CANP_DETACHED) {
 				CANP_UNLOCK(canp);
@@ -202,7 +202,7 @@ can_nh_input(struct mbuf *m)
 				CANP_UNLOCK(canp);
 				continue;
 			}
-		
+
 			/* don't loop back to myself if I don't want it */
 			if (canp == sender_canp && 
 				(canp->canp_flags & CANP_RECEIVE_OWN) == 0) {
@@ -230,7 +230,7 @@ can_nh_input(struct mbuf *m)
 				mc = m;
 				m = NULL;
 			}
-		
+
 			/* enqueue mbuf(9) */
 			if (sbappendaddr(&canp->canp_so->so_rcv,
 					(struct sockaddr *) &from, mc,
@@ -238,50 +238,25 @@ can_nh_input(struct mbuf *m)
 				m_freem(mc);
 			} else
 				sorwakeup(canp->canp_so);
-		
+
 			CANP_UNLOCK(canp);
-		
+
 			if (m == NULL)
 				goto out2;
 		}
 	}
 out2:	/* XXX */
 	rw_runlock(&can_pcbinfo_lock);
-out1:	
+out1:
 	if (sender_canp != NULL) {
 		CANP_LOCK(sender_canp);
 		canp_unref(sender_canp);
 		CANP_UNLOCK(sender_canp);
 	}
-	
+
 	/* If it didn't go anywhere just delete it */
 out:
 	if (m != NULL) 
 		m_freem(m);
 }
 
-/*
- * XXX: I'll refactor this. Those code-sections are from
- * XXX: original implementation by the NetBSD project. 
- */
-#if 0
-static void
-can_notify(struct canpcb *canp, int errno)
-{
-
-	canp->canp_so->so_error = errno;
-	sorwakeup(canp->canp_so);
-	sowwakeup(canp->canp_so);
-}
-
-void 
-can_ctlinput(int cmd, struct sockaddr *sa, void *v)
-{
-
-	/*
-	 * XXX: It seems to me, that this might be a 
-	 * XXX: service-primitive from a CAN module 
-	 * XXX: for tunneling CAN frames by udp(4).
-	 */
-}
-#endif

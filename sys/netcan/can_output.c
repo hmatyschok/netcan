@@ -86,39 +86,39 @@ can_output(struct mbuf *m, struct canpcb *canp)
 {
 	int error = 0;
 	struct ifnet *ifp;
-	struct can_ifsoftc *csc; 
+	struct can_ifsoftc *csc;
 	struct m_tag *sotag;
 	struct sockaddr_can scan;
 	struct sockaddr *gw;
 #ifdef DIAGNOSTIC
-	struct can_hdr *ch; 
+	struct can_hdr *ch;
 #endif /* DIAGNOSTIC */
-	
+
 	M_ASSERTPKTHDR(m);
-	
+
 	if (canp == NULL) {
 		(void)printf("%s: no pcb\n", __func__);
 		error = EINVAL;
 		goto bad;
 	}
-	
+
 	if ((ifp = canp->canp_ifp) == NULL) {
 		error = EDESTADDRREQ;
 		goto bad;
 	}
-	
-	if (ifp->if_type == IFT_CAN) {	
+
+	if (ifp->if_type == IFT_CAN) {
 		if ((csc = ifp->if_l2com) != NULL) {
-			if (csc->csc_linkmodes & CAN_LINKMODE_LISTENONLY) 
+			if (csc->csc_linkmodes & CAN_LINKMODE_LISTENONLY)
 				error = ENETUNREACH;
 		}
 	} else
 		error = ENETUNREACH;
-	
+
 	if (error != 0)
 		goto bad;
-	
-	sotag = m_tag_get(PACKET_TAG_ND_OUTGOING, 
+
+	sotag = m_tag_get(PACKET_TAG_ND_OUTGOING,
 		sizeof(struct socket *), M_NOWAIT);
 	if (sotag == NULL) {
 		error = ENOMEM;
@@ -127,7 +127,7 @@ can_output(struct mbuf *m, struct canpcb *canp)
 	CANP_LOCK(canp);
 	canp_ref(canp);
 	CANP_UNLOCK(canp);
-	
+
 	*(struct canpcb **)(sotag + 1) = canp;
 	m_tag_prepend(m, sotag);
 
@@ -140,8 +140,8 @@ can_output(struct mbuf *m, struct canpcb *canp)
 
 #ifdef DIAGNOSTIC
 	ch = mtod(m, struct can_hdr *);
-	(void)printf("%s: type 0x%01x id 0x%08x dlc 0x%02x\n", 
-		__func__, (ch->ch_id & CAN_FLAG_MASK) >> 28, 
+	(void)printf("%s: type 0x%01x id 0x%08x dlc 0x%02x\n",
+		__func__, (ch->ch_id & CAN_FLAG_MASK) >> 28,
 		(ch->ch_id & CAN_EFF_MASK), ch->ch_dlc);
 #endif /* DIAGNOSTIC */
 
@@ -153,7 +153,7 @@ can_output(struct mbuf *m, struct canpcb *canp)
 		error = EMSGSIZE;
 		goto bad;
 	}
-done:	
+done:
 	return (error);
 bad:
 	m_freem(m);
@@ -166,9 +166,9 @@ bad:
 int
 can_ctloutput(struct socket *so, struct sockopt *sopt)
 {	
-	int error;	
+	int error;
 
-	if (sopt->sopt_level == CANPROTO_CAN) 
+	if (sopt->sopt_level == CANPROTO_CAN)
 		error = ENOPROTOOPT;
 	else
 		error = EINVAL;

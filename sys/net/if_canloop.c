@@ -82,21 +82,21 @@ struct canlo_softc {
 	TAILQ_ENTRY(canlo_softc) cs_next;
 };
 
-static int		canlo_ioctl(struct ifnet *, u_long, caddr_t);
-static void 	canlo_start(struct ifnet *);
-static void 	canlo_init(void *);
+static int	canlo_ioctl(struct ifnet *, u_long, caddr_t);
+static void	canlo_start(struct ifnet *);
+static void	canlo_init(void *);
 
-static void 	canlo_clone_destroy(struct ifnet *);
-static int 	canlo_clone_create(struct if_clone *, int, caddr_t);
+static void	canlo_clone_destroy(struct ifnet *);
+static int	canlo_clone_create(struct if_clone *, int, caddr_t);
 
 static struct if_clone *canlo_cloner;
 static const char canlo_name[] = "canlo";
 
 static struct mtx canlo_list_mtx;
-static TAILQ_HEAD(canlo_head, canlo_softc) canlo_list = 
+static TAILQ_HEAD(canlo_head, canlo_softc) canlo_list =
 	TAILQ_HEAD_INITIALIZER(canlo_list);
 	
-static MALLOC_DEFINE(M_CANLO, "canlo", "can(4) Loopback Interface"); 
+static MALLOC_DEFINE(M_CANLO, "canlo", "can(4) Loopback Interface");
 
 /*
  * Interface cloner and module(9) description.
@@ -106,13 +106,13 @@ static void
 canlo_clone_destroy(struct ifnet *ifp)
 {
 	struct canlo_softc *cs;
-	
+
 	cs = (struct canlo_softc *)ifp->if_softc;
-	
+
 	mtx_lock(&canlo_list_mtx);
 	TAILQ_REMOVE(&canlo_list, cs, cs_next);
 	mtx_unlock(&canlo_list_mtx);
-	
+
 	ifp->if_drv_flags &= ~(IFF_DRV_RUNNING | IFF_DRV_OACTIVE);
 	ifp->if_flags &= ~IFF_UP;
 
@@ -134,7 +134,7 @@ canlo_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 	mtx_lock(&canlo_list_mtx);
 	TAILQ_INSERT_TAIL(&canlo_list, cs, cs_next);
 	mtx_unlock(&canlo_list_mtx);
-	
+
 	ifp->if_softc = cs;
 
 	if_initname(ifp, canlo_name, unit);
@@ -143,7 +143,7 @@ canlo_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 	ifp->if_init = canlo_init;
 	ifp->if_ioctl = canlo_ioctl;
 	ifp->if_start = canlo_start;
-	
+
 	can_ifattach(ifp, NULL, 0);
 
 	ifp->if_drv_flags |= IFF_DRV_RUNNING;
@@ -160,7 +160,7 @@ canlo_init(void *xsc)
 
 	cs = (struct canlo_softc *)xsc;
 	ifp = cs->cs_ifp;
-	
+
 	ifp->if_drv_flags |= IFF_DRV_RUNNING;
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;	
 }
@@ -174,9 +174,9 @@ canlo_start(struct ifnet *ifp)
 	struct mbuf *m;
 
 	if ((ifp->if_drv_flags & (IFF_DRV_RUNNING | IFF_DRV_OACTIVE)) !=
-	    IFF_DRV_RUNNING)
+		FF_DRV_RUNNING)
 		return;
-		
+
 	ifp->if_drv_flags |= IFF_DRV_OACTIVE;
 	for (;;) {
 		IFQ_DEQUEUE(&ifp->if_snd, m);
@@ -219,7 +219,7 @@ canlo_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 		if ((ifp->if_flags & IFF_UP) != 0)
 			ifp->if_drv_flags |= IFF_DRV_RUNNING;
 		else
-			ifp->if_drv_flags &= ~IFF_DRV_RUNNING;	
+			ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
 		break;
 	default:
 		error = can_ioctl(ifp, cmd, data);

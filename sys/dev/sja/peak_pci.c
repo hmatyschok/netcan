@@ -49,8 +49,8 @@
 #include <dev/pci/pcivar.h>
 
 /*
- * Device driver(9) for PEAK PCAN PCI family 
- * cards implements proxy pattern on pci(4) 
+ * Device driver(9) for PEAK PCAN PCI family
+ * cards implements proxy pattern on pci(4)
  * bus for instances sja(4).
  *
  * XXX: Well, work on progess ...
@@ -66,27 +66,27 @@ static int	peak_pci_attach(device_t);
 static int	peak_pci_detach(device_t);
 
 static const struct peak_type pk_devs[] = {
-	{ PEAK_VENDORID, PEAK_DEVICEID_PCI, 
+	{ PEAK_VENDORID, PEAK_DEVICEID_PCI,
 		"PCAN PCI/PCIe card" },
-	{ PEAK_VENDORID, PEAK_DEVICEID_PCIEC, 
+	{ PEAK_VENDORID, PEAK_DEVICEID_PCIEC,
 		"PCAN PCI ExpressCard" },
-	{ PEAK_VENDORID, PEAK_DEVICEID_PCIE, 
+	{ PEAK_VENDORID, PEAK_DEVICEID_PCIE,
 		"PCAN nextgen PCIe card" },
-	{ PEAK_VENDORID, PEAK_DEVICEID_CPCI, 
+	{ PEAK_VENDORID, PEAK_DEVICEID_CPCI,
 		"PCAN nextgen cPCI card" },
-	{ PEAK_VENDORID, PEAK_DEVICEID_MPCI, 
+	{ PEAK_VENDORID, PEAK_DEVICEID_MPCI,
 		"PCAN nextgen miniPCI card" },
-	{ PEAK_VENDORID, PEAK_DEVICEID_PC_104P, 
+	{ PEAK_VENDORID, PEAK_DEVICEID_PC_104P,
 		"PCAN-PC/104+ card" },
-	{ PEAK_VENDORID, PEAK_DEVICEID_PCI_104E, 
+	{ PEAK_VENDORID, PEAK_DEVICEID_PCI_104E,
 		"PCAN-PCI/104 card" },
-	{ PEAK_VENDORID, PEAK_DEVICEID_MPCIE, 
+	{ PEAK_VENDORID, PEAK_DEVICEID_MPCIE,
 		"PCAN miniPCIe card" },
-	{ PEAK_VENDORID, PEAK_DEVICEID_OEM_PCIE, 
+	{ PEAK_VENDORID, PEAK_DEVICEID_OEM_PCIE,
 		"PCAN-PCI Express OEM" },
-	{ PEAK_VENDORID, PEAK_DEVICEID_PCIEC34, 
+	{ PEAK_VENDORID, PEAK_DEVICEID_PCIEC34,
 		"PCAN-PCI Express 34 card (one channel)" },
-	{ 0, 0, NULL }	
+	{ 0, 0, NULL }
 };
 
 static int
@@ -95,10 +95,10 @@ peak_pci_probe(device_t dev)
 	const struct peak_type	*t;
 	uint16_t did, vid;
 	int	i, error = ENXIO;
-	
+
 	vid = pci_get_vendor(dev);
 	did = pci_get_device(dev);
-	
+
 	for (t = pk_devs, i = 0; i < nitems(pk_devs); i++, t++) {
 		if ((t->pk_vid == vid) && (t->pk_did == did)) {
 			device_set_desc(dev, t->pk_name);
@@ -118,12 +118,12 @@ peak_pci_attach(device_t dev)
 	uint32_t csid;
 	uint16_t status;
 	int i, error = 0;
-	
+
 	sc = device_get_softc(dev);
 	sc->pk_dev = dev;
-	
+
 	(void)pci_enable_busmaster(dev);
-	
+
 	/* determine cardinality of given channels */
 	csid = pci_read_config(dev, PCIR_SUBDEV_0, 4);
 
@@ -137,42 +137,42 @@ peak_pci_attach(device_t dev)
 		sc->pk_chan_cnt = PEAK_QUAD_CHAN;
 
 	pci_write_config(dev, PCIR_COMMAND, 4, 2);
-	pci_write_config(dev, PCIR_PCCARDIF_2, 4, 0);	
+	pci_write_config(dev, PCIR_PCCARDIF_2, 4, 0);
 
-	/* reserve resources for control registers and ports */ 
+	/* reserve resources for control registers and ports */
 	sc->pk_res_type = SYS_RES_MEMORY;
-	
-	sc->pk_res = bus_alloc_resource_anywhere(dev, sc->pk_res_type, 
+
+	sc->pk_res = bus_alloc_resource_anywhere(dev, sc->pk_res_type,
 		&sc->pk_res_id, PEAK_CFG_SIZE, RF_ACTIVE);
-	
+
 	if (sc->pk_res == NULL) {
 		device_printf(dev, "couldn't map CSR\n");
 		error = ENXIO;
 		goto fail;
 	}
-	
+
 	status = pci_read_config(dev, PCIR_BAR(1), 4);
-	
-	for (i = 0; i < sc->pk_chan_cnt; i++) { 
+
+	for (i = 0; i < sc->pk_chan_cnt; i++) {
 		chan = &sc->pk_chan[i];
 		var = &chan->sja_var;
 
 		chan->sja_res_id = PCIR_BAR(1) + i * PEAK_CHAN_SIZE;
-		chan->sja_res_type = (PCI_BAR_IO(status) != 0) ? 
+		chan->sja_res_type = (PCI_BAR_IO(status) != 0) ?
 			SYS_RES_IOPORT : SYS_RES_MEMORY;
-		
-		chan->sja_res = bus_alloc_resource_anywhere(dev, 
+
+		chan->sja_res = bus_alloc_resource_anywhere(dev,
 			chan->sja_res_type, &chan->sja_res_id, 
 				PEAK_CHAN_SIZE, RF_ACTIVE | RF_SHAREABLE);
-		
+
 		if (chan->sja_res == NULL) {
 			device_printf(dev, "couldn't map port %d\n", i);
 			error = ENXIO;
 			goto fail;
 		}
-		
+
 		chan->sja_aln = 2;
-		
+
 		if (i == 0)
 			chan->sja_flags = PEAK_ICR_INT_GP0;
 		else if (i == 1) 
