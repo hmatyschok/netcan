@@ -73,13 +73,6 @@
 #include <netcan/can_pcb.h>
 #include <netcan/can_var.h>
 
-/* 
- * XXX: Incomplete, but work in progress.. 
- */
-
-static int 	can_get_netlink(struct ifnet *, struct ifdrv *);
-static int 	can_set_netlink(struct ifnet *, struct ifdrv *);
-
 /*
  * Generic control operations.
  */
@@ -104,18 +97,3 @@ can_control(struct socket *so, u_long cmd, caddr_t data,
 	
 	return (error);
 }
-
-/* 
- * XXX: Well, this comes from the implementation for 
- * XXX: NetBSD 8.0 OS and should be reimplemented. 
- */
-#if 0 
-static int
-can_purgeif(struct socket *so, struct ifnet *ifp)
-{
-	
-	return (0);
-}
-#endif
-
-
