@@ -174,7 +174,7 @@ canlo_start(struct ifnet *ifp)
 	struct mbuf *m;
 
 	if ((ifp->if_drv_flags & (IFF_DRV_RUNNING | IFF_DRV_OACTIVE)) !=
-		FF_DRV_RUNNING)
+		IFF_DRV_RUNNING)
 		return;
 
 	ifp->if_drv_flags |= IFF_DRV_OACTIVE;

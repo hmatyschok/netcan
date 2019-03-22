@@ -357,6 +357,7 @@ can_pcbnotifyall(struct canpcbinfo *pcbinfo, uint32_t faddr, int errno,
 			(*notify)(canp, errno);
 	}
 }
+#endif
 
 void
 can_pcbstate(struct canpcb *canp, int state)

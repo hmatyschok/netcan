@@ -83,8 +83,6 @@ can_control(struct socket *so, u_long cmd, caddr_t data,
 	struct ifnet *ifp, struct thread *td)
 {
 	int error;
-
-	ifd = (struct ifdrv *)data;
 	
 	if (ifp != NULL) {
 		if (ifp->if_ioctl != NULL)
