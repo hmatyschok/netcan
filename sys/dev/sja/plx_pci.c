@@ -49,9 +49,10 @@
 #include <dev/pci/pcivar.h>
 
 /*
- * Device driver(9) for PLX90xx PCI-bridge
- * cards implements proxy pattern on pci(4)
- * bus for instances of sja(4).
+ * Device driver(9) for PLX90xx PCI-bridge cards implements proxy pattern 
+ * on pci(4) bus for instances of sja(4).
+ *
+ * See linux/drivers/net/can/sja100/plx_pci.c for further details.
  *
  * XXX: Well, work on progess ...
  */
@@ -93,7 +94,7 @@ static struct plx_data plx_adlink = {
 
 	.plx_tcr_addr =	PLX_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
-	.plc_tcr_rcr =	0, 
+	.plx_tcr_rcr =	0, 
 };
 
 /*
@@ -120,11 +121,11 @@ static struct plx_data plx_esd_200 = {
 
 	.plx_icr_read = 1,
 	.plx_icr_addr = PLX_ICR,
-	.plx_icr = (PLX_ICR_INT0_ENB | PLC_ICR_PINT_ENB),
+	.plx_icr = (PLX_ICR_INT0_ENB | PLX_ICR_PINT_ENB),
 
 	.plx_tcr_addr =	PLX_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
-	.plc_tcr_rcr =	0,
+	.plx_tcr_rcr =	0,
 };
 
 /*
@@ -155,7 +156,7 @@ static struct plx_data plx_esd_266 = {
 
 	.plx_tcr_addr =	PLX_9056_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
-	.plc_tcr_rcr =	PLX_9056_TCR_RCR,
+	.plx_tcr_rcr =	PLX_9056_TCR_RCR,
 };
 
 /*
@@ -186,7 +187,7 @@ static struct plx_data plx_esd_2000 = {
 
 	.plx_tcr_addr =	PLX_9056_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
-	.plc_tcr_rcr =	PLX_9056_TCR_RCR,
+	.plx_tcr_rcr =	PLX_9056_TCR_RCR,
 };
 
 /*
@@ -217,7 +218,7 @@ static struct plx_data plx_ixxat = {
 
 	.plx_tcr_addr =	PLX_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
-	.plc_tcr_rcr =	0,
+	.plx_tcr_rcr =	0,
 };
 
 /*
@@ -248,7 +249,7 @@ static struct plx_data plx_marathon_pci = {
 
 	.plx_tcr_addr =	PLX_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
-	.plc_tcr_rcr =	0,
+	.plx_tcr_rcr =	0,
 };
 
 /*
@@ -279,7 +280,7 @@ static struct plx_data plx_marathon_pcie = {
 
 	.plx_tcr_addr =	PLX_9056_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
-	.plc_tcr_rcr =	PLX_9056_TCR_RCR,
+	.plx_tcr_rcr =	PLX_9056_TCR_RCR,
 };
 
 /*
@@ -310,7 +311,7 @@ static struct plx_data plx_tews = {
 
 	.plx_tcr_addr =	PLX_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
-	.plc_tcr_rcr =	0,
+	.plx_tcr_rcr =	0,
 };
 
 /*
@@ -341,7 +342,7 @@ static struct plx_data plx_cti = {
 
 	.plx_tcr_addr =	PLX_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
-	.plc_tcr_rcr =	0,
+	.plx_tcr_rcr =	0,
 };
 
 /*
@@ -372,7 +373,7 @@ static struct plx_data plx_elcus = {
 
 	.plx_tcr_addr =	PLX_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
-	.plc_tcr_rcr =	0,
+	.plx_tcr_rcr =	0,
 };
 
 /*
@@ -403,7 +404,7 @@ static struct plx_data plx_moxa = {
 
 	.plx_tcr_addr =	PLX_TCR,
 	.plx_tcr_rst =	PLX_TCR_RST,
-	.plc_tcr_rcr =	0,
+	.plx_tcr_rcr =	0,
 };
 
 /*
@@ -492,7 +493,7 @@ plx_pci_probe(device_t dev)
 	if ((t = plx_pci_match(dev)) != NULL) {
 		device_set_desc(dev, t->plx_name);
 		error = BUS_PROBE_DEFAULT;
-	} else 
+	} else
 		error = ENXIO;
 
 	return (error);
@@ -503,7 +504,7 @@ plx_pci_attach(device_t dev)
 {
 	const struct plx_type	*t;
 	struct plx_softc *sc;
-	struct plx_desc *res;	
+	struct plx_desc *res;
 	struct sja_chan *chan;
 	struct sja_data *var;
 	int i, error = 0;
@@ -576,15 +577,15 @@ plx_pci_attach(device_t dev)
 			goto fail;
 		}
 
-		var->var_port = i;
+		var->sja_port = i;
 
-		var->var_cdr = PLX_CDR_DFLT;
-		var->var_ocr = PLX_OCR_DFLT;
-		var->var_freq = PLX_CLK_FREQ;
+		var->sja_cdr = PLX_CDR_DFLT;
+		var->sja_ocr = PLX_OCR_DFLT;
+		var->sja_freq = PLX_CLK_FREQ;
 	}
-	
+
 	/* attach set of sja(4) controller as its children */
-	for (i = 0; i < PLX_CHAN_MAX; i++) { 
+	for (i = 0; i < PLX_CHAN_MAX; i++) {
 		chan = &sc->plx_chan[i];
 		var = &chan->sja_var;
 
@@ -623,21 +624,21 @@ plx_pci_detach(device_t dev)
 	struct sja_data *var;
 	uint32_t status;
 	int i;
- 
+
 	sc = device_get_softc(dev);
 
 	if (sc->plx_id != NULL) {
 		/* local bus reset for PLX9056 and PLX9030/50/52 */
 		status = bus_read_4(sc->plx_res, sc->plx_id->plx_tcr_addr);
 		status |= sc->plx_id->plx_tcr_rst;
-		
+
 		bus_write_4(sc->plx_res, sc->plx_id->plx_tcr_addr, status);
 		DELAY(100);
-	
+
 		status &= ~(sc->plx_id->plx_tcr_rst);
-	
+
 		bus_write_4(sc->plx_res, sc->plx_id->plx_tcr_addr, status);
-	
+
 		/* reload data from EEPROM on PLX9056, if any */
 		if (sc->plx_id->plx_tcr_rcr != 0) {
 			status |= sc->plx_id->plx_tcr_rcr;
@@ -661,20 +662,21 @@ plx_pci_detach(device_t dev)
 			(void)device_delete_child(dev, chan->sja_dev);
 	}
 	(void)bus_generic_detach(dev);
- 
+
 	/* release bound resources */
 	for (i = 0; i < PLX_CHAN_MAX; i++) {
 		chan = &sc->plx_chan[i];
 		var = &chan->sja_var;
-			
+
 		if (chan->sja_res != NULL) {
-			(void)bus_release_resource(dev, chan->sja_res_type, 
+			(void)bus_release_resource(dev, chan->sja_res_type,
 				chan->sja_res_id, chan->sja_res);
 		}
 	}
 
 	if (sc->plx_res != NULL)
-		(void)bus_release_resource(dev, sc->plx_res_type, sc->plx_res);
+		(void)bus_release_resource(dev, sc->plx_res_type,
+			sc->plx_res_id, sc->plx_res);
 
 	return (0);
 }
@@ -728,7 +730,7 @@ plx_pci_write_1(device_t dev, struct sja_data *var, int port, uint8_t val)
 	sc = device_get_softc(dev);
 	chan = &sc->plx_chan[var->sja_port];
 
-	bus_write_1(chan->sja_res, port, val));
+	bus_write_1(chan->sja_res, port, val);
 }
 
 static void
@@ -740,7 +742,7 @@ plx_pci_write_2(device_t dev, struct sja_data *var, int port, uint16_t val)
 	sc = device_get_softc(dev);
 	chan = &sc->plx_chan[var->sja_port];
 
-	bus_write_2(chan->sja_res, port, val));
+	bus_write_2(chan->sja_res, port, val);
 }
 
 static void
@@ -752,7 +754,7 @@ plx_pci_write_4(device_t dev, struct sja_data *var, int port, uint32_t val)
 	sc = device_get_softc(dev);
 	chan = &sc->plx_chan[var->sja_port];
 
-	bus_write_4(chan->sja_res, port, val));	
+	bus_write_4(chan->sja_res, port, val);
 }
 
 /* 

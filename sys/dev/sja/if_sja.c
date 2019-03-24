@@ -41,10 +41,9 @@
 #include <net/if_var.h>
 #include <net/if_types.h>
 
-/*
- * XXX: Well, it's a work in progess, because
- * XXX: there is a lot of work to accomplish
- * XXX: conformancy with AN97076.
+/* 
+ * XXX Well, it's a work in progess, because there is a lot of work to
+ * accomplish conformancy with AN97076.
  */
 
 #include <dev/sja/if_sjareg.h>
@@ -918,7 +917,7 @@ sja_stop(struct sja_softc *sja)
 
 static uint8_t
 sja_read_1(device_t dev, struct sja_data *var, int port)
-
+{
 	
 	return (SJA_READ_1(device_get_parent(dev), var, port));	
 }

@@ -49,11 +49,12 @@
 #include <dev/pci/pcivar.h>
 
 /*
- * Device driver(9) for KVASER PCAN PCI cards
- * implements proxy pattern on pci(4) bus for
- * instances of sja(4).
+ * Device driver(9) for KVASER PCAN PCI cards implements proxy pattern 
+ * on pci(4) bus for instances of sja(4).
  *
- * XXX: Well, work on progess ...
+ * See linux/drivers/net/can/sja100/kvaser_pci.c for further details.
+ *
+ * XXX Well, work on progess ...
  */
 
 #include <dev/sja/if_sjareg.h>

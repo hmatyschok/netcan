@@ -49,11 +49,12 @@
 #include <dev/pci/pcivar.h>
 
 /*
- * Device driver(9) for PEAK PCAN PCI family
- * cards implements proxy pattern on pci(4)
- * bus for instances sja(4).
+ * Device driver(9) for PEAK PCAN PCI family cards implements proxy
+ * pattern on pci(4) bus for instances sja(4).
  *
- * XXX: Well, work on progess ...
+ * See linux/drivers/net/can/sja100/peak_pci.c for further details.
+ *
+ * XXX Well, work on progess ...
  */
 
 #include <dev/sja/if_sjareg.h>

@@ -67,8 +67,35 @@
 #define PLX_SUBVENDID_ANY			0xffff
 
 /*
- * Provides information for bus_alloc_resource_any{where}(9).
+ * Default values.
  */
+#define PLX_OCR_DFLT		(SJA_OCR_TX0_PSHP | SJA_OCR_TX1_PSHP)
+#define PLX_CDR_DFLT		(SJA_CDR_CBP | SJA_CDR_CLK_OUT)
+#define PLX_CLK_FREQ		(16000000 / 2)
+
+/*
+ * Important register.
+ * 
+ * PLX9030/9050/9052
+ */
+#define PLX_ICR		0x4c		/* interrupt control / status */
+#define PLX_TCR		0x50		/* control / software reset */
+
+#define PLX_ICR_INT0_ENB		0x00000001	/* local interrupt 0 */
+#define PLX_ICR_INT1_ENB		0x00000008	/* local interrupt 1 */
+#define PLX_ICR_PINT_ENB		0x00000040	/* PCI interrupt */
+
+#define PLX_TCR_RST		0x40000000	/* pci(4) adapter software reset */
+
+/* PLX9056 */
+#define PLX_9056_ICR		0x68		/* interrupt control / status */
+#define PLX_9056_TCR		0x6c		/* control / software reset */
+
+#define PLX_9056_ICR_INT0_ENB		0x00000800
+#define PLX_9056_ICR_PINT_ENB		0x00000100
+#define PLX_9056_TCR_RCR		0x20000000 /* read configuration */
+
+#define PLX_CHAN_MAX		2
 
 struct plx_desc {
 	int		plx_bar;
@@ -100,37 +127,6 @@ struct plx_type {
 	struct plx_data		*plx_id;
 	const char 	*plx_name;
 };
-
-/*
- * Default values.
- */
-#define PLX_OCR_DFLT		(SJA_OCR_TX0_PSHP | SJA_OCR_TX1_PSHP)
-#define PLX_CDR_DFLT		(SJA_CDR_CBP | SJA_CDR_CLK_OUT)
-#define PLX_CLK_FREQ		(16000000 / 2)
-
-/*
- * Important register.
- * 
- * PLX9030/9050/9052
- */
-#define PLX_ICR		0x4c		/* interrupt control / status */
-#define PLX_TCR		0x50		/* control / software reset */
-
-#define PLX_ICR_INT0_ENB		0x00000001	/* local interrupt 0 */
-#define PLX_ICR_INT1_ENB		0x00000008	/* local interrupt 1 */
-#define PLX_ICR_PINT_ENB		0x00000040	/* PCI interrupt */
-
-#define PLX_TCR_RST		0x40000000	/* pci(4) adapter software reset */
-
-/* PLX9056 */
-#define PLX_9056_ICR		0x68		/* interrupt control / status */
-#define PLX_9056_TCR		0x6c		/* control / software reset */
-
-#define PLX_9056_ICR_INT0_ENB		0x00000800
-#define PLX_9056_ICR_PINT_ENB		0x00000100
-#define PLX_9056_TCR_RCR		0x20000000 /* read configuration */
-
-#define PLX_CHAN_MAX		2
 
 struct plx_softc {
 	device_t 	plx_dev;

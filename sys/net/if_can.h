@@ -409,15 +409,15 @@ struct can_link_timings {
 /*
  * Common structure for can(4) interface drivers maps to if_l2com.
  * 
- * XXX: IFT_OTHER schould replaced by 
- * XXX:
- * XXX:  IFT_CAN maps to IFT_PVC		= 0xf1
- * XXX:
- * XXX: from net/if_types.h see  
- * XXX: 
- * XXX:  if_[dr]egister_com_alloc(9)
- * XXX:
- * XXX: in net/if.c for futher details.
+ * XXX IFT_OTHER schould replaced by 
+ * XXX
+ * XXX  IFT_CAN maps to IFT_PVC		= 0xf1
+ * XXX
+ * XXX from net/if_types.h see  
+ * XXX 
+ * XXX  if_[dr]egister_com_alloc(9)
+ * XXX
+ * XXX in net/if.c for futher details.
  */
 struct can_ifsoftc {
 	struct ifnet	*csc_ifp; 	/* our ifnet(9) interface */
