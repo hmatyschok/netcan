@@ -362,7 +362,7 @@ peak_pci_clear_intr(device_t dev, struct sja_data *var)
 	flags = chan->sja_flags;
 	status = bus_read_2(sc->pk_res, PEAK_ICR);
 
-	if (status & flags)
+	if ((status & flags) != 0)
 		bus_write_2(sc->pk_res, PEAK_ICR, flags);
 }
 

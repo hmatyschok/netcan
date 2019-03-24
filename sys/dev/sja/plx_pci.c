@@ -49,7 +49,7 @@
 #include <dev/pci/pcivar.h>
 
 /*
- * Device driver(9) for PLX90xx PCI-bridge cards implements proxy pattern 
+ * Device driver(9) for PLX90xx PCI-bridge cards implements proxy pattern
  * on pci(4) bus for instances of sja(4).
  *
  * See linux/drivers/net/can/sja100/plx_pci.c for further details.

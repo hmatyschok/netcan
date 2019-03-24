@@ -83,7 +83,7 @@ can_control(struct socket *so, u_long cmd, caddr_t data,
 	struct ifnet *ifp, struct thread *td)
 {
 	int error;
-	
+
 	if (ifp != NULL) {
 		if (ifp->if_ioctl != NULL)
 			error = can_ioctl(ifp, cmd, data);
@@ -91,6 +91,6 @@ can_control(struct socket *so, u_long cmd, caddr_t data,
 			error = EOPNOTSUPP;
 	} else
 		error = EADDRNOTAVAIL;
-		
+
 	return (error);
 }
