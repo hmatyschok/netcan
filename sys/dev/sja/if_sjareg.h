@@ -174,20 +174,6 @@
 #define SJA_ECC_OF		0x1c		/* overload flag */
 #define SJA_ECC_SEG 	0x1f		/* segment flag */
 
-#define IS_SJA_ECC_BIT_ERR(reg) \
-	(((reg) & SJA_ECC_ERR_MASK) == 0x00)
-#define IS_SJA_ECC_FORM_ERR(reg) \
-	(((reg) & SJA_ECC_ERR_MASK) == 0x40)
-#define IS_SJA_ECC_STUFF_ERR(reg) \
-	(((reg) & SJA_ECC_ERR_MASK) == 0x80)
-#define IS_SJA_ECC_OTHER_ERR(reg) \
-	(((reg) & SJA_ECC_ERR_MASK) == 0xc0)
-
-#define IS_SJA_ECC_TX_ERR(reg) \
-	(((reg) & SJA_ECC_DIR) == 0x00)
-#define IS_SJA_ECC_RX_ERR(reg) \
-	(((reg) & SJA_ECC_DIR) == 0x20)
-
 /*
  * SJA1000, 6.4.10 Error Warning Limit Register [EWLR]
  */

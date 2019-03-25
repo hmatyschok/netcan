@@ -396,11 +396,11 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 		cf->can_id |= (CAN_ERR_PROTO | CAN_ERR_BE);
 
 		/* map error condition, if any */
-		if (IS_SJA_ECC_BIT_ERR(flags))
+		if ((flags & SJA_ECC_ERR_MASK) == SJA_ECC_BE)
 			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROTO_BIT;
-		else if (IS_SJA_ECC_FORM_ERR(flags))
+		else if ((flags & SJA_ECC_ERR_MASK) == SJA_ECC_FMT)
 			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROTO_FORM;
-		else if (IS_SJA_ECC_STUFF_ERR(flags))
+		else if ((flags & SJA_ECC_ERR_MASK) == SJA_ECC_CRC_SEQ)
 			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROTO_STUFF;
 
 		/* map tx error condition, if any */ 

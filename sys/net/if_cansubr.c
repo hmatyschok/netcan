@@ -78,13 +78,6 @@
 #include <security/mac/mac_framework.h>
 #endif /* MAC */
 
-/*
- * XXX: Rather incomplete, but work in progress.
- * XXX: 
- * XXX: Well, it's a good place for an generic 
- * XXX: implementaion of LLC and error control.
- */
-
 static MALLOC_DEFINE(M_IFCAN, "IFCAN", "CAN interface internals");
 
 static int 	can_restart(struct ifnet *);
