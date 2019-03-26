@@ -44,6 +44,8 @@
 /* 
  * XXX Well, it's a work in progess, because there is a lot of work to
  * accomplish conformancy with AN97076.
+ * 
+ * See linux/drivers/net/can/sja1000/sja1000.d for further details.
  */
 
 #include <dev/sja/if_sjareg.h>
@@ -105,6 +107,7 @@ sja_attach(device_t dev)
 	sja = device_get_softc(dev);
 	sja->sja_dev = dev;
 
+	/* map params inherited from parent */
 	sja->sja_var = device_get_ivars(dev);
 
 	mtx_init(&sja->sja_mtx, device_get_nameunit(dev),
@@ -295,13 +298,13 @@ again:
 
 	/* map id */
 	if ((status & SJA_FI_FF) != 0) {
-		cf->can_id = CAN_EFF_FLAG;
-		cf->can_id |= SJA_READ_4(sja->sja_dev,
-			sja->sja_var, SJA_ID + 4) >> 3;
+		cf->can_id = (SJA_READ_4(sja->sja_dev,
+			sja->sja_var, SJA_ID + 4) >> 3);
+		cf->can_id |= CAN_EFF_FLAG;
 		addr = SJA_DATA_EFF;
 	} else {
-		cf->can_id |= SJA_READ_2(sja->sja_dev,
-			sja->sja_var, SJA_ID + 2) >> 5;
+		cf->can_id = (SJA_READ_2(sja->sja_dev,
+			sja->sja_var, SJA_ID + 2) >> 5);
 		addr = SJA_DATA_SFF;
 	}	
 
@@ -310,7 +313,7 @@ again:
 		cf->can_id |= CAN_RTR_FLAG;
 		addr = cf->can_dlc = 0;
 	} else 
-		cf->can_dlc = status & SJA_FI_DLC;
+		cf->can_dlc = (status & SJA_FI_DLC);
 	
 	for (i = 0; i < cf->can_dlc; addr++, i++) 
 		cf->can_data[i] = SJA_READ_1(sja->sja_dev, sja->sja_var, addr);
@@ -479,7 +482,9 @@ sja_start_locked(struct ifnet *ifp)
 		/* IAP on bpf(4) */
 		can_bpf_mtap(ifp, m);
 
-		if (sja_encap(sja, &m) == 0) {
+		if (sja_encap(sja, &m) != 0)
+			if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
+		else {
 			/* notify controller for transmission */
 			if ((csc->csc_linkmodes & CAN_LINKMODE_ONE_SHOT) != 0)
 				status = SJA_CMR_AT;
@@ -493,8 +498,7 @@ sja_start_locked(struct ifnet *ifp)
 
 			SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_CMR, status);
 			status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_SR);
-		} else
-			if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
+		}
 	}
 
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;

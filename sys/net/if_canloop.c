@@ -118,6 +118,8 @@ canlo_clone_destroy(struct ifnet *ifp)
 
 	can_ifdetach(ifp);
 	if_free(ifp);
+	
+	free(cs, M_CANLO);
 }
 
 static int
@@ -139,7 +141,7 @@ canlo_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 
 	if_initname(ifp, canlo_name, unit);
 	
-	ifp->if_flags = IFF_LOOPBACK | IFF_MULTICAST;
+	ifp->if_flags = (IFF_LOOPBACK | IFF_MULTICAST);
 	ifp->if_init = canlo_init;
 	ifp->if_ioctl = canlo_ioctl;
 	ifp->if_start = canlo_start;

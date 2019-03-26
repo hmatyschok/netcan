@@ -26,7 +26,6 @@
 #
 
 #include <sys/bus.h>
-#include <dev/sja/sja_if.h>
 
 INTERFACE sja;
 
