@@ -113,7 +113,7 @@ canlo_clone_destroy(struct ifnet *ifp)
 	TAILQ_REMOVE(&canlo_list, cs, cs_next);
 	mtx_unlock(&canlo_list_mtx);
 
-	ifp->if_drv_flags &= ~(IFF_DRV_RUNNING | IFF_DRV_OACTIVE);
+	ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
 	ifp->if_flags &= ~IFF_UP;
 
 	can_ifdetach(ifp);
@@ -128,8 +128,8 @@ canlo_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 	struct canlo_softc *cs;
 	struct ifnet *ifp;
 
-	cs = malloc(sizeof(*cs), M_CANLO, M_WAITOK | M_ZERO);
-	if ((ifp = if_alloc(IFT_CAN)) == NULL)
+	cs = malloc(sizeof(struct canlo_softc), M_CANLO, M_WAITOK | M_ZERO);
+	if ((ifp = cs->cs_ifp = if_alloc(IFT_CAN)) == NULL)
 		return (ENOSPC);
 
 	/* attach */
@@ -185,7 +185,6 @@ canlo_start(struct ifnet *ifp)
 		if (m == NULL) 
 			break;
 
-		/* IAP for tapping by bpf(4). */
 		can_bpf_mtap(ifp, m);
 
 		/* Do some statistics. */		
@@ -242,9 +241,8 @@ canlo_modevent(module_t mod, int type, void *data)
 			canlo_clone_create, canlo_clone_destroy, 0);
 		error = 0;
 	case MOD_UNLOAD:
-		if_clone_detach(canlo_cloner);
-		mtx_destroy(&canlo_list_mtx);
-		error = 0;
+		(void)printf("%s: MOD_UNLOAD: not possible by IFF_LOOPBACK\n");
+		error = EINVAL;
 		break;
 	default:
 		error = EOPNOTSUPP;
