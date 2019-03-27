@@ -239,7 +239,8 @@ canlo_modevent(module_t mod, int type, void *data)
 		canlo_cloner = if_clone_simple(canlo_name, 
 			canlo_clone_create, canlo_clone_destroy, 0);
 	case MOD_UNLOAD:
-		(void)printf("%s: MOD_UNLOAD: not possible by IFF_LOOPBACK\n");
+		(void)printf("%s: MOD_UNLOAD: not possible "
+			"by IFF_LOOPBACK\n", __func__);
 		return (EINVAL);
 	default:
 		return (EOPNOTSUPP);

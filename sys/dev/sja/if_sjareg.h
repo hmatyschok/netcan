@@ -237,18 +237,6 @@
 #define SJA_OCR_MOD_MASK		0x07 
 #define SJA_OCR_MOD(reg)	((reg) & SJA_OCR_MOD_MASK)
 
-#define IS_SJA_OCR_MOD_BPH(reg) \
-	(((reg) & SJA_OCR_MOD_MASK) == SJA_OCR_MOD_BPH)
-	
-#define IS_SJA_OCR_MOD_TST(reg) \
-	(((reg) & SJA_OCR_MOD_MASK) == SJA_OCR_MOD_TST)
-
-#define IS_SJA_OCR_MOD_NORM(reg) \
-	(((reg) & SJA_OCR_MOD_MASK) == SJA_OCR_MOD_NORM)
-
-#define IS_SJA_OCR_MOD_CLK(reg) \
-	(((reg) & SJA_OCR_MOD_MASK) == SJA_OCR_MOD_CLK)
-
 #define SJA_OCR_TX0_INV		0x04		/* invert */
 #define SJA_OCR_TX0_PDN		0x08 		/* pulldown */
 #define SJA_OCR_TX0_PUP		0x10		/* pullup */
@@ -274,12 +262,8 @@
 /* clock divider */
 #define SJA_CDR_CD(reg)		((reg) & SJA_CDR_CLK_OUT)
 
-/*
- * XXX: work in progress..
- */
- 
 struct sja_data {
-	int			sja_port;
+	int			sja_port;	/* index of used channel */
 	
 	/* default parameter */
 	uint8_t		sja_cdr;
@@ -305,7 +289,7 @@ struct sja_chan {
 struct sja_softc {
 	struct ifnet	*sja_ifp;		/* generic ifnet(9) glue */
 	device_t	sja_dev;
-	struct sja_data		*sja_var;
+	struct sja_data		*sja_var;	/* params got from its parent */
 	struct resource 	*sja_irq;
 	void	*sja_intr;
 	int		sja_if_flags;
