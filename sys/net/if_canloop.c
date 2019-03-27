@@ -232,23 +232,19 @@ canlo_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 static int
 canlo_modevent(module_t mod, int type, void *data)
 {
-	int error;
 
 	switch (type) {
 	case MOD_LOAD:
 		mtx_init(&canlo_list_mtx, "canlo_list_mtx", NULL, MTX_DEF);
 		canlo_cloner = if_clone_simple(canlo_name, 
 			canlo_clone_create, canlo_clone_destroy, 0);
-		error = 0;
 	case MOD_UNLOAD:
 		(void)printf("%s: MOD_UNLOAD: not possible by IFF_LOOPBACK\n");
-		error = EINVAL;
-		break;
+		return (EINVAL);
 	default:
-		error = EOPNOTSUPP;
-		break;
+		return (EOPNOTSUPP);
 	}
-	return (error);
+	return (0);
 }
 
 static moduledata_t canlo_mod = {

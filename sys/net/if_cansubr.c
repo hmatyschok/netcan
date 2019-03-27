@@ -615,7 +615,7 @@ can_hex2id(struct can_frame *cf, u_char *buf)
 }
 
 /*
- * Subr. for common structure of can(4) interface.
+ * Allocate or free common structure of can(4) interface.
  */
 
 static void *
@@ -644,22 +644,18 @@ can_free(void *com, u_char type)
 static int
 can_modevent(module_t mod, int type, void *data)
 {
-	int error;
 
 	switch (type) {
 	case MOD_LOAD:
 		if_register_com_alloc(IFT_CAN, can_alloc, can_free);
-		error = 0;
 		break;
 	case MOD_UNLOAD:
 		if_deregister_com_alloc(IFT_CAN);
-		error = 0;
 		break;
 	default:
-		error = EOPNOTSUPP;
-		break;
+		return (EOPNOTSUPP);
 	}
-	return (error);
+	return (0);
 } 
 
 static moduledata_t can_mod = {

@@ -824,23 +824,19 @@ slc_txeof_poll(struct tty *tp)
 static int
 slc_modevent(module_t mod, int type, void *data) 
 {
-	int error;
 
 	switch (type) {
 	case MOD_LOAD:
 		mtx_init(&slc_list_mtx, "slc_list_mtx", NULL, MTX_DEF);
 		slc_cloner = if_clone_simple(slc_name, 
 			slc_ifclone_create, slc_ifclone_destroy, 0);
-		error = 0;
 		break;
 	case MOD_UNLOAD:
 		if_clone_detach(slc_cloner);
 		mtx_destroy(&slc_list_mtx);
-		error = 0;
 		break;
 	default:
-		error = EOPNOTSUPP;
-		break;
+		return (EOPNOTSUPP);
 	}
 	return (error);
 }

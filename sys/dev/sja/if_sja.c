@@ -604,7 +604,7 @@ sja_init(void *xsc)
 {
 	struct sja_softc *sja;
 
-	sja = xsc;
+	sja = (struct sja_softc *)xsc;
 
 	SJA_LOCK(sja);
 	sja_init_locked(sja);
@@ -766,14 +766,12 @@ sja_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 static int 
 sja_normal_mode(struct sja_softc *sja)
 {
-	struct ifnet *ifp;
 	struct can_ifsoftc *csc;
 	struct timeval tv0, tv;
 	uint8_t status;
 	int error;
 
-	ifp = sja->sja_ifp;
-	csc = ifp->if_l2com;
+	csc = sja->sja_ifp->if_l2com;
 
 	/* flush error counters and error code capture */
 	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_TXERR, 0x00);
@@ -828,14 +826,12 @@ sja_normal_mode(struct sja_softc *sja)
 static int 
 sja_reset(struct sja_softc *sja)
 {
-	struct ifnet *ifp;
 	struct can_ifsoftc *csc;
 	struct timeval tv0, tv;
 	uint8_t status;
 	int error;
 
-	ifp = sja->sja_ifp;
-	csc = ifp->if_l2com;
+	csc = sja->sja_ifp->if_l2com;
 
 	/* disable interrupts, if any */
 	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_IER, SJA_IER_OFF);

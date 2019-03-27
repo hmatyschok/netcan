@@ -317,13 +317,23 @@ struct canfd_frame {
 #define SLC_HC_DLC_SUP 	'9'
 
 /*
- * can(4) ID based filter
- * checks received can_id & can_filter.cf_mask against
+ * The can(4) ID based filter checks received
+ * 
+ *   can_id & can_filter.cf_mask
+ *
+ * against
+ *
  *   can_filter.cf_id & can_filter.cf_mask
- * valid flags for can_id:
- *     CAN_INV_FILTER: invert filter
- * valid flags for can_mask:
- *     CAN_ERR_FLAG: filter for error message frames
+ *
+ * Valid flags for
+ *
+ *   can_id maps to CAN_INV_FILTER
+ *
+ * denotes invert filter and valid flags for
+ *
+ *   can_mask maps to CAN_ERR_FLAG
+ *
+ * denotes filter for error message frames.
  */
 struct can_filter {
 	canid_t	cf_id;

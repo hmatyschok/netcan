@@ -109,7 +109,7 @@ can_init(void)
 }
 
 /*
- * Handoff rx'd can(4) frames from protocol- into socket-layer.
+ * Handoff rx'd can(4) frame from protocol- into socket-layer.
  */ 
 void
 can_nh_input(struct mbuf *m)
@@ -180,7 +180,7 @@ can_nh_input(struct mbuf *m)
 
 	rw_rlock(&can_pcbinfo_lock);
 
-	/* XXX: Well, I'll refactor this, ...  */
+	/* XXX: Well, I'll change this, ...  */
 	TAILQ_FOREACH(cani, &can_pcbinfo_tbl, cani_next) {
 		struct canpcb   *canp;
 
