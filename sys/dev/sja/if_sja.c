@@ -41,10 +41,10 @@
 #include <net/if_var.h>
 #include <net/if_types.h>
 
-/* 
+/*
  * XXX Well, it's a work in progess, because there is a lot of work to
  * accomplish conformancy with AN97076.
- * 
+ *
  * See linux/drivers/net/can/sja1000/sja1000.d for further details.
  */
 
@@ -62,7 +62,7 @@ static int	sja_error(struct sja_softc *, uint8_t);
 static int	sja_intr(void *);
 static void	sja_start(struct ifnet *);
 static void	sja_start_locked(struct ifnet *);
-static int	sja_encap(struct sja_softc *, struct mbuf **); 
+static int	sja_encap(struct sja_softc *, struct mbuf **);
 static int	sja_ioctl(struct ifnet *, u_long, caddr_t);
 static void	sja_init(void *);
 static void	sja_init_locked(struct sja_softc *);
@@ -73,7 +73,7 @@ static int 	sja_set_link_timings(struct sja_softc *);
 static void	sja_stop(struct sja_softc *);
 
 /*
- * can(4) link timing capabilities 
+ * can(4) link timing capabilities
  */
 static const struct can_link_timecaps sja_timecaps = {
 	.cltc_ps1_min =		1,
@@ -90,9 +90,9 @@ static const struct can_link_timecaps sja_timecaps = {
 static int
 sja_probe(device_t dev)
 {
-	
+
 	device_set_desc(dev, "SJA1000 network interface");
-	
+
 	return (BUS_PROBE_SPECIFIC);
 }
 
@@ -111,7 +111,7 @@ sja_attach(device_t dev)
 	sja->sja_var = device_get_ivars(dev);
 
 	mtx_init(&sja->sja_mtx, device_get_nameunit(dev),
-		MTX_NETWORK_LOCK, MTX_DEF);	
+		MTX_NETWORK_LOCK, MTX_DEF);
 
 	/* reserve interrupt resources */
 	rid = 0;
@@ -155,7 +155,7 @@ sja_attach(device_t dev)
 
 	/* set clock divider */
 	sja->sja_var->sja_cdr |= SJA_CDR_PELICAN;
-	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_CDR, 
+	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_CDR,
 		sja->sja_var->sja_cdr);
 
 	/* set acceptance filter (accept all) */
@@ -167,7 +167,7 @@ sja_attach(device_t dev)
 
 	/* set output control register */
 	sja->sja_var->sja_ocr |= SJA_OCR_MOD_NORM;
-	SJA_WRITE_1(sja->sja_dev, sja->sja_var, 
+	SJA_WRITE_1(sja->sja_dev, sja->sja_var,
 		SJA_OCR, sja->sja_var->sja_ocr);
 
 	/* set normal mode */
@@ -177,15 +177,15 @@ sja_attach(device_t dev)
 	}
 
 	/* hook interrupts */
-	error = bus_setup_intr(dev, sja->sja_irq, 
-		INTR_TYPE_NET | INTR_MPSAFE, sja_intr, 
+	error = bus_setup_intr(dev, sja->sja_irq,
+		INTR_TYPE_NET | INTR_MPSAFE, sja_intr,
 			NULL, sja, &sja->sja_intr);
 
 	if (error != 0) {
 		device_printf(dev, "couldn't set up irq\n");
 		goto fail1;
 	}
-out: 
+out:
 	return (error);
 fail1:
 	can_ifdetach(ifp);
@@ -237,7 +237,7 @@ sja_intr(void *arg)
 	sja = (struct sja_softc *)arg;
 
 	SJA_LOCK(sja);
-	
+
 	ifp = sja->sja_ifp;
 
 	if ((ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
@@ -246,20 +246,20 @@ sja_intr(void *arg)
 	status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_IR);
 
 	for (n = 0; status != SJA_IR_OFF && n < 6; n++) { /* XXX */
-		
+
 		if ((status & SJA_IR_RI) != 0)
 			sja_rxeof(sja);
-			
+
 		if ((status & SJA_IR_TI) != 0)
 			sja_txeof(sja);
-			
+
 		if ((status & SJA_IR_ERR) != 0) {
 			if (sja_error(sja, status) != 0)
 				break;
 		}
 		status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_IR);
 	}
-	error = FILTER_HANDLED;	
+	error = FILTER_HANDLED;
 done:
 	SJA_CLEAR_INTR(sja->sja_dev, sja->sja_var);
 	SJA_UNLOCK(sja);
@@ -293,7 +293,7 @@ again:
 	(void)memset(mtod(m, caddr_t), 0, MHLEN);
 	cf = mtod(m, struct can_frame *);
 
-	/* fetch frame information */	
+	/* fetch frame information */
 	status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_FI);
 
 	/* map id */
@@ -306,16 +306,16 @@ again:
 		cf->can_id = (SJA_READ_2(sja->sja_dev,
 			sja->sja_var, SJA_ID + 2) >> 5);
 		addr = SJA_DATA_SFF;
-	}	
+	}
 
 	/* map dlc and data region */
 	if ((status & SJA_FI_RTR) != 0) {
 		cf->can_id |= CAN_RTR_FLAG;
 		addr = cf->can_dlc = 0;
-	} else 
+	} else
 		cf->can_dlc = (status & SJA_FI_DLC);
-	
-	for (i = 0; i < cf->can_dlc; addr++, i++) 
+
+	for (i = 0; i < cf->can_dlc; addr++, i++)
 		cf->can_data[i] = SJA_READ_1(sja->sja_dev, sja->sja_var, addr);
 
 	/* pass can(4) frame to layer above */
@@ -325,11 +325,11 @@ again:
 	SJA_UNLOCK(sja);
  	(*ifp->if_input)(ifp, m);
 	SJA_LOCK(sja);
-	
+
 done:	/* SJA1000, 6.4.4, note 4 */
 	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_CMR, SJA_CMR_RRB);
 	status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_SR);
-	
+
 	if ((status & SJA_SR_RBS) != 0)
 		goto again;
 }
@@ -376,10 +376,10 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 			}
 
 			cf->can_id |= CAN_ERR_DEV;
-		}	
+		}
 	}
 
-	/* data overrun condition */ 	
+	/* data overrun condition */ 
 	if ((intr & SJA_IR_DOI) != 0) {
 		if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
 
@@ -406,9 +406,9 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 		else if ((flags & SJA_ECC_ERR_MASK) == SJA_ECC_CRC_SEQ)
 			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROTO_STUFF;
 
-		/* map tx error condition, if any */ 
+		/* map tx error condition, if any */
 		if ((flags & SJA_ECC_DIR) == 0)
-			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROTO_TX;	
+			cf->can_data[CAN_ERR_DF_PROTO] |= CAN_ERR_PROTO_TX;
 
 		/* map error location */
 		cf->can_data[CAN_ERR_DF_PROTO_LOC] |= flags & SJA_ECC_SEG;
@@ -488,7 +488,7 @@ sja_start_locked(struct ifnet *ifp)
 			/* notify controller for transmission */
 			if ((csc->csc_linkmodes & CAN_LINKMODE_ONE_SHOT) != 0)
 				status = SJA_CMR_AT;
-			else 
+			else
 				status = 0x00;
 
 			if ((csc->csc_linkmodes & CAN_LINKMODE_LOOPBACK) != 0)
@@ -532,8 +532,8 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 		status = SJA_FI_FF;  
 
 		if ((cf->can_id & CAN_RTR_FLAG) != 0)
-			status |= SJA_FI_RTR;		
-	} else 
+			status |= SJA_FI_RTR;
+	} else
 		status = 0x00;
 
 	status |= (cf->can_dlc & SJA_FI_DLC);
@@ -557,11 +557,11 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 		addr = SJA_DATA_SFF;
 	}
 
-	/* copy can(4) SDU into TX buffer */ 
-	for (error = i = 0, len = cf->can_dlc; i < len; addr++, i++) 
+	/* copy can(4) SDU into TX buffer */
+	for (error = i = 0, len = cf->can_dlc; i < len; addr++, i++)
 		SJA_WRITE_1(sja->sja_dev, sja->sja_var, addr, cf->can_data[i]);
 
-out:		
+out:
 	m_freem(*mp);
 	*mp = NULL;
 
@@ -596,8 +596,8 @@ sja_txeof(struct sja_softc *sja)
 }
 
 /*
- * Initialize sja(4) controller. 
- */ 
+ * Initialize sja(4) controller.
+ */
  
 static void 
 sja_init(void *xsc)
@@ -658,7 +658,7 @@ sja_init_locked(struct sja_softc *sja)
 
 		/* set output control register */
 		sja->sja_var->sja_ocr |= SJA_OCR_MOD_NORM;
-		SJA_WRITE_1(sja->sja_dev, sja->sja_var, 
+		SJA_WRITE_1(sja->sja_dev, sja->sja_var,
 			SJA_OCR, sja->sja_var->sja_ocr);
 
 		/* flush error counters and error code capture */
@@ -919,49 +919,49 @@ static uint8_t
 sja_read_1(device_t dev, struct sja_data *var, int port)
 {
 	
-	return (SJA_READ_1(device_get_parent(dev), var, port));	
+	return (SJA_READ_1(device_get_parent(dev), var, port));
 }
 
 static uint16_t
 sja_read_2(device_t dev, struct sja_data *var, int port)
 {
 
-	return (SJA_READ_2(device_get_parent(dev), var, port));	
+	return (SJA_READ_2(device_get_parent(dev), var, port));
 }
 
 static uint32_t
 sja_read_4(device_t dev, struct sja_data *var, int port)
 {
 	
-	return (SJA_READ_4(device_get_parent(dev), var, port));	
+	return (SJA_READ_4(device_get_parent(dev), var, port));
 }
 
 static void
 sja_write_1(device_t dev, struct sja_data *var, int port, uint8_t val)
 {
 
-	SJA_WRITE_1(device_get_parent(dev), var, port, val);	
+	SJA_WRITE_1(device_get_parent(dev), var, port, val);
 }
 
 static void
 sja_write_2(device_t dev, struct sja_data *var, int port, uint16_t val)
 {
 
-	SJA_WRITE_2(device_get_parent(dev), var, port, val);	
+	SJA_WRITE_2(device_get_parent(dev), var, port, val);
 }
 
 static void
 sja_write_4(device_t dev, struct sja_data *var, int port, uint32_t val)
 {
 
-	SJA_WRITE_4(device_get_parent(dev), var, port, val);	
+	SJA_WRITE_4(device_get_parent(dev), var, port, val);
 }
 
 static void
 sja_clear_intr(device_t dev, struct sja_data *var)
 {
 
-	SJA_CLEAR_INTR(device_get_parent(dev), var);	
+	SJA_CLEAR_INTR(device_get_parent(dev), var);
 }
 
 /*

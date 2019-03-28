@@ -126,7 +126,7 @@
 #define SJA_IER_ALL		0xff
 
 /*
- * SJA1000, 6.4.8 Arbitration Lost Capature Register [ALC] 
+ * SJA1000, 6.4.8 Arbitration Lost Capature Register [ALC]
  */
 #define SJA_ALC_BIT0		0x01 	/* ALC in 2^0 + 1 bit of id */
 #define SJA_ALC_BIT1		0x02 	/* ALC in 2^1 + 1 bit of id */
@@ -234,7 +234,7 @@
 #define SJA_OCR_MOD_NORM		0x02		/* normal output mode */
 #define SJA_OCR_MOD_CLK		0x03		/* clock output mode */
 
-#define SJA_OCR_MOD_MASK		0x07 
+#define SJA_OCR_MOD_MASK		0x07
 #define SJA_OCR_MOD(reg)	((reg) & SJA_OCR_MOD_MASK)
 
 #define SJA_OCR_TX0_INV		0x04		/* invert */

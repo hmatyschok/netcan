@@ -95,7 +95,7 @@ static const char canlo_name[] = "canlo";
 static struct mtx canlo_list_mtx;
 static TAILQ_HEAD(canlo_head, canlo_softc) canlo_list =
 	TAILQ_HEAD_INITIALIZER(canlo_list);
-	
+
 static MALLOC_DEFINE(M_CANLO, "canlo", "can(4) Loopback Interface");
 
 /*

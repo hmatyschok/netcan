@@ -34,7 +34,7 @@ INTERFACE sja;
 #
 METHOD uint8_t read_1 {
 	device_t	dev;
-	struct sja_data	*var;	
+	struct sja_data	*var;
 	int		port;
 };
 
@@ -46,7 +46,7 @@ METHOD uint16_t read_2 {
 
 METHOD uint32_t read_4 {
 	device_t	dev;
-	struct sja_data	*var;	
+	struct sja_data	*var;
 	int		port;
 };
 
@@ -55,14 +55,14 @@ METHOD uint32_t read_4 {
 #
 METHOD void write_1 {
 	device_t	dev;
-	struct sja_data	*var;	
+	struct sja_data	*var;
 	int		port;
 	uint8_t		val;
 };
 
 METHOD void write_2 {
 	device_t	dev;
-	struct sja_data	*var;	
+	struct sja_data	*var;
 	int		port;
 	uint16_t	val;
 };

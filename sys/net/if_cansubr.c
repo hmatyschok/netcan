@@ -124,9 +124,9 @@ can_ifinput(struct ifnet *ifp, struct mbuf *m)
 			goto out1;
 		}
 	}
-#ifdef DIAGNOSTIC	
+#ifdef DIAGNOSTIC
 	ch = mtod(m, struct can_hdr *);
-	
+
 	switch (ch->ch_id & CAN_FLAG_MASK) {
 	case CAN_STD_FRM:
 	case CAN_EXT_FRM:
@@ -180,19 +180,19 @@ can_ifoutput(struct ifnet *ifp, struct mbuf *m,
 		error = EINVAL;
 		goto bad;
 	}
-	
+
 	if (dst->sa_family != AF_CAN) {
 		error = EINVAL;
 		goto bad;
 	}
-	
+
 	if (ifp->if_l2com == NULL) {
 		error = ENXIO;
 		goto bad;
 	}
 
 #ifdef MAC
-	if ((error = mac_ifnet_check_transmit(ifp, m)) != 0) 
+	if ((error = mac_ifnet_check_transmit(ifp, m)) != 0)
 		goto bad;
 #endif 	/* MAC */
 
@@ -206,7 +206,7 @@ can_ifoutput(struct ifnet *ifp, struct mbuf *m,
 		error = ENETDOWN;
 		goto bad;
 	}
-	
+
 	if ((ifp->if_flags & IFF_PROMISC) != 0) {
 		error = ENETDOWN;
 		goto bad;
@@ -234,7 +234,7 @@ can_ifattach(struct ifnet *ifp, const struct can_link_timecaps *cltc,
 	if_attach(ifp);
 
 	ifp->if_mtu = CAN_MTU;	/* XXX */
-	ifp->if_input = can_ifinput;	
+	ifp->if_input = can_ifinput;
 	ifp->if_output = can_ifoutput; 
 
 	bpfattach(ifp, DLT_CAN_SOCKETCAN, 0);
@@ -303,7 +303,7 @@ can_restart(struct ifnet *ifp)
 	m->m_pkthdr.rcvif = ifp;
 	
  	(*ifp->if_input)(ifp, m);
- 	
+ 
 done:
 	if_printf(ifp, "restarted\n");
 
@@ -350,7 +350,7 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 		else
 			error = EINVAL;
 				
-		break;	
+		break;
 	case SIOCGDRVSPEC:
 	case SIOCSDRVSPEC:		/* FALLTHROUGH */
 
@@ -360,14 +360,14 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 			if (ifd->ifd_len != sizeof(struct can_link_timecaps))
 				error = EINVAL;
 			else
-				error = copyout(&csc->csc_timecaps, 
+				error = copyout(&csc->csc_timecaps,
 					ifd->ifd_data, ifd->ifd_len);
 			break;
 		case CANGLINKTIMINGS:
 
 			if (ifd->ifd_len != sizeof(struct can_link_timings))
 				error = EINVAL;
-			else	
+			else
 				error = copyout(&csc->csc_timings,
 					ifd->ifd_data, ifd->ifd_len);
 			break;
@@ -389,7 +389,7 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 
 			if (error != 0)
 				break;
-				
+
 			error = (*ifp->if_ioctl)(ifp, cmd, (caddr_t)ifd);
 			break;
 		case CANSLINKMODE:
@@ -405,7 +405,7 @@ can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 
 			if ((mode & csc->csc_timecaps.cltc_linkmode_caps) != mode) {
 				error = EINVAL;
-				break;	
+				break;
 			}
 
 			/* XXX: locking */
@@ -574,7 +574,7 @@ can_id2hex(struct can_frame *cf, u_char *buf)
 		if (isalpha(c) && islower(c))
 			c = toupper(c);
 
-		*ep = can_hex_tbl[c];	
+		*ep = can_hex_tbl[c];
 	}
 	return (len);
 }
@@ -601,7 +601,7 @@ can_hex2id(struct can_frame *cf, u_char *buf)
 
 		if (isdigit(c))
 			c -= '0';
-		else if (isalpha(c)) 
+		else if (isalpha(c))
 			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
 		else
 			return (-1);
@@ -656,7 +656,7 @@ can_modevent(module_t mod, int type, void *data)
 		return (EOPNOTSUPP);
 	}
 	return (0);
-} 
+}
 
 static moduledata_t can_mod = {
 	"can",

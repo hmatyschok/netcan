@@ -137,13 +137,13 @@ rcan_attach(struct socket *so, int proto, struct thread *td)
 		error = EPROTONOSUPPORT;
 		goto out;
 	}
-	
+
 	error = soreserve(so, rcan_sendspace, rcan_recvspace);
 	if (error != 0)
 		goto out;
 
 	error = can_pcballoc(so, &rcan_pcbinfo);
-out:	
+out:
 	return (error);
 }
 
@@ -155,11 +155,11 @@ rcan_detach(struct socket *so)
 	canp = sotocanpcb(so);
 	KASSERT((canp != NULL), 
 		("%s: canp == NULL", __func__));
-	
+
 	CANP_LOCK(canp);
 	can_pcbdetach(canp);
 	CANP_UNLOCK(canp);
-	can_pcbfree(canp);	
+	can_pcbfree(canp);
 }
 
 static int
@@ -175,12 +175,12 @@ rcan_bind(struct socket *so, struct sockaddr *nam, struct thread *td)
 		error = EINVAL;
 		goto out;
 	}
-	
+
 	if (TAILQ_EMPTY(&V_ifnet)) {
 		error = EADDRNOTAVAIL;
 		goto out;
 	}
-		
+
 	if (scan->scan_family != AF_CAN) {
 		error = EAFNOSUPPORT;
 		goto out;
@@ -188,7 +188,7 @@ rcan_bind(struct socket *so, struct sockaddr *nam, struct thread *td)
 	canp = sotocanpcb(so);
 	KASSERT((canp != NULL), 
 		("%s: canp == NULL", __func__));
-	
+
 	CANP_LOCK(canp);	
 	error = can_pcbbind(canp, scan, td->td_ucred);
 	CANP_UNLOCK(canp);
@@ -213,9 +213,9 @@ rcan_disconnect(struct socket *so)
 		CANP_LOCK(canp);
 		can_pcbdisconnect(canp);
 		CANP_UNLOCK(canp);
-	} else 
+	} else
 		error = ENOTCONN;
-				
+
 	return (error);
 }
 
@@ -237,7 +237,7 @@ static int
 rcan_sockaddr(struct socket *so, struct sockaddr **nam)
 {
 	struct canpcb *canp;
-			
+
 	canp = sotocanpcb(so);
 	KASSERT((canp != NULL), 
 		("%s: canp == NULL", __func__));
@@ -248,7 +248,7 @@ rcan_sockaddr(struct socket *so, struct sockaddr **nam)
 }
 
 static int
-rcan_send(struct socket *so, int flags, struct mbuf *m, 
+rcan_send(struct socket *so, int flags, struct mbuf *m,
 	struct sockaddr *nam, struct mbuf *control, struct thread *td)
 {
 	struct sockaddr_can *scan;
@@ -281,25 +281,25 @@ rcan_send(struct socket *so, int flags, struct mbuf *m,
 	}
 
 	if (nam != NULL) {
-		if ((so->so_state & SS_ISCONNECTED) != 0) 
+		if ((so->so_state & SS_ISCONNECTED) != 0)
 			error = EISCONN;
 		else {
 			CANP_LOCK(canp);
 			error = can_pcbbind(canp, scan, td->td_ucred);
 			CANP_UNLOCK(canp);
-		}	
+		}
 	} else {
 		if ((so->so_state & SS_ISCONNECTED) == 0)
 			error =  EDESTADDRREQ;
 		else
 			error = 0;
 	}
-	
+
 	if (error != 0)
 		goto bad;
-	
+
 	error = can_output(m, canp);
-	
+
 	if (nam != NULL) {
 		struct sockaddr_can lscan;
 		

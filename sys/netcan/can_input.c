@@ -150,7 +150,7 @@ can_nh_input(struct mbuf *m)
 	if ((sotag = m_tag_find(m, PACKET_TAG_ND_OUTGOING, NULL)) != NULL) {
 		sender_canp = *(struct canpcb **)(sotag + 1);
 		m_tag_delete(m, sotag);
-		
+
 		KASSERT((sender_canp != NULL),
 			("%s: sender_canp == NULL", __func__));
 
@@ -158,7 +158,7 @@ can_nh_input(struct mbuf *m)
 		if ((sender_canp->canp_flags & CANP_NO_LOOPBACK) != 0)
 			goto out1;
 			
-	} else 
+	} else
 		sender_canp = NULL;
 
 	/* fetch interface index */
@@ -174,7 +174,7 @@ can_nh_input(struct mbuf *m)
 #ifdef DIAGNOSTIC
 	ch = mtod(m, struct can_hdr *);
 	(void)printf("%s: type 0x%01x id 0x%08x dlc 0x%02x\n",
-		__func__, (ch->ch_id & CAN_FLAG_MASK) >> 28, 
+		__func__, (ch->ch_id & CAN_FLAG_MASK) >> 28,
 		(ch->ch_id & CAN_EFF_MASK), ch->ch_dlc);
 #endif /* DIAGNOSTIC */
 

@@ -111,7 +111,7 @@ static TAILQ_HEAD(slc_head, slc_softc) slc_list =
 	TAILQ_HEAD_INITIALIZER(slc_list);
 
 static MALLOC_DEFINE(M_SLC, "slc", "Serial line can(4) Interface");
- 
+
 /* tty(4) hook */
 static struct ttyhook slc_hook = {
 	.th_getc_inject =	slc_txeof,
@@ -132,7 +132,7 @@ static struct cdevsw slc_cdevsw = {
 /*
  * Subr. on ifclone(4).
  */
- 
+
 static int
 slc_ifclone_create(struct if_clone *ifc, int unit, caddr_t data)
 {
@@ -504,7 +504,7 @@ bad:
 static size_t
 slc_rint_poll(struct tty *tp)
 {
-	
+
 	return (1);
 }
 
@@ -541,7 +541,7 @@ slc_rxeof(struct slc_softc *slc)
 		cf->can_id |= CAN_RTR_FLAG;
 					 	/* FALLTHROUGH */
 	case SLC_HC_EFF_DATA:
-		cf->can_id |= CAN_EFF_FLAG; 
+		cf->can_id |= CAN_EFF_FLAG;
 		break;
 	default:
 		error = EINVAL;
@@ -559,8 +559,8 @@ slc_rxeof(struct slc_softc *slc)
 	/* fetch dlc */
 	cf->can_dlc = *mtod(m, u_char *);
 	m_adj(m, SLC_DLC_LEN);
-	
-	if ((cf->can_dlc < SLC_HC_DLC_INF) || 
+
+	if ((cf->can_dlc < SLC_HC_DLC_INF) ||
 		(cf->can_dlc > SLC_HC_DLC_SUP)) {
 		error = EMSGSIZE;
 		goto bad;
@@ -589,7 +589,7 @@ slc_rxeof(struct slc_softc *slc)
  	(*ifp->if_input)(ifp, m);
  	mtx_lock(&slc->slc_mtx);
 out:
-	return (error);			
+	return (error);
 bad:
 	if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
 	m_freem(m);
@@ -598,7 +598,7 @@ bad:
 
 /*
  * Tx path of can(4) frame:
- * 
+ *
  *  (a) The can(4) frame is enqueued by if_transmit(9) on if_snd
  *      queue maps to the instance of generic ifnet(9) structure,
  *      when can_ifoutput(9) was called.
@@ -610,7 +610,7 @@ bad:
  *      maps to slc_softc{}.
  *
  *      On success, the ttydevsw_outwakeup(9) invokes the 
- *      tsw_outwakeup(9) callback function maps to the e. g. 
+ *      tsw_outwakeup(9) callback function maps to the e. g.
  *      uart_tty_class(4).
  *
  *  (c) During runtime of ttydisc_getc(9), the cached ASCII
@@ -658,7 +658,7 @@ slc_ifstart(struct ifnet *ifp)
 
 static struct tty *
 slc_encap(struct slc_softc *slc, struct mbuf **mp)
-{ 
+{
 	struct ifnet *ifp;
 	struct tty *tp;
 	struct mbuf *m;

@@ -129,9 +129,9 @@ DOMAIN_SET(can);
  */
 SYSCTL_NODE(_net,      PF_CAN,		can,	CTLFLAG_RW, 0,
 	"Control Area Network Family");
-	
+
 SYSCTL_NODE(_net_can, CANPROTO_RAW,	raw,	CTLFLAG_RW, 0,	"RAW");
 
 /*
- * XXX: e. g. OID for enabling disabling net.can.can_fd = ...
+ * XXX OID e. g. for enabling disabling net.can.can_fd = ...
  */

@@ -97,11 +97,11 @@ struct canpcb {
 #define	CANP_LOCK_ASSERT(canp) \
 	mtx_assert(&(canp)->canp_lock, MA_OWNED)
 #define	CANP_LOCK_DESTROY(canp) 	mtx_destroy(&(canp)->canp_lock)
-	
+
 LIST_HEAD(canpcbhead, canpcb);
 TAILQ_HEAD(canpcbqueue, canpcb);
 
-/* 
+/*
  * Set contains canpcb{}s maps to PF_CAN family on AF_CAN domain(9).
  */
 struct canpcbinfo {
@@ -123,7 +123,7 @@ struct canpcbinfo {
 #define	CANP_INFO_LOCK_DESTROY(cani) 	mtx_destroy(&(cani)->cani_lock)
 
 TAILQ_HEAD(canpcbinfo_head, canpcbinfo);
-	
+
 /* states in canp_state: */
 #define	CANP_DETACHED		0
 #define	CANP_ATTACHED		1

@@ -144,7 +144,7 @@ struct can_frame {
 #define CAN_MTU		(sizeof(struct can_frame))
 
 /* DLC for error message frames */
-#define CAN_ERR_DLC		8 
+#define CAN_ERR_DLC		8
 #define CAN_ERR_DLEN		8
 
 /* error class on canid_t */
@@ -158,7 +158,7 @@ struct can_frame {
 #define CAN_ERR_BE		0x00000080U /* bus error */
 #define CAN_ERR_RESTARTED		0x00000100U /* controller restarted */
 
-/* arbitration lost in bit ... data[0] */ 
+/* arbitration lost in bit ... data[0] */
 #define CAN_ERR_AL_UNSPEC		0x00 /* unspecified */
 				      /* else bit number in bitstream */
 
@@ -223,7 +223,7 @@ struct can_frame {
 #define CAN_ERR_DF_AL		0
 #define CAN_ERR_DF_DEV		1
 #define CAN_ERR_DF_PROTO 	2
-#define CAN_ERR_DF_PROTO_LOC 	3	
+#define CAN_ERR_DF_PROTO_LOC 	3
 #define CAN_ERR_DF_PROTO_TRX 	4
 #define CAN_ERR_DF_RX		6
 #define CAN_ERR_DF_TX		7
@@ -243,61 +243,61 @@ struct canfd_frame {
 #define CANFD_MTU         (sizeof(struct canfd_frame))
 
 /* 
- * ASCII representation of can(4) frame: 
+ * ASCII representation of can(4) frame:
  *
  *  <frm> ::= <type> <id> <dlc> <data> <hc>;
- * 
- * encodes the 
+ *
+ * encodes the
  *
  *  <type> ::= "R" | "T" | "r" | "t";
- * 
+ *
  * by
- * 
+ *
  *   "R" denotes remote frame, extended frame format
- * 
+ *
  *   "T" denotes data frame, extendet frame format
- * 
+ *
  *   "r" denotes remote frame, base frame format
- * 
+ *
  *   "t" denotes data frame, base frame format
- * 
+ *
  * with
- * 
+ *
  *  <id> ::= <sff> | <eff>;
- * 
+ *
  * where encodes the 11 identifier bits
- * 
+ *
  *  <sff> ::= 3 * <byte>;
- * 
+ *
  * or the 29 identifier bits
- * 
+ *
  *  <eff> ::= 8 * <byte>;
- * 
+ *
  * by
- * 
+ *
  *  <byte> ::= <xdigit> <xdigit>;
- * 
- * with 
- * 
+ *
+ * with
+ *
  *  <xdigit> ::= <digit> | "A" | "B" | "C" | "D" | "E" | "F";
- * 
- * and the 
- * 
+ *
+ * and the
+ *
  *  <dlc> ::= <digit> - "9";
- * 
+ *
  * by
- * 
- *  <digit> ::= "0" | "1" | "2" | "3" | "4" | 
+ *
+ *  <digit> ::= "0" | "1" | "2" | "3" | "4" |
  *              "5" | "6" | "7" | "8" | "9";
- * 
- * and 
- * 
+ *
+ * and
+ *
  *  <data> ::= <dlc> * <byte>;
  *
  * with
- * 
+ *
  *  <hc> ::= "CR" | "BEL";
- * 
+ *
  * finally.
  */
 #define SLC_CMD_LEN 	(sizeof(u_char))
@@ -318,7 +318,7 @@ struct canfd_frame {
 
 /*
  * The can(4) ID based filter checks received
- * 
+ *
  *   can_id & can_filter.cf_mask
  *
  * against
@@ -343,7 +343,7 @@ struct can_filter {
 #define CAN_INV_FILTER 	0x20000000U
 
 /* transport protocol class address information (e.g. ISOTP) */
-struct can_tp { 
+struct can_tp {
 	canid_t		ct_rx_id; 
 	canid_t		ct_tx_id; 
 };
@@ -418,9 +418,9 @@ struct can_link_timings {
 
 /*
  * Common structure for can(4) interface drivers maps to if_l2com.
- * 
- * XXX IFT_OTHER schould replaced by IFT_CAN maps to  IFT_PVC, see 
- * the implementation of if_[dr]egister_com_alloc in net/if.c for 
+ *
+ * XXX IFT_OTHER schould replaced by IFT_CAN maps to  IFT_PVC, see
+ * the implementation of if_[dr]egister_com_alloc in net/if.c for
  * futher details.
  */
 struct can_ifsoftc {
@@ -444,7 +444,7 @@ int 	can_hex2id(struct can_frame *, u_char *);
 void 	can_mbuf_tag_clean(struct mbuf *);
 
 /* interface-layer */
-void 	can_ifattach(struct ifnet *, const struct can_link_timecaps *, 
+void 	can_ifattach(struct ifnet *, const struct can_link_timecaps *,
 	uint32_t);
 void 	can_ifdetach(struct ifnet *);
 void 	can_bpf_mtap(struct ifnet *, struct mbuf *);
