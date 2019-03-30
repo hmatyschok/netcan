@@ -74,11 +74,11 @@
 #include <net/if_can.h>
 
 /*
- * Loopback interface driver for the can(4) protocol.
+ * Loopback interface driver for the can(4) communication domain.
  */
 
 struct canlo_softc {
-	struct ifnet	*cs_ifp;
+	struct ifnet	*sc_ifp;
 	TAILQ_ENTRY(canlo_softc) cs_next;
 };
 
@@ -105,12 +105,12 @@ static MALLOC_DEFINE(M_CANLO, "canlo", "can(4) Loopback Interface");
 static void
 canlo_clone_destroy(struct ifnet *ifp)
 {
-	struct canlo_softc *cs;
+	struct canlo_softc *sc;
 
-	cs = (struct canlo_softc *)ifp->if_softc;
+	sc = (struct canlo_softc *)ifp->if_softc;
 
 	mtx_lock(&canlo_list_mtx);
-	TAILQ_REMOVE(&canlo_list, cs, cs_next);
+	TAILQ_REMOVE(&canlo_list, sc, cs_next);
 	mtx_unlock(&canlo_list_mtx);
 
 	ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
@@ -119,25 +119,27 @@ canlo_clone_destroy(struct ifnet *ifp)
 	can_ifdetach(ifp);
 	if_free(ifp);
 	
-	free(cs, M_CANLO);
+	free(sc, M_CANLO);
 }
 
 static int
 canlo_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 {
-	struct canlo_softc *cs;
+	struct canlo_softc *sc;
 	struct ifnet *ifp;
 
-	cs = malloc(sizeof(struct canlo_softc), M_CANLO, M_WAITOK | M_ZERO);
-	if ((ifp = cs->cs_ifp = if_alloc(IFT_CAN)) == NULL)
+	sc = malloc(sizeof(struct canlo_softc), M_CANLO, M_WAITOK | M_ZERO);
+	if ((ifp = sc->cs_ifp = if_alloc(IFT_CAN)) == NULL) {
+		free(sc, M_CANLO);
 		return (ENOSPC);
-
+	}
+	
 	/* attach */
 	mtx_lock(&canlo_list_mtx);
-	TAILQ_INSERT_TAIL(&canlo_list, cs, cs_next);
+	TAILQ_INSERT_TAIL(&canlo_list, sc, cs_next);
 	mtx_unlock(&canlo_list_mtx);
 
-	ifp->if_softc = cs;
+	ifp->if_softc = sc;
 
 	if_initname(ifp, canlo_name, unit);
 	
@@ -157,11 +159,11 @@ canlo_clone_create(struct if_clone *ifc, int unit, caddr_t data)
 static void
 canlo_init(void *xsc)
 {
-	struct canlo_softc *cs;
+	struct canlo_softc *sc;
 	struct ifnet *ifp;
 
-	cs = (struct canlo_softc *)xsc;
-	ifp = cs->cs_ifp;
+	sc = (struct canlo_softc *)xsc;
+	ifp = sc->cs_ifp;
 
 	ifp->if_drv_flags |= IFF_DRV_RUNNING;
 	ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;	
