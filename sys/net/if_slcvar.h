@@ -46,9 +46,12 @@ struct slc_softc {
 	struct tty	*slc_tp;		/* pointer to tty structure */
 	struct mbuf	*slc_ifbuf;		
 	struct ifqueue	slc_outq;		/* queue of outgoing data */
-	size_t	slc_outqlen;	/* number of bytes in outq */
+	size_t		slc_outqlen;	/* number of bytes in outq */
+	uint32_t	slc_flags;
 	TAILQ_ENTRY(slc_softc) slc_next;
 	struct mtx	slc_mtx;
 };
+#define SLC_ERROR		0x0001
+
 #endif /* _KERNEL */
 #endif /* _NET_IF_SLCVAR_H_ */

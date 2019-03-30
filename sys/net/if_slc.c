@@ -460,6 +460,7 @@ slc_rint(struct tty *tp, char c, int flags)
 	/* allocate mbuf(9) and initialize */
 	if ((m = slc->slc_ifbuf) == NULL) {
 		if ((m = m_gethdr(M_NOWAIT, MT_DATA)) == NULL) {
+			sc->slc_flags |= SLC_ERROR;
 			error = ENOBUFS;
 			goto out1;
 		}
@@ -468,12 +469,19 @@ slc_rint(struct tty *tp, char c, int flags)
 	}
 
 	if (flags != 0) {
+		sc->slc_flags |= SLC_ERROR;
 		error = ECONNABORTED;
 		goto bad;
 	}
 
-	if (m->m_len < MHLEN) {
+	if (m->m_len < SLC_MTU) {
 		if (c == SLC_HC_BEL || c == SLC_HC_CR) {
+			if (slc->slc_flags & SLC_ERROR) != 0) {
+				slc->slc_flags &= ~SLC_ERROR;
+				error = ECONNABORTED;
+				goto bad;
+			}
+			
 			m->m_data = m->m_pktdat;
 			error = slc_rxeof(slc);
 		} else {
