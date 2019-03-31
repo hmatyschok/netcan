@@ -799,13 +799,17 @@ slc_txeof(struct slc_softc *sc)
 			m = m_free(m);
 		}
 
-		sc->slc_if->if_opackets++;
+		if (m == NULL) {
+			sc->slc_if->if_opackets++;
 
-		/*
-		 * We now have characters in the output queue,
-		 * kick the serial port.
-		 */
-		(*tp->t_oproc)(tp);
+			/*
+			* We now have characters in the output queue,
+			* kick the serial port.
+			*/
+			(*tp->t_oproc)(tp);
+		} else
+			m_freem(m);
+			
 		splx(s);
 	}
 }
