@@ -598,7 +598,7 @@ slc_input(int c, struct tty *tp)
 	}
 
 	if (m->m_len < SLC_MTU) {
-		if (c == SLC_HC_BEL || c == SLC_HC_CR) {
+		if ((c == SLC_HC_BEL) || (c == SLC_HC_CR)) {
 			if ((sc->slc_flags & SLC_ERROR) != 0) {
 				sc->slc_flags &= ~SLC_ERROR;
 				error = ECONNABORTED;
