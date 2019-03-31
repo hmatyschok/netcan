@@ -694,7 +694,7 @@ slc_btom(struct slc_softc *sc)
 	m->m_len = m->m_pkthdr.len = len;
 	m->m_data = m->m_pktdat;
 
-	bcopy(buf, mtod(m, u_char *), len);
+	(void)memcpy(mtod(m, u_char *), buf, len);
 
 	m_set_rcvif(m, sc->slc_if);
 out:
@@ -786,9 +786,10 @@ slc_txeof(struct slc_softc *sc)
 			 * Put N characters at once
 		     * into the tty output queue.
 			 */
-			if (b_to_q(mtod(m, u_char *), m->m_len, &tp->t_outq))
+			if (b_to_q(mtod(m, u_char *), m->m_len, &tp->t_outq)) {
+				ndflush(&tp->t_outq, MHLEN);
 				break;
-			
+			}
 			sc->slc_if->if_obytes += m->m_len;
 
 			m = m_free(m);
