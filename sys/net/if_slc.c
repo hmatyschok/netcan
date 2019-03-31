@@ -724,7 +724,7 @@ slc_encap(struct slc_softc *sc, struct mbuf **mp)
 
 	/* finalize */
 	*bp = SLC_HC_CR;
-	bp += 1;
+	bp += SLC_HC_LEN;
 
 	/* re-initialize mbuf(9) and copy back */
 	len = bp - buf; 

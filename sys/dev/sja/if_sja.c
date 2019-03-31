@@ -99,38 +99,38 @@ sja_probe(device_t dev)
 static int 
 sja_attach(device_t dev)
 {
-	struct sja_softc *sja;
+	struct sja_softc *sc
 	struct ifnet *ifp;
 	int rid, error;
 	uint8_t addr;
 
-	sja = device_get_softc(dev);
-	sja->sja_dev = dev;
+	sc = device_get_softc(dev);
+	sc->sja_dev = dev;
 
 	/* map params inherited from parent */
-	sja->sja_var = device_get_ivars(dev);
+	sc->sja_var = device_get_ivars(dev);
 
-	mtx_init(&sja->sja_mtx, device_get_nameunit(dev),
+	mtx_init(&sc->sja_mtx, device_get_nameunit(dev),
 		MTX_NETWORK_LOCK, MTX_DEF);
 
 	/* reserve interrupt resources */
 	rid = 0;
-	sja->sja_irq = bus_alloc_resource_any(dev, SYS_RES_IRQ,
+	sc->sja_irq = bus_alloc_resource_any(dev, SYS_RES_IRQ,
 		&rid, RF_SHAREABLE | RF_ACTIVE);
 
-	if (sja->sja_irq == NULL) {
+	if (sc->sja_irq == NULL) {
 		device_printf(dev, "couldn't reserve interrupt resources\n");
 		error = ENXIO;
 		goto fail;
 	}
 
 	/* allocate and initialize ifnet(9) structure */
-	if ((ifp = sja->sja_ifp = if_alloc(IFT_CAN)) == NULL) {
+	if ((ifp = sc->sja_ifp = if_alloc(IFT_CAN)) == NULL) {
 		device_printf(dev, "couldn't if_alloc(9)\n");
 		error = ENOSPC;
 		goto fail;
 	}
-	ifp->if_softc = sja;
+	ifp->if_softc = sc;
 
 	if_initname(ifp, device_get_name(dev), device_get_unit(dev));
 
@@ -145,41 +145,41 @@ sja_attach(device_t dev)
 	IFQ_SET_MAXLEN(&ifp->if_snd, ifqmaxlen);
 	IFQ_SET_READY(&ifp->if_snd);
 
-	can_ifattach(ifp, &sja_timecaps, sja->sja_var->sja_freq);
+	can_ifattach(ifp, &sja_timecaps, sc->sja_var->sja_freq);
 
 	/* force into reset mode */
-	if ((error = sja_reset(sja)) != 0) {
+	if ((error = sja_reset(sc)) != 0) {
 		device_printf(dev, "couldn't reset\n");
 		goto fail1;
 	}
 
 	/* set clock divider */
-	sja->sja_var->sja_cdr |= SJA_CDR_PELICAN;
-	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_CDR,
-		sja->sja_var->sja_cdr);
+	sc->sja_var->sja_cdr |= SJA_CDR_PELICAN;
+	SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_CDR,
+		sc->sja_var->sja_cdr);
 
 	/* set acceptance filter (accept all) */
 	for (addr = SJA_ACR0; addr < SJA_AMR0; addr++)
-		SJA_WRITE_1(sja->sja_dev, sja->sja_var, addr, 0x00);
+		SJA_WRITE_1(sc->sja_dev, sc->sja_var, addr, 0x00);
 
 	for (addr = SJA_AMR0; addr <= SJA_AMR3; addr++)
-		SJA_WRITE_1(sja->sja_dev, sja->sja_var, addr, 0xff);
+		SJA_WRITE_1(sc->sja_dev, sc->sja_var, addr, 0xff);
 
 	/* set output control register */
-	sja->sja_var->sja_ocr |= SJA_OCR_MOD_NORM;
-	SJA_WRITE_1(sja->sja_dev, sja->sja_var,
-		SJA_OCR, sja->sja_var->sja_ocr);
+	sc->sja_var->sja_ocr |= SJA_OCR_MOD_NORM;
+	SJA_WRITE_1(sc->sja_dev, sc->sja_var,
+		SJA_OCR, sc->sja_var->sja_ocr);
 
 	/* set normal mode */
-	if ((error = sja_normal_mode(sja)) != 0) {
+	if ((error = sja_normal_mode(sc)) != 0) {
 		device_printf(dev, "couldn't set normal mode\n");
 		goto fail1;
 	}
 
 	/* hook interrupts */
-	error = bus_setup_intr(dev, sja->sja_irq,
+	error = bus_setup_intr(dev, sc->sja_irq,
 		INTR_TYPE_NET | INTR_MPSAFE, sja_intr,
-			NULL, sja, &sja->sja_intr);
+			NULL, sc, &sc->sja_intr);
 
 	if (error != 0) {
 		device_printf(dev, "couldn't set up irq\n");
@@ -197,31 +197,31 @@ fail:
 static int
 sja_detach(device_t dev)
 {
-	struct sja_softc *sja;
+	struct sja_softc *sc
 	struct ifnet *ifp;
 
-	sja = device_get_softc(dev);
-	ifp = sja->sja_ifp;
+	sc = device_get_softc(dev);
+	ifp = sc->sja_ifp;
 
 	if (device_is_attached(dev) != 0) {
-		SJA_LOCK(sja);
-		sja_stop(sja);
-		SJA_UNLOCK(sja);
+		SJA_LOCK(sc);
+		sja_stop(sc);
+		SJA_UNLOCK(sc);
 		can_ifdetach(ifp);
 	}
 
-	if (sja->sja_intr != NULL) {
-		(void)bus_teardown_intr(dev, sja->sja_irq, sja->sja_intr);
-		sja->sja_intr = NULL;
+	if (sc->sja_intr != NULL) {
+		(void)bus_teardown_intr(dev, sc->sja_irq, sc->sja_intr);
+		sc->sja_intr = NULL;
 	}
 
-	if (sja->sja_irq != NULL)
-		(void)bus_release_resource(dev, SYS_RES_IRQ, 0, sja->sja_irq);
+	if (sc->sja_irq != NULL)
+		(void)bus_release_resource(dev, SYS_RES_IRQ, 0, sc->sja_irq);
 
 	if (ifp != NULL)
 		if_free(ifp);
 
-	mtx_destroy(&sja->sja_mtx);
+	mtx_destroy(&sc->sja_mtx);
 
 	return (0);
 }
@@ -229,40 +229,40 @@ sja_detach(device_t dev)
 static int
 sja_intr(void *arg)
 {
-	struct sja_softc *sja;
+	struct sja_softc *sc
 	struct ifnet *ifp;
 	uint8_t status;
 	int n, error;
 
-	sja = (struct sja_softc *)arg;
+	sc = (struct sja_softc *)arg;
 
-	SJA_LOCK(sja);
+	SJA_LOCK(sc);
 
-	ifp = sja->sja_ifp;
+	ifp = sc->sja_ifp;
 
 	if ((ifp->if_drv_flags & IFF_DRV_RUNNING) == 0)
 		goto bad;
 
-	status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_IR);
+	status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_IR);
 
 	for (n = 0; status != SJA_IR_OFF && n < 6; n++) { /* XXX */
 
 		if ((status & SJA_IR_RI) != 0)
-			sja_rxeof(sja);
+			sja_rxeof(sc);
 
 		if ((status & SJA_IR_TI) != 0)
-			sja_txeof(sja);
+			sja_txeof(sc);
 
 		if ((status & SJA_IR_ERR) != 0) {
-			if (sja_error(sja, status) != 0)
+			if (sja_error(sc, status) != 0)
 				break;
 		}
-		status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_IR);
+		status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_IR);
 	}
 	error = FILTER_HANDLED;
 done:
-	SJA_CLEAR_INTR(sja->sja_dev, sja->sja_var);
-	SJA_UNLOCK(sja);
+	SJA_CLEAR_INTR(sc->sja_dev, sc->sja_var);
+	SJA_UNLOCK(sc);
 	return (error);
 bad:
 	error = FILTER_STRAY;
@@ -273,7 +273,7 @@ bad:
  * Copy can(4) frame from RX buffer into mbuf(9).
  */
 static void 	
-sja_rxeof(struct sja_softc *sja)
+sja_rxeof(struct sja_softc *sc)
 {
 	struct ifnet *ifp;
 	struct mbuf *m;
@@ -281,8 +281,8 @@ sja_rxeof(struct sja_softc *sja)
 	uint8_t status, addr;
 	int i;
 
-	SJA_LOCK_ASSERT(sja);
-	ifp = sja->sja_ifp;
+	SJA_LOCK_ASSERT(sc);
+	ifp = sc->sja_ifp;
 
 again:
 	if ((m = m_gethdr(M_NOWAIT, MT_DATA)) == NULL) {
@@ -294,17 +294,17 @@ again:
 	cf = mtod(m, struct can_frame *);
 
 	/* fetch frame information */
-	status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_FI);
+	status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_FI);
 
 	/* map id */
 	if ((status & SJA_FI_FF) != 0) {
-		cf->can_id = (SJA_READ_4(sja->sja_dev,
-			sja->sja_var, SJA_ID + 4) >> 3);
+		cf->can_id = (SJA_READ_4(sc->sja_dev,
+			sc->sja_var, SJA_ID + 4) >> 3);
 		cf->can_id |= CAN_EFF_FLAG;
 		addr = SJA_DATA_EFF;
 	} else {
-		cf->can_id = (SJA_READ_2(sja->sja_dev,
-			sja->sja_var, SJA_ID + 2) >> 5);
+		cf->can_id = (SJA_READ_2(sc->sja_dev,
+			sc->sja_var, SJA_ID + 2) >> 5);
 		addr = SJA_DATA_SFF;
 	}
 
@@ -316,26 +316,26 @@ again:
 		cf->can_dlc = (status & SJA_FI_DLC);
 
 	for (i = 0; i < cf->can_dlc; addr++, i++)
-		cf->can_data[i] = SJA_READ_1(sja->sja_dev, sja->sja_var, addr);
+		cf->can_data[i] = SJA_READ_1(sc->sja_dev, sc->sja_var, addr);
 
 	/* pass can(4) frame to layer above */
 	m->m_len = m->m_pkthdr.len = sizeof(struct can_frame);
 	m->m_pkthdr.rcvif = ifp;
 
-	SJA_UNLOCK(sja);
+	SJA_UNLOCK(sc);
  	(*ifp->if_input)(ifp, m);
-	SJA_LOCK(sja);
+	SJA_LOCK(sc);
 
 done:	/* SJA1000, 6.4.4, note 4 */
-	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_CMR, SJA_CMR_RRB);
-	status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_SR);
+	SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_CMR, SJA_CMR_RRB);
+	status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_SR);
 
 	if ((status & SJA_SR_RBS) != 0)
 		goto again;
 }
 
 static int 
-sja_error(struct sja_softc *sja, uint8_t intr)
+sja_error(struct sja_softc *sc, uint8_t intr)
 {
 	struct ifnet *ifp;
 	struct can_ifsoftc *csc;
@@ -343,8 +343,8 @@ sja_error(struct sja_softc *sja, uint8_t intr)
  	struct can_frame *cf;
 	uint8_t status, flags;
 
-	SJA_LOCK_ASSERT(sja);
-	ifp = sja->sja_ifp;
+	SJA_LOCK_ASSERT(sc);
+	ifp = sc->sja_ifp;
 	csc = ifp->if_l2com;
 
 	if ((m = m_gethdr(M_NOWAIT, MT_DATA)) == NULL)
@@ -355,7 +355,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	cf->can_id |= CAN_ERR_FLAG;
 
 	/* fetch status information */	
-	status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_SR);
+	status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_SR);
 
 	/*  error passive / warning condition */
 	if ((intr & (SJA_IR_EPI | SJA_IR_EI)) != 0) {
@@ -372,7 +372,7 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 
 			if (csc->csc_flags == CAN_STATE_BUS_OFF) {
 				ifp->if_drv_flags &= ~IFF_DRV_RUNNING;
-				sja_init_locked(sja);
+				sja_init_locked(sc);
 			}
 
 			cf->can_id |= CAN_ERR_DEV;
@@ -386,15 +386,15 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 		cf->can_id |= CAN_ERR_DEV;
 		cf->can_data[CAN_ERR_DF_DEV] |= CAN_ERR_DEV_RX_OVF;
 
-		SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_CMR, SJA_CMR_CDO);
-		status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_SR);
+		SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_CMR, SJA_CMR_CDO);
+		status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_SR);
 	}
 
 	/* bus error condition */
 	if ((intr & SJA_IR_BEI) != 0) {
 		if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
 
-		flags = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_ECC);
+		flags = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_ECC);
 
 		cf->can_id |= (CAN_ERR_PROTO | CAN_ERR_BE);
 
@@ -418,25 +418,25 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 	if ((intr & SJA_IR_ALI) != 0) {
 		if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
 		
-		flags = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_ALC);
+		flags = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_ALC);
 
 		cf->can_id |= CAN_ERR_AL;
 		cf->can_data[CAN_ERR_DF_AL] |= flags & SJA_ALC_MASK;
 	} 
 
 	/* map error count */
-	cf->can_data[CAN_ERR_DF_RX] = SJA_READ_1(sja->sja_dev,
-		sja->sja_var, SJA_RXERR);
-	cf->can_data[CAN_ERR_DF_TX] = SJA_READ_1(sja->sja_dev,
-		sja->sja_var, SJA_TXERR);
+	cf->can_data[CAN_ERR_DF_RX] = SJA_READ_1(sc->sja_dev,
+		sc->sja_var, SJA_RXERR);
+	cf->can_data[CAN_ERR_DF_TX] = SJA_READ_1(sc->sja_dev,
+		sc->sja_var, SJA_TXERR);
 
 	/* pass can(4) frame to upper layer */
 	m->m_len = m->m_pkthdr.len = sizeof(struct can_frame);
 	m->m_pkthdr.rcvif = ifp;
 
-	SJA_UNLOCK(sja);
+	SJA_UNLOCK(sc);
 	(*ifp->if_input)(ifp, m);
-	SJA_LOCK(sja);
+	SJA_LOCK(sc);
 
 	return (0);
 }
@@ -448,24 +448,24 @@ sja_error(struct sja_softc *sja, uint8_t intr)
 static void
 sja_start(struct ifnet *ifp)
 {
-	struct sja_softc *sja;
+	struct sja_softc *sc
 
-	sja = ifp->if_softc;
-	SJA_LOCK(sja);
+	sc = ifp->if_softc;
+	SJA_LOCK(sc);
 	sja_start_locked(ifp);
-	SJA_UNLOCK(sja);
+	SJA_UNLOCK(sc);
 }
 
 static void
 sja_start_locked(struct ifnet *ifp)
 {
-	struct sja_softc *sja;
+	struct sja_softc *sc
 	struct can_ifsoftc *csc;
 	struct mbuf *m;
 	uint8_t status;
 
-	sja = ifp->if_softc;
-	SJA_LOCK_ASSERT(sja);
+	sc = ifp->if_softc;
+	SJA_LOCK_ASSERT(sc);
 	csc = ifp->if_l2com;
 
 	if ((ifp->if_drv_flags & (IFF_DRV_RUNNING | IFF_DRV_OACTIVE)) !=
@@ -482,7 +482,7 @@ sja_start_locked(struct ifnet *ifp)
 		/* IAP on bpf(4) */
 		can_bpf_mtap(ifp, m);
 
-		if (sja_encap(sja, &m) != 0)
+		if (sja_encap(sc, &m) != 0)
 			if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
 		else {
 			/* notify controller for transmission */
@@ -496,8 +496,8 @@ sja_start_locked(struct ifnet *ifp)
 			else
 				status |= SJA_CMR_TR;
 
-			SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_CMR, status);
-			status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_SR);
+			SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_CMR, status);
+			status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_SR);
 		}
 	}
 
@@ -505,14 +505,14 @@ sja_start_locked(struct ifnet *ifp)
 }
 
 static int 
-sja_encap(struct sja_softc *sja, struct mbuf **mp)
+sja_encap(struct sja_softc *sc, struct mbuf **mp)
 {
 	struct mbuf *m;
 	struct can_frame *cf;
 	uint8_t status, addr;
 	int i, len, error;
 
-	SJA_LOCK_ASSERT(sja);
+	SJA_LOCK_ASSERT(sc);
 
 	/* get a writable copy, if any */
 	if (M_WRITABLE(*mp) == 0) {
@@ -538,28 +538,28 @@ sja_encap(struct sja_softc *sja, struct mbuf **mp)
 
 	status |= (cf->can_dlc & SJA_FI_DLC);
 
-	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_FI, status);
+	SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_FI, status);
 
 	/* map can(4) ID */
 	if ((cf->can_id & CAN_EFF_FLAG) != 0) {
 		cf->can_id &= CAN_EFF_MASK;
 		cf->can_id <<= 3;
 
-		SJA_WRITE_4(sja->sja_dev, sja->sja_var, SJA_ID + 4, cf->can_id);
+		SJA_WRITE_4(sc->sja_dev, sc->sja_var, SJA_ID + 4, cf->can_id);
 
 		addr = SJA_DATA_EFF;
 	} else {
 		cf->can_id &= CAN_SFF_MASK;
 		cf->can_id <<= 5;
 
-		SJA_WRITE_2(sja->sja_dev, sja->sja_var, SJA_ID + 2, cf->can_id);
+		SJA_WRITE_2(sc->sja_dev, sc->sja_var, SJA_ID + 2, cf->can_id);
 
 		addr = SJA_DATA_SFF;
 	}
 
 	/* copy can(4) SDU into TX buffer */
 	for (error = i = 0, len = cf->can_dlc; i < len; addr++, i++)
-		SJA_WRITE_1(sja->sja_dev, sja->sja_var, addr, cf->can_data[i]);
+		SJA_WRITE_1(sc->sja_dev, sc->sja_var, addr, cf->can_data[i]);
 
 out:
 	m_freem(*mp);
@@ -569,25 +569,25 @@ out:
 }
 
 static void 
-sja_txeof(struct sja_softc *sja)
+sja_txeof(struct sja_softc *sc)
 {
 	struct ifnet *ifp;
 	struct can_ifsoftc *csc;
 	uint8_t status;
 
-	SJA_LOCK_ASSERT(sja);
+	SJA_LOCK_ASSERT(sc);
 
-	ifp = sja->sja_ifp;
+	ifp = sc->sja_ifp;
 	csc = ifp->if_l2com;
 
-	status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_SR);
+	status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_SR);
 
 	/* TX buffer released or TX complete */
 	if ((csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK) != 0
 		&& (status & SJA_SR_TCS) == 0) 
 		if_inc_counter(ifp, IFCOUNTER_OERRORS, 1);
 	else {
-		status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_FI);
+		status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_FI);
 		status &= SJA_FI_DLC;
 
 		if_inc_counter(ifp, IFCOUNTER_OBYTES, status);
@@ -602,42 +602,42 @@ sja_txeof(struct sja_softc *sja)
 static void 
 sja_init(void *xsc)
 {
-	struct sja_softc *sja;
+	struct sja_softc *sc
 
-	sja = (struct sja_softc *)xsc;
+	sc = (struct sja_softc *)xsc;
 
-	SJA_LOCK(sja);
-	sja_init_locked(sja);
-	SJA_UNLOCK(sja);
+	SJA_LOCK(sc);
+	sja_init_locked(sc);
+	SJA_UNLOCK(sc);
 }
 
 static void 
-sja_init_locked(struct sja_softc *sja)
+sja_init_locked(struct sja_softc *sc)
 {
 	struct ifnet *ifp;
 	struct can_ifsoftc *csc;
 	struct timeval tv0, tv;
 	uint8_t status, addr;
 
-	SJA_LOCK_ASSERT(sja);
-	ifp = sja->sja_ifp;
+	SJA_LOCK_ASSERT(sc);
+	ifp = sc->sja_ifp;
 	csc = ifp->if_l2com;
 
 	if ((ifp->if_drv_flags & IFF_DRV_RUNNING) != 0)
 		return;
 
 	/* disable interrupts and abort pending transmission, if any */
-	sja_stop(sja);
+	sja_stop(sc);
 
 	getmicrotime(&tv0);
 	getmicrotime(&tv);
 
 	/* force controller into reset mode */
 	for (; sja_timercmp(&tv0, &tv, 100);) {
-		SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_MOD, SJA_MOD_RM);
+		SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_MOD, SJA_MOD_RM);
 		DELAY(10);
 
-		status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_MOD);
+		status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_MOD);
 		getmicrotime(&tv);
 	}
 
@@ -645,30 +645,30 @@ sja_init_locked(struct sja_softc *sja)
 		csc->csc_flags = CAN_STATE_SUSPENDED;
 
 		/* set clock divider */
-		sja->sja_var->sja_cdr |= SJA_CDR_PELICAN;
-		SJA_WRITE_1(sja->sja_dev, sja->sja_var, 
-			SJA_CDR, sja->sja_var->sja_cdr);
+		sc->sja_var->sja_cdr |= SJA_CDR_PELICAN;
+		SJA_WRITE_1(sc->sja_dev, sc->sja_var, 
+			SJA_CDR, sc->sja_var->sja_cdr);
 
 		/* set acceptance filter (accept all) */
 		for (addr = SJA_ACR0; addr < SJA_AMR0; addr++)
-			SJA_WRITE_1(sja->sja_dev, sja->sja_var, addr, 0x00);
+			SJA_WRITE_1(sc->sja_dev, sc->sja_var, addr, 0x00);
 
 		for (addr = SJA_AMR0; addr <= SJA_AMR3; addr++)
-			SJA_WRITE_1(sja->sja_dev, sja->sja_var, addr, 0xff);
+			SJA_WRITE_1(sc->sja_dev, sc->sja_var, addr, 0xff);
 
 		/* set output control register */
-		sja->sja_var->sja_ocr |= SJA_OCR_MOD_NORM;
-		SJA_WRITE_1(sja->sja_dev, sja->sja_var,
-			SJA_OCR, sja->sja_var->sja_ocr);
+		sc->sja_var->sja_ocr |= SJA_OCR_MOD_NORM;
+		SJA_WRITE_1(sc->sja_dev, sc->sja_var,
+			SJA_OCR, sc->sja_var->sja_ocr);
 
 		/* flush error counters and error code capture */
-		SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_TXERR, 0x00);
-		SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_RXERR, 0x00);
+		SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_TXERR, 0x00);
+		SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_RXERR, 0x00);
 
-		status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_ECC);
+		status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_ECC);
 
 		/* clear interrupt flags */
-		status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_IR);
+		status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_IR);
 
 		getmicrotime(&tv0);
 		getmicrotime(&tv);
@@ -683,10 +683,10 @@ sja_init_locked(struct sja_softc *sja)
 			if ((csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK) != 0)
 				status |= SJA_MOD_STM;
 
-			SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_MOD, status);
+			SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_MOD, status);
 			DELAY(10);
 
-			status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_MOD);
+			status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_MOD);
 			getmicrotime(&tv);
 		}
 	}
@@ -698,7 +698,7 @@ sja_init_locked(struct sja_softc *sja)
 		if ((csc->csc_linkmodes & CAN_LINKMODE_BUS_ERR_REP) == 0)
 			status &= ~SJA_IER_BEIE;
 
-		SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_IER, status);
+		SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_IER, status);
 
 		csc->csc_flags = CAN_STATE_ERR_ACTIVE;
 
@@ -711,12 +711,12 @@ sja_init_locked(struct sja_softc *sja)
 static int
 sja_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
-	struct sja_softc *sja;
+	struct sja_softc *sc
 	struct ifreq *ifr;
 	struct ifdrv *ifd;
 	int error;
 
-	sja = ifp->if_softc;
+	sc = ifp->if_softc;
 	ifr = (struct ifreq *)data;
 	ifd = (struct ifdrv *)data;
 	error = 0;
@@ -726,30 +726,30 @@ sja_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 	case SIOCSDRVSPEC:
 		switch (ifd->ifd_cmd) {
 		case CANSLINKTIMINGS:
-			SJA_LOCK(sja);
-			error = sja_set_link_timings(sja);
-			SJA_UNLOCK(sja);
+			SJA_LOCK(sc);
+			error = sja_set_link_timings(sc);
+			SJA_UNLOCK(sc);
 			break;
 		default:
 			break;
 		}
 		break;
 	case SIOCSIFFLAGS:
-		SJA_LOCK(sja);
+		SJA_LOCK(sc);
 		if ((ifp->if_flags & IFF_UP) != 0) {
 			if (ifp->if_drv_flags & IFF_DRV_RUNNING) {
-				if ((ifp->if_flags ^ sja->sja_if_flags) &
+				if ((ifp->if_flags ^ sc->sja_if_flags) &
 					(IFF_PROMISC | IFF_ALLMULTI))
-					sja_rxfilter(sja);
+					sja_rxfilter(sc);
 
-				sja_init_locked(sja);
+				sja_init_locked(sc);
 			}
 		} else {
 			if ((ifp->if_drv_flags & IFF_DRV_RUNNING) != 0)
-				sja_stop(sja);
+				sja_stop(sc);
 		}
-		sja->sja_if_flags = ifp->if_flags;
-		SJA_UNLOCK(sja);
+		sc->sja_if_flags = ifp->if_flags;
+		SJA_UNLOCK(sc);
 		break;
 	default:
 		error = can_ioctl(ifp, cmd, data);
@@ -764,26 +764,26 @@ sja_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
  */
  
 static int 
-sja_normal_mode(struct sja_softc *sja)
+sja_normal_mode(struct sja_softc *sc)
 {
 	struct can_ifsoftc *csc;
 	struct timeval tv0, tv;
 	uint8_t status;
 	int error;
 
-	csc = sja->sja_ifp->if_l2com;
+	csc = sc->sja_ifp->if_l2com;
 
 	/* flush error counters and error code capture */
-	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_TXERR, 0x00);
-	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_RXERR, 0x00);
+	SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_TXERR, 0x00);
+	SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_RXERR, 0x00);
 
-	status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_ECC);
+	status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_ECC);
 
 	/* clear interrupt flags */
-	status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_IR);
+	status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_IR);
 
 	/* fetch contents of status register */
-	status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_MOD);
+	status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_MOD);
 
 	getmicrotime(&tv0);
 	getmicrotime(&tv);
@@ -798,7 +798,7 @@ sja_normal_mode(struct sja_softc *sja)
 			if ((csc->csc_linkmodes & CAN_LINKMODE_BUS_ERR_REP) == 0)
 				status &= ~SJA_IER_BEIE;
 
-			SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_IER, status);
+			SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_IER, status);
 
 			csc->csc_flags = CAN_STATE_ERR_ACTIVE;
 			error = 0;
@@ -813,10 +813,10 @@ sja_normal_mode(struct sja_softc *sja)
 		if ((csc->csc_linkmodes & CAN_LINKMODE_PRESUME_ACK) != 0)
 			status |= SJA_MOD_STM;
 
-		SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_MOD, status);
+		SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_MOD, status);
 		DELAY(10);
 
-		status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_MOD);
+		status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_MOD);
 		getmicrotime(&tv);
 	}
 
@@ -824,20 +824,20 @@ sja_normal_mode(struct sja_softc *sja)
 }
 
 static int 
-sja_reset(struct sja_softc *sja)
+sja_reset(struct sja_softc *sc)
 {
 	struct can_ifsoftc *csc;
 	struct timeval tv0, tv;
 	uint8_t status;
 	int error;
 
-	csc = sja->sja_ifp->if_l2com;
+	csc = sc->sja_ifp->if_l2com;
 
 	/* disable interrupts, if any */
-	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_IER, SJA_IER_OFF);
+	SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_IER, SJA_IER_OFF);
 
 	/* fetch contents of status register */
-	status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_MOD);
+	status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_MOD);
 
 	getmicrotime(&tv0);
 	getmicrotime(&tv);
@@ -851,10 +851,10 @@ sja_reset(struct sja_softc *sja)
 			break;
 		}
 
-		SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_MOD, SJA_MOD_RM);
+		SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_MOD, SJA_MOD_RM);
 		DELAY(10);
 
-		status = SJA_READ_1(sja->sja_dev, sja->sja_var, SJA_MOD);
+		status = SJA_READ_1(sc->sja_dev, sc->sja_var, SJA_MOD);
 		getmicrotime(&tv);
 	}
 
@@ -862,26 +862,26 @@ sja_reset(struct sja_softc *sja)
 }
 
 static void
-sja_rxfilter(struct sja_softc *sja)
+sja_rxfilter(struct sja_softc *sc)
 {
 
 }
 
 static int 
-sja_set_link_timings(struct sja_softc *sja)
+sja_set_link_timings(struct sja_softc *sc)
 {
 	struct can_ifsoftc *csc;
 	struct can_link_timings *clt;
 	uint8_t status;
 
-	csc = sja->sja_ifp->if_l2com;
+	csc = sc->sja_ifp->if_l2com;
 	clt = &csc->csc_timings;
 
 	/* baud rate prescalar and synchroniziation jump */
 	status = ((clt->clt_brp - 1) & SJA_BTR0_BRP_MASK);
 	status |= (((clt->clt_sjw - 1) & SJA_BTR0_SJW_MASK) << 6);
 
-	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_BTR0, status);
+	SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_BTR0, status);
 
 	/* time segments and sampling, if any */
 	status = ((clt->clt_prop + clt->clt_ps1 - 1) & 0x0f);
@@ -890,25 +890,25 @@ sja_set_link_timings(struct sja_softc *sja)
 	if ((csc->csc_linkmodes & CAN_LINKMODE_3SAMPLES) != 0)
 		status |= SJA_BTR1_SAM;
 
-	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_BTR1, status);
+	SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_BTR1, status);
 
 	return (0);
 }
 
 static void 
-sja_stop(struct sja_softc *sja)
+sja_stop(struct sja_softc *sc)
 {
 	struct ifnet *ifp;
 
-	SJA_LOCK_ASSERT(sja);
-	ifp = sja->sja_ifp;
+	SJA_LOCK_ASSERT(sc);
+	ifp = sc->sja_ifp;
 
 	ifp->if_drv_flags |= ~(IFF_DRV_RUNNING | IFF_DRV_OACTIVE);
 
 	/* disable interrupts and abort pending transmission, if any. */
 
-	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_IER, SJA_IER_OFF);
-	SJA_WRITE_1(sja->sja_dev, sja->sja_var, SJA_CMR, SJA_CMR_AT);
+	SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_IER, SJA_IER_OFF);
+	SJA_WRITE_1(sc->sja_dev, sc->sja_var, SJA_CMR, SJA_CMR_AT);
 }
 
 /*
@@ -996,4 +996,5 @@ driver_t sja_driver = {
 
 devclass_t sja_devclass;
 
-MODULE_VERSION(sja, 1);
+DRIVER_MODULE(sja, mskc, msk_driver, msk_devclass, NULL, NULL);
+MODULE_DEPEND(sja, can, 1, 1, 1);
