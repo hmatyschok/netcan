@@ -781,27 +781,25 @@ slc_txeof(struct slc_softc *sc)
 
 		s = spltty();
 
-		while (m != NULL) {
-			
+		while (m != NULL) {	
 			/*
 			 * Put N characters at once
 		     * into the tty output queue.
 			 */
-			if (b_to_q(mtod(m, u_char *), m->m_len, &tp->t_outq)) {
-				clfree(&tp->t_outq);
-				clalloc(&tp->t_outq, sc->slc_oldbufsize,
-					sc->slc_oldbufquot);
+			if (b_to_q(mtod(m, u_char *), m->m_len, &tp->t_outq))
 				break;
-			}
-			
-			off += m->m_len;
-			
+				
 			sc->slc_if->if_obytes += m->m_len;
 
 			m = m_free(m);
 		}
 
-		if (m == NULL) {
+		if (m != NULL) {
+			clfree(&tp->t_outq);
+			clalloc(&tp->t_outq, sc->slc_oldbufsize,
+				sc->slc_oldbufquot);
+			m_freem(m);
+		} else {
 			sc->slc_if->if_opackets++;
 
 			/*
@@ -809,8 +807,7 @@ slc_txeof(struct slc_softc *sc)
 			* kick the serial port.
 			*/
 			(*tp->t_oproc)(tp);
-		} else
-			m_freem(m);
+		}
 
 		splx(s);
 	}
