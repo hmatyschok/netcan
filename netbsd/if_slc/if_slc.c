@@ -597,14 +597,9 @@ slc_input(int c, struct tty *tp)
 		sc->slc_ifbuf = m;
 	}
 
-	if (flags != 0) {
-		error = ECONNABORTED;
-		goto bad;
-	}
-
 	if (m->m_len < SLC_MTU) {
 		if (c == SLC_HC_BEL || c == SLC_HC_CR) {
-			if (sc->slc_flags & SLC_ERROR) != 0) {
+			if ((sc->slc_flags & SLC_ERROR) != 0) {
 				sc->slc_flags &= ~SLC_ERROR;
 				error = ECONNABORTED;
 				goto bad;
@@ -809,7 +804,7 @@ slc_txeof(struct slc_softc *sc)
 			(*tp->t_oproc)(tp);
 		} else
 			m_freem(m);
-			
+
 		splx(s);
 	}
 }
