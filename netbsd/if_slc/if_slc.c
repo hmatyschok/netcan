@@ -795,9 +795,7 @@ slc_txeof(struct slc_softc *sc)
 		}
 
 		if (m != NULL) {
-			clfree(&tp->t_outq);
-			clalloc(&tp->t_outq, sc->slc_oldbufsize,
-				sc->slc_oldbufquot);
+			ndflush(&tp->t_outq, MHLEN);
 			m_freem(m);
 		} else {
 			sc->slc_if->if_opackets++;
