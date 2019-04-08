@@ -254,14 +254,12 @@ static int
 slc_ifioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
 	struct slc_softc *sc;
-	struct ifdrv *ifd;
 	int error;
 
 	if ((sc = ifp->if_softc) == NULL) {
 		error = EINVAL;
 		goto out;
 	} 
-	ifd = (struct ifdrv *)data;
 	error = 0;
 
 	switch (cmd) {
