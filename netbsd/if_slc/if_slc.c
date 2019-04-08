@@ -145,10 +145,10 @@ static LIST_HEAD(, slc_softc) slc_softc_list;
 struct if_clone slc_cloner =
     IF_CLONE_INITIALIZER("slc", slc_clone_create, slc_clone_destroy);
 
-static int	slc_bin2hex(struct can_frame *, u_char *);
-static int	slc_hex2bin(struct can_frame *, u_char *);
-static int	slc_id2hex(struct can_frame *, u_char *);
-static int	slc_hex2id(struct can_frame *, u_char *);
+static int	slc_bintohex(struct can_frame *, u_char *);
+static int	slc_hextobin(struct can_frame *, u_char *);
+static int	slc_idtohex(struct can_frame *, u_char *);
+static int	slc_hextoid(struct can_frame *, u_char *);
 
 static struct mbuf *	slc_btom(struct slc_softc *);
 static struct tty *	slc_encap(struct slc_softc *, struct mbuf **);
@@ -493,7 +493,7 @@ slc_encap(struct slc_softc *sc, struct mbuf **mp)
 	bp += SLC_CMD_LEN;	
 
 	/* encode ID */
-	if ((len = can_id2hex(cf, bp)) < 0)
+	if ((len = can_idtohex(cf, bp)) < 0)
 		goto bad1;
 		
 	bp += len;
@@ -504,7 +504,7 @@ slc_encap(struct slc_softc *sc, struct mbuf **mp)
 
 	/* encode data, if any */
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) {
-		if ((len = slc_bin2hex(cf, bp)) < 0)
+		if ((len = slc_bintohex(cf, bp)) < 0)
 			goto bad1;
 
 		bp += len;
@@ -667,7 +667,7 @@ slc_btom(struct slc_softc *sc)
 	m_adj(m, SLC_CMD_LEN);
 
 	/* fetch id */
-	if ((len = can_hex2id(cf, mtod(m, u_char *))) < 0)
+	if ((len = can_hextoid(cf, mtod(m, u_char *))) < 0)
 		goto bad;
 
 	m_adj(m, len);
@@ -684,7 +684,7 @@ slc_btom(struct slc_softc *sc)
 
 	/* fetch data, if any */
 	if ((cf->can_id & CAN_RTR_FLAG) == 0) {
-		if (can_hex2bin(cf, mtod(m, u_char *)) < 0)
+		if (can_hextobin(cf, mtod(m, u_char *)) < 0)
 			goto bad;
 	}
 
@@ -853,7 +853,7 @@ slc_ifioctl(struct ifnet *ifp, u_long cmd, void *data)
 static const char slc_hex_tbl[] = "0123456789ABCDEF";
 
 static int
-slc_bin2hex(struct can_frame *cf, u_char *buf)
+slc_bintohex(struct can_frame *cf, u_char *buf)
 {
 	int len, i;
 	u_char *bp, *dp;
@@ -893,7 +893,7 @@ slc_bin2hex(struct can_frame *cf, u_char *buf)
 }
 
 static int
-slc_hex2bin(struct can_frame *cf, u_char *buf)
+slc_hextobin(struct can_frame *cf, u_char *buf)
 {
 	int len, i;
 	u_char *bp;
@@ -932,7 +932,7 @@ slc_hex2bin(struct can_frame *cf, u_char *buf)
 }
 
 static int
-slc_id2hex(struct can_frame *cf, u_char *buf)
+slc_idtohex(struct can_frame *cf, u_char *buf)
 {
 	canid_t id;
 	int len;
@@ -962,7 +962,7 @@ slc_id2hex(struct can_frame *cf, u_char *buf)
 }
 
 static int
-slc_hex2id(struct can_frame *cf, u_char *buf)
+slc_hextoid(struct can_frame *cf, u_char *buf)
 {
 	int len;
 	canid_t u, v;

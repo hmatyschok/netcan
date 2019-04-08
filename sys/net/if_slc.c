@@ -267,17 +267,6 @@ slc_ifioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 	switch (cmd) {
 	case SIOCGDRVSPEC:
 	case SIOCSDRVSPEC:
-		switch (ifd->ifd_cmd) {
-		case TIOCGETD:
-			if (ifd->ifd_len != sizeof(dev_t))
-				error = EINVAL;
-			else
-				error = slc_gtty(sc, ifd->ifd_data);
-			break;
-		default:
-			error = EINVAL;
-			break;
-		}
 		break;			
 	case SIOCSIFFLAGS:	/* XXX */
 		slc_ifinit(sc);
