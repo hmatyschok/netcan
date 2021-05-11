@@ -1,0 +1,30 @@
+--- /usr/src/sys/modules/Makefile.orig	2018-06-22 01:02:40.000000000 +0200
++++ /usr/src/sys/modules/Makefile	2018-10-18 18:23:49.179275000 +0200
+@@ -153,6 +153,7 @@
+ 	${_ida} \
+ 	${_ie} \
+ 	if_bridge \
++	${_if_canloop} \
+ 	if_disc \
+ 	if_edsc \
+ 	${_if_enc} \
+@@ -162,6 +163,7 @@
+ 	${_if_me} \
+ 	if_lagg \
+ 	${_if_ndis} \
++	${_if_slc} \
+ 	${_if_stf} \
+ 	if_tap \
+ 	if_tun \
+@@ -434,6 +436,11 @@
+ _autofs=	autofs
+ .endif
+ 
++.if ${MK_CAN_SUPPORT} != "no" || defined(ALL_MODULES)
++_if_canloop= 	if_canloop
++_if_slc= 	if_slc
++.endif
++
+ .if ${MK_CDDL} != "no" || defined(ALL_MODULES)
+ .if (${MACHINE_CPUARCH} != "arm" || ${MACHINE_ARCH:Marmv6*} != "") && \
+ 	${MACHINE_CPUARCH} != "mips" && \
