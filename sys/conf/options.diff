@@ -1,9 +1,0 @@
---- /usr/src/sys/conf/options.orig	2018-06-22 01:02:23.000000000 +0200
-+++ /usr/src/sys/conf/options	2018-10-18 14:17:54.022141000 +0200
-@@ -1004,3 +1004,6 @@
- 
- # NVME options
- NVME_USE_NVD	opt_nvme.h
-+
-+# can(4) communication domain(9)
-+CAN 		opt_can.h
