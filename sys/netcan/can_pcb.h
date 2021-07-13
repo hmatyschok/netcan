@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 /*
- * Copyright (c) 2018 Henning Matyschok
+ * Copyright (c) 2018, 2021 Henning Matyschok, DARPA/AFRL
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -89,13 +89,30 @@ struct canpcb {
 
 	int		canp_refcount;
 };
-#define	CANP_LOCK_INIT(canp, d) \
-	mtx_init(&(canp)->canp_lock, (d), NULL, MTX_DEF)
-#define	CANP_LOCK(canp) 	mtx_lock(&(canp)->canp_lock)
-#define	CANP_UNLOCK(canp) 	mtx_unlock(&(canp)->canp_lock)
-#define	CANP_LOCK_ASSERT(canp) \
-	mtx_assert(&(canp)->canp_lock, MA_OWNED)
-#define	CANP_LOCK_DESTROY(canp) 	mtx_destroy(&(canp)->canp_lock)
+#define	CANP_LOCK_INIT(canp, d)                                                 \
+    do {                                                                        \
+        mtx_init(&(canp)->canp_lock, (d), NULL, MTX_DEF)                        \
+    } while (0)
+
+#define	CANP_LOCK(canp)                                                         \
+    do {                                                                        \
+        mtx_lock(&(canp)->canp_lock)                                            \
+    } while (0)
+
+#define	CANP_UNLOCK(canp)                                                       \
+    do {                                                                        \
+        mtx_unlock(&(canp)->canp_lock)                                          \
+    } while (0)
+
+#define	CANP_LOCK_ASSERT(canp)                                                  \
+    do {                                                                        \
+        mtx_assert(&(canp)->canp_lock, MA_OWNED)                                \
+    } while (0)
+
+#define	CANP_LOCK_DESTROY(canp)                                                 \
+    do {                                                                        \
+        mtx_destroy(&(canp)->canp_lock)                                         \
+    } while (0)
 
 LIST_HEAD(canpcbhead, canpcb);
 TAILQ_HEAD(canpcbqueue, canpcb);
@@ -113,25 +130,48 @@ struct canpcbinfo {
 	u_long	cani_bindhash;
 	u_long	cani_connecthash;
 };
-#define	CANP_INFO_LOCK_INIT(cani, d) \
-	mtx_init(&(cani)->cani_lock, (d), NULL, MTX_DEF)
-#define	CANP_INFO_LOCK(cani) 	mtx_lock(&(cani)->cani_lock)
-#define	CANP_INFO_UNLOCK(cani) 	mtx_unlock(&(cani)->cani_lock)
-#define	CANP_INFO_LOCK_ASSERT(cani) \
-	mtx_assert(&(cani)->cani_lock, MA_OWNED)
-#define	CANP_INFO_LOCK_DESTROY(cani) 	mtx_destroy(&(cani)->cani_lock)
+#define	CANP_INFO_LOCK_INIT(cani, d)                                            \
+    do {                                                                        \
+        mtx_init(&(cani)->cani_lock, (d), NULL, MTX_DEF)                        \
+    } while (0)
+    
+#define	CANP_INFO_LOCK(cani)                                                    \
+    do {                                                                        \
+        mtx_lock(&(cani)->cani_lock)                                            \
+    } while (0)
+
+#define	CANP_INFO_UNLOCK(cani)                                                  \
+    do {                                                                        \
+        mtx_unlock(&(cani)->cani_lock)                                          \
+    } while (0)
+
+#define	CANP_INFO_LOCK_ASSERT(cani)                                             \
+    do {                                                                        \
+        mtx_assert(&(cani)->cani_lock, MA_OWNED)                                \
+    } while (0)
+
+#define	CANP_INFO_LOCK_DESTROY(cani)                                            \
+    do {                                                                        \
+        mtx_destroy(&(cani)->cani_lock)                                         \
+    } while (0)
 
 TAILQ_HEAD(canpcbinfo_head, canpcbinfo);
 
 /* states in canp_state: */
-#define	CANP_DETACHED		0
-#define	CANP_ATTACHED		1
-#define	CANP_BOUND		2
-#define	CANP_CONNECTED		3
+typedef enum canp_state {
+    CANP_DETACHED,
+    CANP_ATTACHED,
+    CANP_BOUND,
+    CANP_CONNECTED,
+    CANP_NMAX,
+} canp_state_t;
 
 /* flags in canp_flags: */
-#define CANP_NO_LOOPBACK	0x0001 /* local loopback disabled */
-#define CANP_RECEIVE_OWN	0x0002 /* receive own message */
+typedef enum canp_flags {
+    CANP_NO_LOOPBACK =          0x00000001, /* local loopback disabled */
+    CANP_RECEIVE_OWN =          0x00000002, /* receive own message */
+    CANP_MASK =                 0xefffffff,
+} canp_flags_t;
 
 #define	sotocanpcb(so)		((struct canpcb *)(so)->so_pcb)
 

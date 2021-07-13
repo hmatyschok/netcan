@@ -1,4 +1,4 @@
-/*	$NetBSD: can_proto.c,v 1.2 2017/05/27 21:02:56 bouyer Exp $	*/
+/*  $NetBSD: can_proto.c,v 1.2 2017/05/27 21:02:56 bouyer Exp $ */
 
 /*-
  * Copyright (c) 2003, 2017 The NetBSD Foundation, Inc.
@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 /*
- * Copyright (c) 2018 Henning Matyschok
+ * Copyright (c) 2018, 2021 Henning Matyschok, DARPA/AFRL
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -86,38 +86,38 @@ extern struct domain candomain;
 
 struct protosw cansw[] = {
 {
-	.pr_type =		0,
-	.pr_domain =		&candomain,
-	.pr_protocol =		CANPROTO_CAN,
+    .pr_type =      0,
+    .pr_domain =        &candomain,
+    .pr_protocol =      CANPROTO_CAN,
 #if 0
-	.pr_ctlinput =		can_ctlinput,
+    .pr_ctlinput =      can_ctlinput,
 #endif
-	.pr_ctloutput = 	can_ctloutput,
-	.pr_init =		can_init,
-	.pr_usrreqs =		&nousrreqs
+    .pr_ctloutput =     can_ctloutput,
+    .pr_init =      can_init,
+    .pr_usrreqs =       &nousrreqs
 },
 {
-	.pr_type = 		SOCK_RAW,
-	.pr_domain = 		&candomain,
-	.pr_protocol =		CANPROTO_RAW,
-	.pr_ctloutput = 	rcan_ctloutput,
-	.pr_init = 		rcan_init,
-	.pr_flags = 		PR_ATOMIC|PR_ADDR,
-	.pr_usrreqs = 		&rcan_usrreqs,
+    .pr_type =      SOCK_RAW,
+    .pr_domain =        &candomain,
+    .pr_protocol =      CANPROTO_RAW,
+    .pr_ctloutput =     rcan_ctloutput,
+    .pr_init =      rcan_init,
+    .pr_flags =         PR_ATOMIC|PR_ADDR,
+    .pr_usrreqs =       &rcan_usrreqs,
 }
 };
 
 struct domain candomain = {
-	.dom_family = 		AF_CAN,
-	.dom_name = 		"can",
+    .dom_family =       AF_CAN,
+    .dom_name =         "can",
 #if 0
-	.dom_init = 		can_dominit,
+    .dom_init =         can_dominit,
 #endif
-	.dom_protosw = 		cansw,
-	.dom_protoswNPROTOSW = &cansw[nitems(cansw)],
+    .dom_protosw =      cansw,
+    .dom_protoswNPROTOSW = &cansw[nitems(cansw)],
 #if 0
-	.dom_ifattach =		can_domifattach,
-	.dom_ifdetach =		can_domifdetach
+    .dom_ifattach =     can_domifattach,
+    .dom_ifdetach =     can_domifdetach
 #endif
 };
 
@@ -126,11 +126,7 @@ DOMAIN_SET(can);
 /*
  * Declarations for OIDs for sysctl(9) MIB on PF_CAN.
  */
-SYSCTL_NODE(_net,      PF_CAN,		can,	CTLFLAG_RW, 0,
-	"Control Area Network Family");
+SYSCTL_NODE(_net,      PF_CAN,      can,    CTLFLAG_RW, 0,
+    "Control Area Network Family");
 
-SYSCTL_NODE(_net_can, CANPROTO_RAW,	raw,	CTLFLAG_RW, 0,	"RAW");
-
-/*
- * XXX OID e. g. for enabling disabling net.can.can_fd = ...
- */
+SYSCTL_NODE(_net_can, CANPROTO_RAW, raw,    CTLFLAG_RW, 0,  "RAW");

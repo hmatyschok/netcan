@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Henning Matyschok
+ * Copyright (c) 2019, 2021 Henning Matyschok, DARPA/AFRL
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -52,9 +52,14 @@
  * Device driver(9) for KVASER PCAN PCI cards implements proxy pattern
  * on pci(4) bus for instances of sja(4).
  *
- * See linux/drivers/net/can/sja100/kvaser_pci.c for further details.
+ * XXX
+ *  Work in progres..
  *
- * XXX Well, work on progess ...
+ *  See
+ *
+ *      linux/drivers/net/can/sja100/kvaser_pci.c
+ *
+ *  for further details.
  */
 
 #include <dev/sja/if_sjareg.h>
@@ -62,194 +67,194 @@
 
 #include "sja_if.h"
 
-static int	kvaser_pci_probe(device_t);
-static int	kvaser_pci_attach(device_t);
-static int	kvaser_pci_detach(device_t);
+static int  kvaser_pci_probe(device_t);
+static int  kvaser_pci_attach(device_t);
+static int  kvaser_pci_detach(device_t);
 
 static const struct kvaser_type  kv_devs[] = {
-	{ KVASER_VENDORID0, KVASER_DEVICEID_PCI0,
-		"KVASER PCAN PCI card 0" },
-	{ KVASER_VENDORID1, KVASER_DEVICEID_PCI1,
-		"KVASER PCAN PCI card 1" },
-	{ 0, 0, NULL }	
+    { KVASER_VENDORID0, KVASER_DEVICEID_PCI0,
+        "KVASER PCAN PCI card 0" },
+    { KVASER_VENDORID1, KVASER_DEVICEID_PCI1,
+        "KVASER PCAN PCI card 1" },
+    { 0, 0, NULL }
 };
 
 static int
 kvaser_pci_probe(device_t dev)
 {
-	const struct kvaser_type	*t;
-	uint16_t did, vid;
-	int	i, error = ENXIO;
+    const struct kvaser_type    *t;
+    uint16_t did, vid;
+    int i, error = ENXIO;
 
-	vid = pci_get_vendor(dev);
-	did = pci_get_device(dev);
+    vid = pci_get_vendor(dev);
+    did = pci_get_device(dev);
 
-	for (t = kv_devs, i = 0; i < nitems(kv_devs); i++, t++) {
-		if ((t->kv_vid == vid) && (t->kv_did == did)) {
-			device_set_desc(dev, t->kv_name);
-			error = BUS_PROBE_DEFAULT;
-			break;
-		}
-	}
-	return (error);
+    for (t = kv_devs, i = 0; i < nitems(kv_devs); i++, t++) {
+        if ((t->kv_vid == vid) && (t->kv_did == did)) {
+            device_set_desc(dev, t->kv_name);
+            error = BUS_PROBE_DEFAULT;
+            break;
+        }
+    }
+    return (error);
 }
 
 static int
 kvaser_pci_attach(device_t dev)
 {
-	struct kvaser_softc *sc;
-	struct sja_chan *chan;
-	struct sja_data *var;
-	int i, error = 0;
-	uint32_t status;
+    struct kvaser_softc *sc;
+    struct sja_chan *chan;
+    struct sja_data *var;
+    int i, error = 0;
+    uint32_t status;
 
-	sc = device_get_softc(dev);
-	sc->kv_dev = dev;
+    sc = device_get_softc(dev);
+    sc->kv_dev = dev;
 
-	(void)pci_enable_busmaster(dev);
+    (void)pci_enable_busmaster(dev);
 
-	/* allocate resources for control registers and ports */
-	sc->kv_cfg_id = PCIR_BAR(0); 
-	sc->kv_cfg_type = SYS_RES_MEMORY;
-	sc->kv_cfg = bus_alloc_resource_anywhere(dev, 
-		sc->kv_cfg_type, &sc->kv_cfg_id, 
-			KVASER_PCI_CFG_SIZE, RF_ACTIVE);
+    /* allocate resources for control registers and ports */
+    sc->kv_cfg_id = PCIR_BAR(0);
+    sc->kv_cfg_type = SYS_RES_MEMORY;
+    sc->kv_cfg = bus_alloc_resource_anywhere(dev,
+        sc->kv_cfg_type, &sc->kv_cfg_id,
+            KVASER_PCI_CFG_SIZE, RF_ACTIVE);
 
-	if (sc->kv_cfg == NULL) {
-		device_printf(dev, "couldn't map CMR\n");
-		error = ENXIO;
-		goto fail;
-	}
+    if (sc->kv_cfg == NULL) {
+        device_printf(dev, "couldn't map CMR\n");
+        error = ENXIO;
+        goto fail;
+    }
 
-	sc->kv_res_id = PCIR_BAR(2);
+    sc->kv_res_id = PCIR_BAR(2);
 
-	status = pci_read_config(dev, sc->kv_res_id, 4);
-	sc->kv_res_type = (PCI_BAR_IO(status) != 0) ?
-		SYS_RES_IOPORT : SYS_RES_MEMORY;
+    status = pci_read_config(dev, sc->kv_res_id, 4);
+    sc->kv_res_type = (PCI_BAR_IO(status) != 0) ?
+        SYS_RES_IOPORT : SYS_RES_MEMORY;
 
-	sc->kv_res = bus_alloc_resource_anywhere(dev,
-		sc->kv_res_type, &sc->kv_res_id, 
-			KVASER_PCI_RES_SIZE, RF_ACTIVE);
+    sc->kv_res = bus_alloc_resource_anywhere(dev,
+        sc->kv_res_type, &sc->kv_res_id,
+            KVASER_PCI_RES_SIZE, RF_ACTIVE);
 
-	if (sc->kv_res == NULL) {
-		device_printf(dev, "couldn't map CMR\n");
-		error = ENXIO;
-		goto fail;
-	}
+    if (sc->kv_res == NULL) {
+        device_printf(dev, "couldn't map CMR\n");
+        error = ENXIO;
+        goto fail;
+    }
 
-	sc->kv_vers_id = bus_read_1(sc->kv_res, KVASER_VERS_ID);
-	sc->kv_vers_id >>= 4;
+    sc->kv_vers_id = bus_read_1(sc->kv_res, KVASER_VERS_ID);
+    sc->kv_vers_id >>= 4;
 
-	status = pci_read_config(dev, PCIR_BAR(1), 4);
+    status = pci_read_config(dev, PCIR_BAR(1), 4);
 
-	for (i = 0; i < KVASER_CHAN_MAX; i++) {
-		chan = &sc->kv_chan[i];
-		var = &chan->sja_var;
+    for (i = 0; i < KVASER_CHAN_MAX; i++) {
+        chan = &sc->kv_chan[i];
+        var = &chan->sja_var;
 
-		chan->sja_res_id = PCIR_BAR(1) + i * KVASER_CHAN_SIZE;
-		chan->sja_res_type = (PCI_BAR_IO(status) != 0) ?
-			SYS_RES_IOPORT : SYS_RES_MEMORY;
+        chan->sja_res_id = PCIR_BAR(1) + i * KVASER_CHAN_SIZE;
+        chan->sja_res_type = (PCI_BAR_IO(status) != 0) ?
+            SYS_RES_IOPORT : SYS_RES_MEMORY;
 
-		chan->sja_res = bus_alloc_resource_anywhere(dev,
-			chan->sja_res_type, &chan->sja_res_id,
-				KVASER_CHAN_SIZE, RF_ACTIVE);
+        chan->sja_res = bus_alloc_resource_anywhere(dev,
+            chan->sja_res_type, &chan->sja_res_id,
+                KVASER_CHAN_SIZE, RF_ACTIVE);
 
-		if (chan->sja_res == NULL) {
-			device_printf(dev, "couldn't map port %i\n", i);
-			break;
-		}
+        if (chan->sja_res == NULL) {
+            device_printf(dev, "couldn't map port %i\n", i);
+            break;
+        }
 
-		var->sja_port = i;
-		var->sja_cdr = KVASER_CDR_DFLT;
-		var->sja_ocr = KVASER_OCR_DFLT;
-		var->sja_freq = KVASER_CLK_FREQ;
-	}
+        var->sja_port = i;
+        var->sja_cdr = KVASER_CDR_DFLT;
+        var->sja_ocr = KVASER_OCR_DFLT;
+        var->sja_freq = KVASER_CLK_FREQ;
+    }
 
-	sc->kv_chan_cnt = i;
+    sc->kv_chan_cnt = i;
 
-	if (sc->kv_chan_cnt == 0) {
-		device_printf(dev, "couldn't map ports\n");
-		error = ENXIO;
-		goto fail;
-	}
+    if (sc->kv_chan_cnt == 0) {
+        device_printf(dev, "couldn't map ports\n");
+        error = ENXIO;
+        goto fail;
+    }
 
-	/* attach set of sja(4) controller as its children */		
-	for (i = 0; i < sc->kv_chan_cnt; i++) { 
-		chan = &sc->kv_chan[i];
-		var = &chan->sja_var;
+    /* attach set of sja(4) controller as its children */
+    for (i = 0; i < sc->kv_chan_cnt; i++) {
+        chan = &sc->kv_chan[i];
+        var = &chan->sja_var;
 
-		if ((chan->sja_dev = device_add_child(dev, "sja", -1)) == NULL) {
-			device_printf(dev, "couldn't map channels");
-			error = ENXIO;
-			goto fail;
-		}
-		device_set_ivars(chan->sja_dev, var);
-	}
+        if ((chan->sja_dev = device_add_child(dev, "sja", -1)) == NULL) {
+            device_printf(dev, "couldn't map channels");
+            error = ENXIO;
+            goto fail;
+        }
+        device_set_ivars(chan->sja_dev, var);
+    }
 
-	if ((error = bus_generic_attach(dev)) != 0) {
-		device_printf(dev, "failed to attach ports\n");
-		goto fail;
-	}
+    if ((error = bus_generic_attach(dev)) != 0) {
+        device_printf(dev, "failed to attach ports\n");
+        goto fail;
+    }
 
-	/* assert passive mode */
-	bus_write_4(sc->kv_cfg, KVASER_TCR, KVASER_TCR_PSV);
+    /* assert passive mode */
+    bus_write_4(sc->kv_cfg, KVASER_TCR, KVASER_TCR_PSV);
 
-	/* enable interrupts */
-	status = bus_read_4(sc->kv_cfg, KVASER_ICR);
-	status |= KVASER_ICR_INIT;
+    /* enable interrupts */
+    status = bus_read_4(sc->kv_cfg, KVASER_ICR);
+    status |= KVASER_ICR_INIT;
 
-	bus_write_4(sc->kv_cfg, KVASER_ICR, status);
+    bus_write_4(sc->kv_cfg, KVASER_ICR, status);
 out:
-	return (error);
+    return (error);
 fail:
-	(void)kvaser_pci_detach(dev);
-	goto out;
+    (void)kvaser_pci_detach(dev);
+    goto out;
 }
 
 static int
 kvaser_pci_detach(device_t dev)
 {
-	struct kvaser_softc *sc;
-	struct sja_chan *chan;
-	uint32_t status;
-	int i;
- 
-	sc = device_get_softc(dev);
+    struct kvaser_softc *sc;
+    struct sja_chan *chan;
+    uint32_t status;
+    int i;
 
-	/* disable interrupts */
-	status = bus_read_4(sc->kv_cfg, KVASER_ICR);
-	status &= ~KVASER_ICR_INIT;
+    sc = device_get_softc(dev);
 
-	bus_write_4(sc->kv_cfg, KVASER_ICR, status);
+    /* disable interrupts */
+    status = bus_read_4(sc->kv_cfg, KVASER_ICR);
+    status &= ~KVASER_ICR_INIT;
 
-	/* detach each channel, if any */
-	for (i = 0; i < sc->kv_chan_cnt; i++) {
-		chan = &sc->kv_chan[i];
+    bus_write_4(sc->kv_cfg, KVASER_ICR, status);
 
-		if (chan->sja_dev != NULL)
-			(void)device_delete_child(dev, chan->sja_dev);
-	}
-	(void)bus_generic_detach(dev);
+    /* detach each channel, if any */
+    for (i = 0; i < sc->kv_chan_cnt; i++) {
+        chan = &sc->kv_chan[i];
 
-	/* release bound resources */
-	for (i = 0; i < sc->kv_chan_cnt; i++) {
-		chan = &sc->kv_chan[i];
+        if (chan->sja_dev != NULL)
+            (void)device_delete_child(dev, chan->sja_dev);
+    }
+    (void)bus_generic_detach(dev);
 
-		if (chan->sja_res != NULL) {
-			(void)bus_release_resource(dev, chan->sja_res_type,
-				chan->sja_res_id, chan->sja_res);
-		}
-	}
+    /* release bound resources */
+    for (i = 0; i < sc->kv_chan_cnt; i++) {
+        chan = &sc->kv_chan[i];
 
-	if (sc->kv_res != NULL)
-		(void)bus_release_resource(dev, sc->kv_res_type,
-			sc->kv_res_id, sc->kv_res);
+        if (chan->sja_res != NULL) {
+            (void)bus_release_resource(dev, chan->sja_res_type,
+                chan->sja_res_id, chan->sja_res);
+        }
+    }
 
-	if (sc->kv_cfg != NULL)
-		(void)bus_release_resource(dev, sc->kv_cfg_type,
-			sc->kv_cfg_id, sc->kv_cfg);
+    if (sc->kv_res != NULL)
+        (void)bus_release_resource(dev, sc->kv_res_type,
+            sc->kv_res_id, sc->kv_res);
 
-	return (0);
+    if (sc->kv_cfg != NULL)
+        (void)bus_release_resource(dev, sc->kv_cfg_type,
+            sc->kv_cfg_id, sc->kv_cfg);
+
+    return (0);
 }
 
 /*
@@ -259,100 +264,100 @@ kvaser_pci_detach(device_t dev)
 static uint8_t
 kvaser_pci_read_1(device_t dev, struct sja_data *var, int port)
 {
-	struct kvaser_softc *sc;
-	struct sja_chan *chan;
+    struct kvaser_softc *sc;
+    struct sja_chan *chan;
 
-	sc = device_get_softc(dev);
-	chan = &sc->kv_chan[var->sja_port];
+    sc = device_get_softc(dev);
+    chan = &sc->kv_chan[var->sja_port];
 
-	return (bus_read_1(chan->sja_res, port));
+    return (bus_read_1(chan->sja_res, port));
 }
 
 static uint16_t
 kvaser_pci_read_2(device_t dev, struct sja_data *var, int port)
 {
-	struct kvaser_softc *sc;
-	struct sja_chan *chan;
+    struct kvaser_softc *sc;
+    struct sja_chan *chan;
 
-	sc = device_get_softc(dev);
-	chan = &sc->kv_chan[var->sja_port];
+    sc = device_get_softc(dev);
+    chan = &sc->kv_chan[var->sja_port];
 
-	return (bus_read_2(chan->sja_res, port));
+    return (bus_read_2(chan->sja_res, port));
 }
 
 static uint32_t
 kvaser_pci_read_4(device_t dev, struct sja_data *var, int port)
 {
-	struct kvaser_softc *sc;
-	struct sja_chan *chan;
+    struct kvaser_softc *sc;
+    struct sja_chan *chan;
 
-	sc = device_get_softc(dev);
-	chan = &sc->kv_chan[var->sja_port];
+    sc = device_get_softc(dev);
+    chan = &sc->kv_chan[var->sja_port];
 
-	return (bus_read_4(chan->sja_res, port));
+    return (bus_read_4(chan->sja_res, port));
 }
 
 static void
 kvaser_pci_write_1(device_t dev, struct sja_data *var, int port, uint8_t val)
 {
-	struct kvaser_softc *sc;
-	struct sja_chan *chan;
+    struct kvaser_softc *sc;
+    struct sja_chan *chan;
 
-	sc = device_get_softc(dev);
-	chan = &sc->kv_chan[var->sja_port];
+    sc = device_get_softc(dev);
+    chan = &sc->kv_chan[var->sja_port];
 
-	bus_write_1(chan->sja_res, port, val);
+    bus_write_1(chan->sja_res, port, val);
 }
 
 static void
 kvaser_pci_write_2(device_t dev, struct sja_data *var, int port, uint16_t val)
 {
-	struct kvaser_softc *sc;
-	struct sja_chan *chan;
+    struct kvaser_softc *sc;
+    struct sja_chan *chan;
 
-	sc = device_get_softc(dev);
-	chan = &sc->kv_chan[var->sja_port];
+    sc = device_get_softc(dev);
+    chan = &sc->kv_chan[var->sja_port];
 
-	bus_write_2(chan->sja_res, port, val);
+    bus_write_2(chan->sja_res, port, val);
 }
 
 static void
 kvaser_pci_write_4(device_t dev, struct sja_data *var, int port, uint32_t val)
 {
-	struct kvaser_softc *sc;
-	struct sja_chan *chan;
+    struct kvaser_softc *sc;
+    struct sja_chan *chan;
 
-	sc = device_get_softc(dev);
-	chan = &sc->kv_chan[var->sja_port];
+    sc = device_get_softc(dev);
+    chan = &sc->kv_chan[var->sja_port];
 
-	bus_write_4(chan->sja_res, port, val);	
+    bus_write_4(chan->sja_res, port, val);
 }
 
-/* 
+/*
  * Hooks for the operating system.
  */
 static device_method_t kvaser_pci_methods[] = {
-	/* Device interface */
-	DEVMETHOD(device_probe, 	kvaser_pci_probe),
-	DEVMETHOD(device_attach,	kvaser_pci_attach),
-	DEVMETHOD(device_detach,	kvaser_pci_detach),
+    /* Device interface */
+    DEVMETHOD(device_probe,     kvaser_pci_probe),
+    DEVMETHOD(device_attach,    kvaser_pci_attach),
+    DEVMETHOD(device_detach,    kvaser_pci_detach),
 
-	/* sja(4) interface */
-	DEVMETHOD(sja_read_1,	kvaser_pci_read_1),
-	DEVMETHOD(sja_read_2,	kvaser_pci_read_2),
-	DEVMETHOD(sja_read_4,	kvaser_pci_read_4),
+    /* sja(4) interface */
+    DEVMETHOD(sja_read_1,   kvaser_pci_read_1),
+    DEVMETHOD(sja_read_2,   kvaser_pci_read_2),
+    DEVMETHOD(sja_read_4,   kvaser_pci_read_4),
 
-	DEVMETHOD(sja_write_1,	kvaser_pci_write_1),
-	DEVMETHOD(sja_write_2,	kvaser_pci_write_2),
-	DEVMETHOD(sja_write_4,	kvaser_pci_write_4),
+    DEVMETHOD(sja_write_1,  kvaser_pci_write_1),
+    DEVMETHOD(sja_write_2,  kvaser_pci_write_2),
+    DEVMETHOD(sja_write_4,  kvaser_pci_write_4),
 
-	DEVMETHOD_END
+    DEVMETHOD_END
 };
 
 static driver_t kvaser_pci_driver = {
-	"kvaser_pci",
-	kvaser_pci_methods,
-	sizeof(struct kvaser_softc)
+    "kvaser_pci",
+    kvaser_pci_methods,
+    sizeof(struct kvaser_softc)
 };
 
 static devclass_t kvaser_pci_devclass;
@@ -361,5 +366,5 @@ DRIVER_MODULE(kvaser_pci, pci, kvaser_pci_driver, kvaser_pci_devclass, 0, 0);
 DRIVER_MODULE(sja, kvaser_pci, sja_driver, sja_devclass, 0, 0);
 
 MODULE_DEPEND(kvaser_pci, pci, 1, 1, 1);
-MODULE_DEPEND(kvaser_pci, sja, 1, 1, 1); 
+MODULE_DEPEND(kvaser_pci, sja, 1, 1, 1);
 MODULE_DEPEND(kvaser_pci, can, 1, 1, 1);

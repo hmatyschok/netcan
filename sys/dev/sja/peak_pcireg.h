@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019 Henning Matyschok
+ * Copyright (c) 2018, 2019, 2021, Henning Matyschok, DARPA/AFRL
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

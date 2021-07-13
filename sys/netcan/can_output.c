@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 /*
- * Copyright (c) 2018 Henning Matyschok
+ * Copyright (c) 2018, 2021 Henning Matyschok, DARPA/AFRL
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -83,7 +83,7 @@ int can_output_cnt = 0;
 int
 can_output(struct mbuf *m, struct canpcb *canp)
 {
-	int error = 0;
+    int error;
 	struct ifnet *ifp;
 	struct can_ifsoftc *csc;
 	struct m_tag *sotag;
@@ -94,6 +94,8 @@ can_output(struct mbuf *m, struct canpcb *canp)
 #endif /* DIAGNOSTIC */
 
 	M_ASSERTPKTHDR(m);
+
+    error = 0;
 
 	if (canp == NULL) {
 		(void)printf("%s: no pcb\n", __func__);

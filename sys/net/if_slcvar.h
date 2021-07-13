@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Henning Matyschok
+ * Copyright (c) 2018, 2021 Henning Matyschok, DARPA/AFRL
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,21 +37,21 @@
  * Definitions for serial line can(4) interface data structures.
  */
 
-#define SLC_MTU 	33 /* includes ext. CAN frame size */
+#define SLC_MTU     33 /* XXX ??? */
 
 #ifdef _KERNEL
 struct slc_softc {
-	struct ifnet	*slc_ifp;
-	struct cdev	*slc_dev;
-	struct tty	*slc_tp;		/* pointer to tty structure */
-	struct mbuf	*slc_ifbuf;		
-	struct ifqueue	slc_outq;		/* queue of outgoing data */
-	size_t		slc_outqlen;	/* number of bytes in outq */
-	uint32_t	slc_flags;
-	TAILQ_ENTRY(slc_softc) slc_next;
-	struct mtx	slc_mtx;
+    struct ifnet    *slc_ifp;
+    struct cdev *slc_dev;
+    struct tty  *slc_tp;        /* pointer against tty{} structure */
+    struct mbuf *slc_ifbuf;
+    struct ifqueue  slc_outq;       /* tx-queue */
+    size_t      slc_outqlen;
+    uint32_t    slc_flags;
+    TAILQ_ENTRY(slc_softc) slc_next;
+    struct mtx  slc_mtx;
 };
-#define SLC_ERROR		0x0001
+#define SLC_ERROR       0x0001
 
 #endif /* _KERNEL */
 #endif /* _NET_IF_SLCVAR_H_ */

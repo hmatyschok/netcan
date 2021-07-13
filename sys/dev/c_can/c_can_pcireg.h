@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Henning Matyschok
+ * Copyright (c) 2019, 2021 Henning Matyschok, DARPA/AFRL
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,49 +23,50 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
- 
+
 /*
  * General constants.
- * 
- * ... card vendor ID.
+ *
+ * XXX
+ *  Card vendor IDs: work in progres..
  */
-#define C_CAN_VENDORID_STMICRO			0x104a
-#define C_CAN_VENDORID_INTEL			0x8086
+#define C_CAN_VENDORID_STMICRO          0x104a
+#define C_CAN_VENDORID_INTEL            0x8086
 
 /*
- * ... card device IDs.
+ * XXX
+ *  Card device IDs: work in progres..
  */
-#define C_CAN_DEVICEID_STMICRO_CAN			0xcc11
-#define C_CAN_DEVICEID_PCH_CAN			0x8818
+#define C_CAN_DEVICEID_STMICRO_CAN          0xcc11
+#define C_CAN_DEVICEID_PCH_CAN          0x8818
 
 struct c_can_pci_type {
-	uint16_t 	ccp_vid;
-	uint16_t 	ccp_did;
-	const char 	*ccp_name;
-	int		ccp_bar;		/* pci(4) BAR */
-	uint32_t		ccp_aln;		/* alignement */ 
-	uint32_t		ccp_srst;	/* SRST register address */
-	uint32_t		ccp_freq;		/* CLK frequency */
+    uint16_t    ccp_vid;
+    uint16_t    ccp_did;
+    const char  *ccp_name;
+    int     ccp_bar;        /* pci(4) BAR */
+    uint32_t        ccp_aln;        /* alignement */
+    uint32_t        ccp_srst;   /* SRST register address */
+    uint32_t        ccp_freq;       /* CLK frequency */
 };
 
 /*
- * Default values.
+ * Clk.-freqs.
  */
-#define C_CAN_STA2X11_CLK_FREQ		52000000	/* 52 MHz */
-#define C_CAN_PCH_CLK_FREQ		50000000		/* 50 MHz */
+#define C_CAN_STA2X11_CLK_FREQ      52000000    /* 52 MHz */
+#define C_CAN_PCH_CLK_FREQ      50000000        /* 50 MHz */
 
 /*
- * Important register.
- * 
- * ...
+ * XXX
+ *  Register-set: work in progres..
  */
 
 struct c_can_pci_softc {
-	device_t 	ccp_dev;
-	struct resource		*ccp_res;
-	int			ccp_res_type;		
-	uint32_t		ccp_aln;
-	uint32_t		ccp_srst;
-	uint32_t		ccp_freq;
-	device_t		ccp_can;	/* device(9) glue for c_can(4) */
+    device_t    ccp_dev;
+    struct resource     *ccp_res;
+    int         ccp_res_type;
+    uint32_t        ccp_aln;
+    uint32_t        ccp_srst;
+    uint32_t        ccp_freq;
+    device_t        ccp_can;    /* device(9) glue for c_can(4) */
 };

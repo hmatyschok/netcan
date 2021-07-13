@@ -1,4 +1,4 @@
-/*	$NetBSD: can.c,v 1.2.2.1 2018/04/09 13:34:11 bouyer Exp $	*/
+/*  $NetBSD: can.c,v 1.2.2.1 2018/04/09 13:34:11 bouyer Exp $   */
 
 /*-
  * Copyright (c) 2003, 2017 The NetBSD Foundation, Inc.
@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 /*
- * Copyright (c) 2018 Henning Matyschok
+ * Copyright (c) 2018, 2021 Henning Matyschok, DARPA/AFRL
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -75,21 +75,21 @@
 /*
  * Generic control operations.
  */
- 
+
 /* ARGSUSED */
 int
 can_control(struct socket *so, u_long cmd, caddr_t data,
-	struct ifnet *ifp, struct thread *td)
+    struct ifnet *ifp, struct thread *td __unused)
 {
-	int error;
+    int error;
 
-	if (ifp != NULL) {
-		if (ifp->if_ioctl != NULL)
-			error = can_ioctl(ifp, cmd, data);
-		else
-			error = EOPNOTSUPP;
-	} else
-		error = EADDRNOTAVAIL;
+    if (ifp != NULL) {
+        if (ifp->if_ioctl != NULL)
+            error = can_ioctl(ifp, cmd, data);
+        else
+            error = EOPNOTSUPP;
+    } else
+        error = EADDRNOTAVAIL;
 
-	return (error);
+    return (error);
 }

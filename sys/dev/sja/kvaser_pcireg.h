@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Henning Matyschok
+ * Copyright (c) 2019, 2021 Henning Matyschok, DARPA/AFRL
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,78 +23,80 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
- 
+
 /*
  * General constants.
- * 
+ *
  * KVASER PCAN PCI card vendor ID.
  */
-#define KVASER_VENDORID0		0x10e8	/* the PCI device and vendor IDs */
-#define KVASER_VENDORID1		0x1a07
+#define KVASER_VENDORID0        0x10e8  /* the PCI device and vendor IDs */
+#define KVASER_VENDORID1        0x1a07
 
 /*
  * KVASER PCAN PCI card device IDs.
  */
-#define KVASER_DEVICEID_PCI0		0x8406
-#define KVASER_DEVICEID_PCI1		0x0008
+#define KVASER_DEVICEID_PCI0        0x8406
+#define KVASER_DEVICEID_PCI1        0x0008
 
 struct kvaser_type {
-	uint16_t 	kv_vid;
-	uint16_t 	kv_did;
-	const char 	*kv_name;
+    uint16_t    kv_vid;
+    uint16_t    kv_did;
+    const char  *kv_name;
 };
 
 /*
  * Default values.
  */
-#define KVASER_OCR_DFLT		(SJA_OCR_TX0_PSHP | SJA_OCR_TX1_PSHP)
-#define KVASER_CDR_DFLT		(SJA_CDR_CBP | SJA_CDR_CLK_OUT)
-#define KVASER_CLK_FREQ		(16000000 / 2)
+#define KVASER_OCR_DFLT     (SJA_OCR_TX0_PSHP | SJA_OCR_TX1_PSHP)
+#define KVASER_CDR_DFLT     (SJA_CDR_CBP | SJA_CDR_CLK_OUT)
+#define KVASER_CLK_FREQ     (16000000 / 2)
 
 /*
  * Important register.
  */
 
-#define KVASER_ICR		0x38		/* interrupt control register */
-#define KVASER_TCR		0x60		/* transfer control register */
+#define KVASER_ICR      0x38        /* interrupt control register */
+#define KVASER_TCR      0x60        /* transfer control register */
 
 /*
- * ...
+ * XXX
+ *  Work in progres..
  */
 
-#define KVASER_PCI_CFG_SIZE		0x80
-#define KVASER_PCI_RES_SIZE		0x08 
-#define KVASER_PCI_BASE_SIZE		0x80
- 
+#define KVASER_PCI_CFG_SIZE     0x80
+#define KVASER_PCI_RES_SIZE     0x08
+#define KVASER_PCI_BASE_SIZE        0x80
+
 #define KVASER_CHAN_SIZE     0x20
 
-#define KVASER_CHAN_MAX		4
+#define KVASER_CHAN_MAX     4
 
 /*
- * ...
+ * XXX
+ *  Work in progres..
  */
 
-#define KVASER_ICR_INIT		0x00002000UL
-#define KVASER_TCR_PSV		0x80808080UL
+#define KVASER_ICR_INIT     0x00002000UL
+#define KVASER_TCR_PSV      0x80808080UL
 
-#define KVASER_VERS_ID		7
+#define KVASER_VERS_ID      7
 #define KVASER_VERS_ID_PRESUMED   14
 
 struct kvaser_softc {
-	device_t 	kv_dev;
+    device_t    kv_dev;
 
-	/* S5920 */
-	struct resource		*kv_cfg;
-	int			kv_cfg_id;
-	int			kv_cfg_type;
+    /* S5920 */
+    struct resource     *kv_cfg;
+    int         kv_cfg_id;
+    int         kv_cfg_type;
 
-	/* XILINX board */
-	struct resource		*kv_res;
-	int			kv_res_id;
-	int			kv_res_type;
-	uint8_t		kv_vers_id;
+    /* XILINX board */
+    struct resource     *kv_res;
+    int         kv_res_id;
+    int         kv_res_type;
+    uint8_t     kv_vers_id;
 
-	/* set of sja(4) controller */
-	uint32_t	kv_chan_cnt;
-	struct sja_chan		kv_chan[KVASER_CHAN_MAX];
+    /* set of sja(4) controller */
+    uint32_t    kv_chan_cnt;
+    struct sja_chan     kv_chan[KVASER_CHAN_MAX];
 };

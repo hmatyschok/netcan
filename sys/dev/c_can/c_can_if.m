@@ -1,5 +1,5 @@
 #-
-# Copyright (c) 2019 Henning Matyschok
+# Copyright (c) 2019, 2021 Henning Matyschok, DARPA/AFRL
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,45 +33,45 @@ INTERFACE c_can;
 # Read register.
 #
 METHOD uint8_t read_1 {
-	device_t	dev;
-	int		port;
+    device_t    dev;
+    int     port;
 };
 
 METHOD uint16_t read_2 {
-	device_t	dev;
-	int		port;
+    device_t    dev;
+    int     port;
 };
 
 METHOD uint32_t read_4 {
-	device_t	dev;
-	int		port;
+    device_t    dev;
+    int     port;
 };
 
 #
 # Write register.
 #
 METHOD void write_1 {
-	device_t	dev;	
-	int		port;
-	uint8_t		val;
+    device_t    dev;
+    int     port;
+    uint8_t     val;
 };
 
 
 METHOD void write_2 {
-	device_t	dev;	
-	int		port;
-	uint16_t	val;
+    device_t    dev;
+    int     port;
+    uint16_t    val;
 };
 
 METHOD void write_4 {
-	device_t	dev;
-	int		port;
-	uint32_t	val;
+    device_t    dev;
+    int     port;
+    uint32_t    val;
 };
 
 #
 # Software reset.
 #
 METHOD void reset {
-	device_t	dev;
+    device_t    dev;
 };

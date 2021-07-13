@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019 Henning Matyschok
+ * Copyright (c) 2018, 2019, 2021 Henning Matyschok, DARPA/AFRL
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sysexits.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -44,117 +45,117 @@
 #include "ifconfig.h"
 
 #ifndef _PATH_DEV
-#define _PATH_DEV 	"/dev/"
+#define _PATH_DEV   "/dev/"
 #endif
 
 static void
 slc_status(int s)
 {
-	char dev[MAXPATHLEN];
-	int slc_fd;
-	dev_t tty_dev;
+    char dev[MAXPATHLEN];
+    int slc_fd;
+    dev_t tty_dev;
 
-	(void)memset(dev, 0, sizeof(dev));
-	(void)snprintf(dev, sizeof(dev), "%s%s",
-		_PATH_DEV, ifr.ifr_name);
+    (void)memset(dev, 0, sizeof(dev));
+    (void)snprintf(dev, sizeof(dev), "%s%s",
+        _PATH_DEV, ifr.ifr_name);
 
-	if ((slc_fd = open(dev, O_RDONLY)) < 0)
-		return;	
+    if ((slc_fd = open(dev, O_RDONLY)) < 0)
+        return;
 
-	tty_dev = NODEV;
+    tty_dev = NODEV;
 
-	if (ioctl(slc_fd, TIOCGETD, &tty_dev) < 0)
-		goto out;
+    if (ioctl(slc_fd, TIOCGETD, &tty_dev) < 0)
+        goto out;
 
-	if (tty_dev == NODEV)
-		goto out;
+    if (tty_dev == NODEV)
+        goto out;
 
-	(void)printf("\tattached: %s\n", devname(tty_dev, S_IFCHR));
+    (void)printf("\tattached: %s\n", devname(tty_dev, S_IFCHR));
 out:
-	(void)close(slc_fd);
-} 
+    (void)close(slc_fd);
+}
 
 static void
 slc_stty(const char *val, int d, int s, const struct afswtch *afp)
 {
-	char dev[MAXPATHLEN];
-	int slc_fd, tty_fd;
-	struct termios tty;
+    char dev[MAXPATHLEN];
+    int slc_fd, tty_fd;
+    struct termios tty;
 
-	(void)memset(dev, 0, sizeof(dev));
-	(void)snprintf(dev, sizeof(dev), "%s%s",
-		_PATH_DEV, ifr.ifr_name);
+    (void)memset(dev, 0, sizeof(dev));
+    (void)snprintf(dev, sizeof(dev), "%s%s",
+        _PATH_DEV, ifr.ifr_name);
 
-	if ((slc_fd = open(dev, O_RDONLY)) < 0)
-		err(1, "cannot open(2) %s", dev);
+    if ((slc_fd = open(dev, O_RDONLY)) < 0)
+        err(EX_SOFTWARE, "cannot open(2) %s", dev);
 
-	(void)memset(dev, 0, sizeof(dev));
-	(void)snprintf(dev, sizeof(dev), "%s%s", _PATH_DEV, val);
+    (void)memset(dev, 0, sizeof(dev));
+    (void)snprintf(dev, sizeof(dev), "%s%s", _PATH_DEV, val);
 
-	if ((tty_fd = open(dev, O_RDONLY | O_NONBLOCK)) < 0)
-		err(1, "TIOCSETD Can't open %s device", dev);
+    if ((tty_fd = open(dev, O_RDONLY | O_NONBLOCK)) < 0)
+        err(EX_SOFTWARE, "TIOCSETD Can't open %s device", dev);
 
-	if (isatty(tty_fd) == 0)
-		err(1, "TIOCSETD %s not a tty(4) device", dev);
+    if (isatty(tty_fd) == 0)
+        err(EX_SOFTWARE, "TIOCSETD %s not a tty(4) device", dev);
 
-	if (tcgetattr(tty_fd, &tty) < 0)
-		err(1, "TIOCSETD Can't tcgetattr(3) from %s", dev);
+    if (tcgetattr(tty_fd, &tty) < 0)
+        err(EX_SOFTWARE, "TIOCSETD Can't tcgetattr(3) from %s", dev);
 
-	tty.c_cflag = CREAD | CS8;
-	tty.c_iflag = 0;
-	tty.c_lflag = 0;
-	tty.c_oflag = 0;
-	tty.c_cc[VMIN] = 1;
-	tty.c_cc[VTIME] = 0;
+    tty.c_cflag = CREAD | CS8;
+    tty.c_iflag = 0;
+    tty.c_lflag = 0;
+    tty.c_oflag = 0;
+    tty.c_cc[VMIN] = 1;
+    tty.c_cc[VTIME] = 0;
 
-	if (tcsetattr(tty_fd, TCSANOW, &tty) < 0)
-		err(1, "TIOCSETD Can't tcsetattr(3) to %s", dev);
+    if (tcsetattr(tty_fd, TCSANOW, &tty) < 0)
+        err(EX_SOFTWARE, "TIOCSETD Can't tcsetattr(3) to %s", dev);
 
-	if (ioctl(slc_fd, TIOCSETD, &tty_fd) < 0)
-		err(1, "TIOCSETD Can't attach %s to %s",
-			dev, ifr.ifr_name);
+    if (ioctl(slc_fd, TIOCSETD, &tty_fd) < 0)
+        err(EX_SOFTWARE, "TIOCSETD Can't attach %s to %s",
+            dev, ifr.ifr_name);
 
-	(void)close(tty_fd);
-	(void)close(slc_fd);
+    (void)close(tty_fd);
+    (void)close(slc_fd);
 }
 
 static void
 slc_dtty(const char *val, int d, int s, const struct afswtch *afp)
 {
-	char dev[MAXPATHLEN];
-	int slc_fd;
+    char dev[MAXPATHLEN];
+    int slc_fd;
 
-	(void)memset(dev, 0, sizeof(dev));
-	(void)snprintf(dev, sizeof(dev), "%s%s",
-		_PATH_DEV, ifr.ifr_name);
+    (void)memset(dev, 0, sizeof(dev));
+    (void)snprintf(dev, sizeof(dev), "%s%s",
+        _PATH_DEV, ifr.ifr_name);
 
-	if ((slc_fd = open(dev, O_RDONLY)) < 0)
-		err(1, "cannot open(2) %s", dev);
+    if ((slc_fd = open(dev, O_RDONLY)) < 0)
+        err(EX_SOFTWARE, "cannot open(2) %s", dev);
 
-	if (ioctl(slc_fd, TIOCNOTTY) < 0)
-		err(1, "TIOCNOTTY Can't detach");
+    if (ioctl(slc_fd, TIOCNOTTY) < 0)
+        err(EX_SOFTWARE, "TIOCNOTTY Can't detach");
 
-	(void)close(slc_fd);
+    (void)close(slc_fd);
 }
 
 static struct cmd slc_cmds[] = {
-	DEF_CMD_ARG("stty",		slc_stty),
-	DEF_CMD("dtty", 0,		slc_dtty),
+    DEF_CMD_ARG("stty",     slc_stty),
+    DEF_CMD("dtty", 0,      slc_dtty),
 };
 
 static struct afswtch af_slc = {
-	.af_name	= "af_slc",
-	.af_af		= AF_UNSPEC,
-	.af_other_status = slc_status,
+    .af_name    = "af_slc",
+    .af_af      = AF_UNSPEC,
+    .af_other_status = slc_status,
 };
 
 static __constructor void
 slc_ctor(void)
 {
-	int i;
+    int i;
 
-	for (i = 0; i < nitems(slc_cmds);  i++)
-		cmd_register(&slc_cmds[i]);
+    for (i = 0; i < nitems(slc_cmds);  i++)
+        cmd_register(&slc_cmds[i]);
 
-	af_register(&af_slc);
+    af_register(&af_slc);
 }

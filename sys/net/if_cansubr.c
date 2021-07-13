@@ -1,4 +1,4 @@
-/*	$NetBSD: can.c,v 1.2.2.1 2018/04/09 13:34:11 bouyer Exp $	*/
+/*  $NetBSD: can.c,v 1.2.2.1 2018/04/09 13:34:11 bouyer Exp $   */
 
 /*-
  * Copyright (c) 2003, 2017 The NetBSD Foundation, Inc.
@@ -29,7 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 /*
- * Copyright (c) 2018, 2019 Henning Matyschok
+ * Copyright (c) 2018, 2019, 2021 Henning Matyschok, DARPA/AFRL
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -52,7 +52,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
- 
+
 #include <sys/cdefs.h>
 
 #include "opt_can.h"
@@ -79,11 +79,11 @@
 
 static MALLOC_DEFINE(M_IFCAN, "IFCAN", "CAN interface internals");
 
-static int 	can_restart(struct ifnet *);
+static int  can_restart(struct ifnet *);
 
-static void 	can_ifinput(struct ifnet *, struct mbuf *);
-static int 	can_ifoutput(struct ifnet *, struct mbuf *, 
-	const struct sockaddr *, struct route *);
+static void     can_ifinput(struct ifnet *, struct mbuf *);
+static int  can_ifoutput(struct ifnet *, struct mbuf *,
+    const struct sockaddr *, struct route *);
 
 /*
  * Process a received can(4) frame by netisr(9).
@@ -91,190 +91,190 @@ static int 	can_ifoutput(struct ifnet *, struct mbuf *,
 static void
 can_ifinput(struct ifnet *ifp, struct mbuf *m)
 {
-#ifdef DIAGNOSTIC	
-	struct can_hdr *ch; 
-#endif 	/* DIAGNOSTIC */	
-	M_ASSERTPKTHDR(m);
-	KASSERT(m->m_pkthdr.rcvif != NULL,
-	    ("%s: NULL interface pointer", __func__));
+#ifdef DIAGNOSTIC
+    struct can_hdr *ch;
+#endif  /* DIAGNOSTIC */
+    M_ASSERTPKTHDR(m);
+    KASSERT(m->m_pkthdr.rcvif != NULL,
+        ("%s: NULL interface pointer", __func__));
 
-	if ((ifp->if_flags & IFF_UP) == 0) {
-		if_printf(ifp, "discard can(4) frame at !IFF_UP\n");
-		goto out;
-	}
+    if ((ifp->if_flags & IFF_UP) == 0) {
+        if_printf(ifp, "discard can(4) frame at !IFF_UP\n\0");
+        goto out;
+    }
 
 #ifdef DIAGNOSTIC
-	if ((ifp->if_drv_flags & IFF_DRV_RUNNING) == 0) {
-		if_printf(ifp, "discard can(4) frame at !IFF_DRV_RUNNING\n");
-		goto out;
-	}
-#endif 	/* DIAGNOSTIC */
+    if ((ifp->if_drv_flags & IFF_DRV_RUNNING) == 0) {
+        if_printf(ifp, "discard can(4) frame at !IFF_DRV_RUNNING\n\0");
+        goto out;
+    }
+#endif  /* DIAGNOSTIC */
 
-	if (m->m_pkthdr.len < sizeof(struct can_frame)) {
-		if_printf(ifp, "discard can(4) frame"
-			" (len %u pkt len %u)\n",
-			m->m_len, m->m_pkthdr.len);
-		goto out1;
-	}
+    if (m->m_pkthdr.len < sizeof(struct can_frame)) {
+        if_printf(ifp, "discard can(4) frame"
+            " (len %u pkt len %u)\n\0",
+            m->m_len, m->m_pkthdr.len);
+        goto out1;
+    }
 
-	if (m->m_len < sizeof(struct can_frame)) {
-	    if ((m = m_pullup(m, sizeof(struct can_frame))) == NULL) {
-			if_printf(ifp, "m_pullup(9) failed, discard can(4) frame.");
-			goto out1;
-		}
-	}
+    if (m->m_len < sizeof(struct can_frame)) {
+        if ((m = m_pullup(m, sizeof(struct can_frame))) == NULL) {
+            if_printf(ifp, "m_pullup(9) failed, discard can(4) frame.");
+            goto out1;
+        }
+    }
 #ifdef DIAGNOSTIC
-	ch = mtod(m, struct can_hdr *);
+    ch = mtod(m, struct can_hdr *);
 
-	switch (ch->ch_id & CAN_FLAG_MASK) {
-	case CAN_STD_FRM:
-	case CAN_EXT_FRM:
-	case CAN_RTR_FRM:
-	case CAN_ERR_FRM:
-		if_printf(ifp, "%s: ", __func__);
-		m_print(m, m->m_pkthdr.len);
-		break;
-	default:
-		goto out1;
-	}
+    switch (ch->ch_id & CAN_FLAG_MASK) {
+    case CAN_STD_FRM:
+    case CAN_EXT_FRM:
+    case CAN_RTR_FRM:
+    case CAN_ERR_FRM:
+        if_printf(ifp, "%s: ", __func__);
+        m_print(m, m->m_pkthdr.len);
+        break;
+    default:
+        goto out1;
+    }
 #endif /* DIAGNOSTIC */
-	
+
 #ifdef MAC
-	mac_ifnet_create_mbuf(ifp, m);
+    mac_ifnet_create_mbuf(ifp, m);
 #endif /* MAC */
 
-	/* IAP for rx'd frames */
-	can_bpf_mtap(ifp, m);
+    /* IAP for rx'd frames */
+    can_bpf_mtap(ifp, m);
 
-	/* remove annotated meta-data */
-	if ((ifp->if_flags & IFF_LOOPBACK) != 0)
-		can_mbuf_tag_clean(m);
+    /* remove annotated meta-data */
+    if ((ifp->if_flags & IFF_LOOPBACK) != 0)
+        can_mbuf_tag_clean(m);
 
-	if_inc_counter(ifp, IFCOUNTER_IPACKETS, 1);
-	if_inc_counter(ifp, IFCOUNTER_IBYTES, m->m_pkthdr.len);
+    if_inc_counter(ifp, IFCOUNTER_IPACKETS, 1);
+    if_inc_counter(ifp, IFCOUNTER_IBYTES, m->m_pkthdr.len);
 
-	/* clear mbuf(9), if monitor mode enabled */ 
-	if ((ifp->if_flags & IFF_MONITOR) != 0)
-		goto out;
+    /* clear mbuf(9), if monitor mode enabled */
+    if ((ifp->if_flags & IFF_MONITOR) != 0)
+        goto out;
 
-	M_SETFIB(m, ifp->if_fib);
-	netisr_dispatch(NETISR_CAN, m);
-	return;
+    M_SETFIB(m, ifp->if_fib);
+    netisr_dispatch(NETISR_CAN, m);
+    return;
 out1:
-	if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
+    if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
 out:
-	m_freem(m);
+    m_freem(m);
 }
 
 /*
  * Enqueue can(4) frame and transmit.
  */
 static int
-can_ifoutput(struct ifnet *ifp, struct mbuf *m, 
-	const struct sockaddr *dst, struct route *ro)
+can_ifoutput(struct ifnet *ifp, struct mbuf *m,
+    const struct sockaddr *dst, struct route *ro)
 {
-	int error;
+    int error;
 
-	if (dst == NULL) {
-		error = EINVAL;
-		goto bad;
-	}
+    if (dst == NULL) {
+        error = EINVAL;
+        goto bad;
+    }
 
-	if (dst->sa_family != AF_CAN) {
-		error = EINVAL;
-		goto bad;
-	}
+    if (dst->sa_family != AF_CAN) {
+        error = EINVAL;
+        goto bad;
+    }
 
-	if (ifp->if_l2com == NULL) {
-		error = ENXIO;
-		goto bad;
-	}
+    if (ifp->if_l2com == NULL) {
+        error = ENXIO;
+        goto bad;
+    }
 
 #ifdef MAC
-	if ((error = mac_ifnet_check_transmit(ifp, m)) != 0)
-		goto bad;
-#endif 	/* MAC */
+    if ((error = mac_ifnet_check_transmit(ifp, m)) != 0)
+        goto bad;
+#endif  /* MAC */
 
-	if ((ifp->if_flags & IFF_MONITOR) != 0) {
-		error = ENETDOWN;
-		goto bad;
-	}
+    if ((ifp->if_flags & IFF_MONITOR) != 0) {
+        error = ENETDOWN;
+        goto bad;
+    }
 
-	if (((ifp->if_flags & IFF_UP) == 0) &&
-	    ((ifp->if_drv_flags & IFF_DRV_RUNNING) != 0)) {
-		error = ENETDOWN;
-		goto bad;
-	}
+    if (((ifp->if_flags & IFF_UP) == 0) &&
+        ((ifp->if_drv_flags & IFF_DRV_RUNNING) != 0)) {
+        error = ENETDOWN;
+        goto bad;
+    }
 
-	if ((ifp->if_flags & IFF_PROMISC) != 0) {
-		error = ENETDOWN;
-		goto bad;
-	}
+    if ((ifp->if_flags & IFF_PROMISC) != 0) {
+        error = ENETDOWN;
+        goto bad;
+    }
 
 #ifdef DIAGNOSTIC
-	if_printf(ifp, "%s: ", __func__);
-	m_print(m, m->m_pkthdr.len);
+    if_printf(ifp, "%s: ", __func__);
+    m_print(m, m->m_pkthdr.len);
 #endif /* DIAGNOSTiC */
 
-	error = (*ifp->if_transmit)(ifp, m);
+    error = (*ifp->if_transmit)(ifp, m);
 out:
-	return (error);
+    return (error);
 bad:
-	m_freem(m);
-	goto out;
+    m_freem(m);
+    goto out;
 }
 
 void
 can_ifattach(struct ifnet *ifp, const struct can_link_timecaps *cltc,
-	uint32_t freq)
+    uint32_t freq)
 {
-	struct can_ifsoftc *csc;
+    struct can_ifsoftc *csc;
 
-	if_attach(ifp);
+    if_attach(ifp);
 
-	ifp->if_mtu = CAN_MTU;	/* XXX */
-	ifp->if_input = can_ifinput;
-	ifp->if_output = can_ifoutput; 
+    ifp->if_mtu = CAN_MTU;  /* XXX */
+    ifp->if_input = can_ifinput;
+    ifp->if_output = can_ifoutput;
 
-	bpfattach(ifp, DLT_CAN_SOCKETCAN, 0);
+    bpfattach(ifp, DLT_CAN_SOCKETCAN, 0);
 
-	KASSERT((ifp->if_l2com != NULL),
-		("%s: ifp->if_l2com == NULL", __func__));
-	csc = ifp->if_l2com; 
+    KASSERT((ifp->if_l2com != NULL),
+        ("%s: ifp->if_l2com == NULL", __func__));
+    csc = ifp->if_l2com;
 
-	if (cltc != NULL) {
-		bcopy(cltc, &csc->csc_timecaps, 
-			sizeof(struct can_link_timecaps));
-		csc->csc_timecaps.cltc_clock_freq = freq;
-	}
-	mtx_init(&csc->csc_mtx, "csc_mtx", NULL, MTX_DEF);
+    if (cltc != NULL) {
+        bcopy(cltc, &csc->csc_timecaps,
+            sizeof(struct can_link_timecaps));
+        csc->csc_timecaps.cltc_clock_freq = freq;
+    }
+    mtx_init(&csc->csc_mtx, "csc_mtx", NULL, MTX_DEF);
 
-	if_printf(ifp, "Index: %d\n", ifp->if_index);
+    if_printf(ifp, "Index: %d\n", ifp->if_index);
 }
 
 void
 can_ifdetach(struct ifnet *ifp)
 {
-	struct can_ifsoftc *csc;
+    struct can_ifsoftc *csc;
 
-	KASSERT((ifp->if_l2com != NULL),
-	    ("%s: ifp->if_l2com == NULL", __func__));
-	csc = ifp->if_l2com; 
-	mtx_destroy(&csc->csc_mtx);
+    KASSERT((ifp->if_l2com != NULL),
+        ("%s: ifp->if_l2com == NULL", __func__));
+    csc = ifp->if_l2com;
+    mtx_destroy(&csc->csc_mtx);
 
-	bpfdetach(ifp);
-	if_detach(ifp);
+    bpfdetach(ifp);
+    if_detach(ifp);
 }
 
 void
 can_ifinit_timings(struct can_ifsoftc *csc)
 {
-	CSC_LOCK(csc);
+    CSC_LOCK(csc);
 
-	/* uninitialized parameters is all-one */
-	(void)memset(&csc->csc_timings, 0xff, 
-		sizeof(struct can_link_timings));
-	CSC_UNLOCK(csc);
+    /* uninitialized parameters is all-one */
+    (void)memset(&csc->csc_timings, 0xff,
+        sizeof(struct can_link_timings));
+    CSC_UNLOCK(csc);
 }
 
 /*
@@ -283,150 +283,150 @@ can_ifinit_timings(struct can_ifsoftc *csc)
 int
 can_restart(struct ifnet *ifp)
 {
-	struct mbuf *m;
-	struct can_frame *cf;
-	int error = 0;
+    struct mbuf *m;
+    struct can_frame *cf;
+    int error = 0;
 
-	if ((m = m_gethdr(M_NOWAIT, MT_DATA)) == NULL) {
-		error = ENOBUFS;
-		goto done;
-	}
+    if ((m = m_gethdr(M_NOWAIT, MT_DATA)) == NULL) {
+        error = ENOBUFS;
+        goto done;
+    }
 
-	(void)memset(mtod(m, caddr_t), 0, MHLEN);
+    (void)memset(mtod(m, caddr_t), 0, MHLEN);
 
-	cf = mtod(m, struct can_frame *);
-	cf->can_id |= (CAN_ERR_FLAG | CAN_ERR_RESTARTED);
+    cf = mtod(m, struct can_frame *);
+    cf->can_id |= (CAN_ERR_FLAG | CAN_ERR_RESTARTED);
 
-	/* pass can(4) frame to layer above */
-	m->m_len = m->m_pkthdr.len = sizeof(struct can_frame);
-	m->m_pkthdr.rcvif = ifp;
-	
- 	(*ifp->if_input)(ifp, m);
- 
+    /* pass can(4) frame to layer above */
+    m->m_len = m->m_pkthdr.len = sizeof(struct can_frame);
+    m->m_pkthdr.rcvif = ifp;
+
+    (*ifp->if_input)(ifp, m);
+
 done:
-	if_printf(ifp, "restarted\n");
+    if_printf(ifp, "restarted\n");
 
-	(*ifp->if_init)(ifp->if_softc);
+    (*ifp->if_init)(ifp->if_softc);
 
-	return (error);
+    return (error);
 }
 
 /* ARGSUSED */
 int
 can_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data)
 {
-	struct can_ifsoftc *csc;
-	struct ifreq *ifr;
-	struct ifdrv *ifd;
-	uint32_t mode;
-	int error;
+    struct can_ifsoftc *csc;
+    struct ifreq *ifr;
+    struct ifdrv *ifd;
+    uint32_t mode;
+    int error;
 
-	ifr = (struct ifreq *)data;
-	ifd = (struct ifdrv *)data;
-	error = 0;
+    ifr = (struct ifreq *)data;
+    ifd = (struct ifdrv *)data;
+    error = 0;
 
-	if ((ifp->if_flags & IFF_UP) == 0) {
-		error = ENETDOWN;
-		goto out;
-	}
+    if ((ifp->if_flags & IFF_UP) == 0) {
+        error = ENETDOWN;
+        goto out;
+    }
 
-	if (ifp->if_type == IFT_CAN) {
-		if ((csc = ifp->if_l2com) == NULL)
-			error = EOPNOTSUPP;
-		else
-			error = 0;
-	} else
-		error = EOPNOTSUPP;
+    if (ifp->if_type == IFT_CAN) {
+        if ((csc = ifp->if_l2com) == NULL)
+            error = EOPNOTSUPP;
+        else
+            error = 0;
+    } else
+        error = EOPNOTSUPP;
 
-	if (error != 0)
-		goto out;
+    if (error != 0)
+        goto out;
 
-	switch (cmd) {
-	case SIOCSIFMTU:
+    switch (cmd) {
+    case SIOCSIFMTU:
 
-		if (ifr->ifr_mtu == CAN_MTU)
-			ifp->if_mtu = ifr->ifr_mtu;
-		else
-			error = EINVAL;
-				
-		break;
-	case SIOCGDRVSPEC:
-	case SIOCSDRVSPEC:		/* FALLTHROUGH */
+        if (ifr->ifr_mtu == CAN_MTU)
+            ifp->if_mtu = ifr->ifr_mtu;
+        else
+            error = EINVAL;
 
-		switch (ifd->ifd_cmd) {
-		case CANGLINKTIMECAP:
+        break;
+    case SIOCGDRVSPEC:
+    case SIOCSDRVSPEC:      /* FALLTHROUGH */
 
-			if (ifd->ifd_len != sizeof(struct can_link_timecaps))
-				error = EINVAL;
-			else
-				error = copyout(&csc->csc_timecaps,
-					ifd->ifd_data, ifd->ifd_len);
-			break;
-		case CANGLINKTIMINGS:
+        switch (ifd->ifd_cmd) {
+        case CANGLINKTIMECAP:
 
-			if (ifd->ifd_len != sizeof(struct can_link_timings))
-				error = EINVAL;
-			else
-				error = copyout(&csc->csc_timings,
-					ifd->ifd_data, ifd->ifd_len);
-			break;
-		case CANGLINKMODE:
+            if (ifd->ifd_len != sizeof(struct can_link_timecaps))
+                error = EINVAL;
+            else
+                error = copyout(&csc->csc_timecaps,
+                    ifd->ifd_data, ifd->ifd_len);
+            break;
+        case CANGLINKTIMINGS:
 
-			if (ifd->ifd_len != sizeof(uint32_t))
-				error = EINVAL;
-			else
-				error = copyout(&csc->csc_linkmodes,
-					ifd->ifd_data, ifd->ifd_len);
-			break;
-		case CANSLINKTIMINGS:
+            if (ifd->ifd_len != sizeof(struct can_link_timings))
+                error = EINVAL;
+            else
+                error = copyout(&csc->csc_timings,
+                    ifd->ifd_data, ifd->ifd_len);
+            break;
+        case CANGLINKMODE:
 
-			if (ifd->ifd_len != sizeof(struct can_link_timings))
-				error = EINVAL;
-			else
-				error = copyin(ifd->ifd_data, 
-					&csc->csc_timings, ifd->ifd_len);
+            if (ifd->ifd_len != sizeof(uint32_t))
+                error = EINVAL;
+            else
+                error = copyout(&csc->csc_linkmodes,
+                    ifd->ifd_data, ifd->ifd_len);
+            break;
+        case CANSLINKTIMINGS:
 
-			if (error != 0)
-				break;
+            if (ifd->ifd_len != sizeof(struct can_link_timings))
+                error = EINVAL;
+            else
+                error = copyin(ifd->ifd_data,
+                    &csc->csc_timings, ifd->ifd_len);
 
-			error = (*ifp->if_ioctl)(ifp, cmd, (caddr_t)ifd);
-			break;
-		case CANSLINKMODE:
-		case CANCLINKMODE: 	/* FALLTHROUGH */
+            if (error != 0)
+                break;
 
-			if (ifd->ifd_len != sizeof(uint32_t))
-				error = EINVAL;
-			else
-				error = copyin(ifd->ifd_data, &mode, ifd->ifd_len);
+            error = (*ifp->if_ioctl)(ifp, cmd, (caddr_t)ifd);
+            break;
+        case CANSLINKMODE:
+        case CANCLINKMODE:  /* FALLTHROUGH */
 
-			if (error != 0)
-				break;
+            if (ifd->ifd_len != sizeof(uint32_t))
+                error = EINVAL;
+            else
+                error = copyin(ifd->ifd_data, &mode, ifd->ifd_len);
 
-			if ((mode & csc->csc_timecaps.cltc_linkmode_caps) != mode) {
-				error = EINVAL;
-				break;
-			}
+            if (error != 0)
+                break;
 
-			/* XXX: locking */
-			if (ifd->ifd_cmd == CANSLINKMODE)
-				csc->csc_linkmodes |= mode;
-			else
-				csc->csc_linkmodes &= ~mode;
+            if ((mode & csc->csc_timecaps.cltc_linkmode_caps) != mode) {
+                error = EINVAL;
+                break;
+            }
 
-		case CANSRESTART:		/* FALLTHROUGH */
+            /* XXX: locking */
+            if (ifd->ifd_cmd == CANSLINKMODE)
+                csc->csc_linkmodes |= mode;
+            else
+                csc->csc_linkmodes &= ~mode;
 
-			error = can_restart(ifp);
-			break;
-		default:
-			error = EOPNOTSUPP;
-			break;
-		}
-		break;
-	default:
-		break;
-	}
+        case CANSRESTART:       /* FALLTHROUGH */
+
+            error = can_restart(ifp);
+            break;
+        default:
+            error = EOPNOTSUPP;
+            break;
+        }
+        break;
+    default:
+        break;
+    }
 out:
-	return (error);
+    return (error);
 }
 
 /*
@@ -435,16 +435,16 @@ out:
 void
 can_bpf_mtap(struct ifnet *ifp, struct mbuf *m)
 {
-	struct can_frame *cf;
-	canid_t oid;
+    struct can_frame *cf;
+    canid_t oid;
 
-	/* bpf(4) wants the can(4) id in network byte order */
+    /* bpf(4) wants the can(4) id in network byte order */
 
-	cf = mtod(m, struct can_frame *);
-	oid = cf->can_id;	
-	cf->can_id = htonl(oid);
-	bpf_mtap(ifp->if_bpf, m);
-	cf->can_id = oid;
+    cf = mtod(m, struct can_frame *);
+    oid = cf->can_id;
+    cf->can_id = htonl(oid);
+    bpf_mtap(ifp->if_bpf, m);
+    cf->can_id = oid;
 }
 
 /*
@@ -453,164 +453,164 @@ can_bpf_mtap(struct ifnet *ifp, struct mbuf *m)
 void
 can_mbuf_tag_clean(struct mbuf *m)
 {
-	struct m_tag *sotag;
+    struct m_tag *sotag;
 
-	if ((sotag = m_tag_find(m, PACKET_TAG_ND_OUTGOING, NULL)) != NULL)
-		m_tag_unlink(m, sotag);
+    if ((sotag = m_tag_find(m, PACKET_TAG_ND_OUTGOING, NULL)) != NULL)
+        m_tag_unlink(m, sotag);
 
-	m_tag_delete_nonpersistent(m);
-	if (sotag != NULL)
-		m_tag_prepend(m, sotag);
+    m_tag_delete_nonpersistent(m);
+    if (sotag != NULL)
+        m_tag_prepend(m, sotag);
 }
 
 /*
  * Subr. for encoding / decoding can(4) ID and SDU.
  */
- 
-static const char can_hex_tbl[] = "0123456789ABCDEF";
+
+static const char can_hex_tbl[] = "0123456789ABCDEF\0";
 
 int
 can_bin2hex(struct can_frame *cf, u_char *buf)
 {
-	int len, i;
-	u_char *bp, *dp;
-	u_char c;
+    int len, i;
+    u_char *bp, *dp;
+    u_char c;
 
-	if ((bp = buf) == NULL || cf == NULL)
-		return (-1);
+    if ((bp = buf) == NULL || cf == NULL)
+        return (-1);
 
-	if ((len = cf->can_dlc) >= CAN_MAX_DLC)
-		return (-1);
+    if ((len = cf->can_dlc) > CAN_DLC_MAX)
+        return (-1);
 
-	for (dp = bp, i = 0; i < len; i++) {
-		c = cf->can_data[i];
+    for (dp = bp, i = 0; i < len; i++) {
+        c = cf->can_data[i];
 
-		*dp = ((c & 0xf0) >> 4);
+        *dp = ((c & 0xf0) >> 4);
 
-		if (isalpha(*dp) && islower(*dp))
-			*dp = toupper(*dp);
+        if (isalpha(*dp) && islower(*dp))
+            *dp = toupper(*dp);
 
-		*dp = can_hex_tbl[*dp];
+        *dp = can_hex_tbl[*dp];
 
-		dp += 1;
+        dp += 1;
 
-		*dp = (c & 0x0f); 
+        *dp = (c & 0x0f);
 
-		if (isalpha(*dp) && islower(*dp))
-			*dp = toupper(*dp);
+        if (isalpha(*dp) && islower(*dp))
+            *dp = toupper(*dp);
 
-		*dp = can_hex_tbl[*dp];
+        *dp = can_hex_tbl[*dp];
 
-		dp += 1;
-	}
+        dp += 1;
+    }
 
-	len = dp - bp;
+    len = dp - bp;
 
-	return (len);
+    return (len);
 }
 
 int
 can_hex2bin(struct can_frame *cf, u_char *buf)
 {
-	int len, i;
-	u_char *bp;
-	u_char c1, c0;
+    int len, i;
+    u_char *bp;
+    u_char c1, c0;
 
-	if ((bp = buf) == NULL || cf == NULL)
-		return (-1);
+    if ((bp = buf) == NULL || cf == NULL)
+        return (-1);
 
-	if ((len = cf->can_dlc) >= CAN_MAX_DLC)
-		return (-1);
+    if ((len = cf->can_dlc) > CAN_DLC_MAX)
+        return (-1);
 
-	for (i = 0; i < len; i++) {
-		c1 = *bp;
-		bp += 1;
+    for (i = 0; i < len; i++) {
+        c1 = *bp;
+        bp += 1;
 
-		if (isdigit(c1))
-			c1 -= '0';
-		else if (isalpha(c1))
-			c1 -= (isupper(c1)) ? 'A' - 10 : 'a' - 10;
-		else
-			return (-1);
+        if (isdigit(c1))
+            c1 -= '0';
+        else if (isalpha(c1))
+            c1 -= (isupper(c1)) ? 'A' - 10 : 'a' - 10;
+        else
+            return (-1);
 
-		c0 = *bp;
-		bp += 1;
+        c0 = *bp;
+        bp += 1;
 
-		if (isdigit(c0))
-			c0 -= '0';
-		else if (isalpha(c0))
-			c0 -= (isupper(c0)) ? 'A' - 10 : 'a' - 10;
-		else
-			return (-1);
+        if (isdigit(c0))
+            c0 -= '0';
+        else if (isalpha(c0))
+            c0 -= (isupper(c0)) ? 'A' - 10 : 'a' - 10;
+        else
+            return (-1);
 
-		cf->can_data[i] = ((c1 << 4) | c0);
-	}
-	return (0);
+        cf->can_data[i] = ((c1 << 4) | c0);
+    }
+    return (0);
 }
 
 int
 can_id2hex(struct can_frame *cf, u_char *buf)
 {
-	canid_t id;
-	int len;
-	u_char *bp, *ep;
-	u_char c;
+    canid_t id;
+    int len;
+    u_char *bp, *ep;
+    u_char c;
 
-	if ((bp = buf) == NULL || cf == NULL)
-		return (-1);
+    if ((bp = buf) == NULL || cf == NULL)
+        return (-1);
 
-	if ((cf->can_id & CAN_EFF_FLAG) != 0) {
-		id = (cf->can_id & CAN_EFF_MASK);
-		len = SLC_EFF_ID_LEN;
-	} else {
-		id = (cf->can_id & CAN_SFF_MASK);
-		len = SLC_SFF_ID_LEN;
-	}
+    if ((cf->can_id & CAN_EFF_FLAG) != 0) {
+        id = (cf->can_id & CAN_EFF_MASK);
+        len = SLC_EFF_ID_LEN;
+    } else {
+        id = (cf->can_id & CAN_SFF_MASK);
+        len = SLC_SFF_ID_LEN;
+    }
 
-	for (ep = bp + len - 1; ep >= bp; ep--, id >>= 4) {
-		c = (id & 0x0f);
+    for (ep = bp + len - 1; ep >= bp; ep--, id >>= 4) {
+        c = (id & 0x0f);
 
-		if (isalpha(c) && islower(c))
-			c = toupper(c);
+        if (isalpha(c) && islower(c))
+            c = toupper(c);
 
-		*ep = can_hex_tbl[c];
-	}
-	return (len);
+        *ep = can_hex_tbl[c];
+    }
+    return (len);
 }
 
 int
 can_hex2id(struct can_frame *cf, u_char *buf)
 {
-	int len;
-	canid_t u, v;
-	u_char *bp, *ep;
-	u_char c;
+    int len;
+    canid_t u, v;
+    u_char *bp, *ep;
+    u_char c;
 
-	if ((bp = buf) == NULL || cf == NULL)
-		return (-1);
+    if ((bp = buf) == NULL || cf == NULL)
+        return (-1);
 
-	if ((cf->can_id & CAN_EFF_FLAG) != 0)
-		len = SLC_EFF_ID_LEN;
-	else 
-		len = SLC_SFF_ID_LEN;
+    if ((cf->can_id & CAN_EFF_FLAG) != 0)
+        len = SLC_EFF_ID_LEN;
+    else
+        len = SLC_SFF_ID_LEN;
 
-	for (u = v = 0, ep = bp + len - 1; bp <= ep; v <<= 4) {
-		c = *bp;
-		bp += 1;
+    for (u = v = 0, ep = bp + len - 1; bp <= ep; v <<= 4) {
+        c = *bp;
+        bp += 1;
 
-		if (isdigit(c))
-			c -= '0';
-		else if (isalpha(c))
-			c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
-		else
-			return (-1);
+        if (isdigit(c))
+            c -= '0';
+        else if (isalpha(c))
+            c -= (isupper(c)) ? 'A' - 10 : 'a' - 10;
+        else
+            return (-1);
 
-		v |= (c & 0x0f);
-		u = v;
-	}
-	cf->can_id |= u;
+        v |= (c & 0x0f);
+        u = v;
+    }
+    cf->can_id |= u;
 
-	return (len);
+    return (len);
 }
 
 /*
@@ -620,47 +620,47 @@ can_hex2id(struct can_frame *cf, u_char *buf)
 static void *
 can_alloc(u_char type, struct ifnet *ifp)
 {
-	struct can_ifsoftc *csc;
+    struct can_ifsoftc *csc;
 
-	csc = malloc(sizeof(struct can_ifsoftc),
-		M_IFCAN, M_WAITOK | M_ZERO);
-	csc->csc_ifp = ifp;
+    csc = malloc(sizeof(struct can_ifsoftc),
+        M_IFCAN, M_WAITOK | M_ZERO);
+    csc->csc_ifp = ifp;
 
-	return (csc);
+    return (csc);
 }
 
 static void
 can_free(void *com, u_char type)
 {
 
-	free(com, M_IFCAN);
+    free(com, M_IFCAN);
 }
 
 /*
  * Module description.
  */
- 
+
 static int
 can_modevent(module_t mod, int type, void *data)
 {
 
-	switch (type) {
-	case MOD_LOAD:
-		if_register_com_alloc(IFT_CAN, can_alloc, can_free);
-		break;
-	case MOD_UNLOAD:
-		if_deregister_com_alloc(IFT_CAN);
-		break;
-	default:
-		return (EOPNOTSUPP);
-	}
-	return (0);
+    switch (type) {
+    case MOD_LOAD:
+        if_register_com_alloc(IFT_CAN, can_alloc, can_free);
+        break;
+    case MOD_UNLOAD:
+        if_deregister_com_alloc(IFT_CAN);
+        break;
+    default:
+        return (EOPNOTSUPP);
+    }
+    return (0);
 }
 
 static moduledata_t can_mod = {
-	"can",
-	can_modevent,
-	0
+    "can",
+    can_modevent,
+    0
 };
 
 DECLARE_MODULE(can, can_mod, SI_SUB_PSEUDO, SI_ORDER_ANY);
